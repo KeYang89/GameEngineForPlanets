@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Vespera — The Veil World</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=VT323&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #04020a;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+    cursor: none;
+  }
+
+  #world { width:100%; height:100%; display:block; }
+
+  /* Custom cursor */
+  #cursor {
+    position: fixed;
+    width: 20px; height: 20px;
+    border: 1px solid rgba(180,140,255,0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%,-50%);
+    transition: width 0.2s, height 0.2s, opacity 0.2s;
+    box-shadow: 0 0 8px rgba(180,140,255,0.3);
+  }
+  #cursor-dot {
+    position: fixed;
+    width: 3px; height: 3px;
+    background: rgba(200,170,255,0.9);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1001;
+    transform: translate(-50%,-50%);
+  }
+
+  #hud {
+    position: absolute;
+    top: 18px; left: 18px;
+    font-family: 'IM Fell English', serif;
+    font-size: 12px;
+    color: rgba(180,150,220,0.8);
+    background: rgba(4,2,10,0.75);
+    border: 1px solid rgba(140,100,200,0.2);
+    padding: 14px 18px;
+    line-height: 2.1;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    max-width: 230px;
+  }
+
+  #hud h1 {
+    font-size: 15px;
+    letter-spacing: 4px;
+    color: rgba(220,200,255,0.95);
+    font-style: italic;
+    border-bottom: 1px solid rgba(140,100,200,0.25);
+    padding-bottom: 7px;
+    margin-bottom: 5px;
+  }
+
+  #whisper {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: clamp(11px, 1.5vw, 16px);
+    color: rgba(180,150,255,0.0);
+    pointer-events: none;
+    z-index: 50;
+    text-align: center;
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px rgba(160,120,255,0.5);
+    transition: color 2s ease, opacity 2s ease;
+    max-width: 500px;
+  }
+
+  #codex {
+    position: absolute;
+    bottom: 18px; right: 18px;
+    font-family: 'IM Fell English', serif;
+    font-size: 10px;
+    color: rgba(150,120,200,0.7);
+    background: rgba(4,2,10,0.75);
+    border: 1px solid rgba(120,90,180,0.2);
+    padding: 12px 16px;
+    line-height: 1.9;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    max-width: 210px;
+  }
+
+  #codex h2 {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(200,170,255,0.9);
+    margin-bottom: 5px;
+    border-bottom: 1px solid rgba(120,90,180,0.2);
+    padding-bottom: 4px;
+  }
+
+  .c-row { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .c-orb { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  #entity-whisper {
+    position: absolute;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: rgba(220,180,255,0.9);
+    background: rgba(4,2,14,0.85);
+    border: 1px solid rgba(160,120,255,0.25);
+    padding: 8px 13px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 30;
+    display: none;
+    max-width: 200px;
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 25px rgba(140,90,255,0.2);
+  }
+
+  #bottom-hint {
+    position: absolute;
+    bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: rgba(150,120,200,0.4);
+    pointer-events: none;
+    z-index: 10;
+    letter-spacing: 3px;
+  }
+</style>
+</head>
+<body>
+<!-- Welcome to Planet Vespera — The Veil World. 🌫️
+This one is built around unease. Everything is half-visible, half-remembered.
+🖤 Sentient Species
+
+Umbrakin — Three-eyed shadow beings made of living darkness. They communicate through silence, flicker out of reality entirely, and leave void impressions behind. They know you're there.
+
+👻 Fauna (7 species)
+
+The Forgotten — Barely-visible humanoid silhouettes, fragmented and incomplete, whispering half-finished thoughts about their lost names
+Mirewalker — Tall multi-eyed stilted creatures with slow leg cycles, sinking in and out of the swamp
+Lanternmoth — Bioluminescent moths that navigate by following unseen lures — do not follow the lanterns
+Veilfish — Translucent fish that swim through air as though it were water, fading at the edges of perception
+Cindersnail — Slow ember-carrying snails that drop glowing ash trails as they move
+Fog Wraith — Creatures made entirely of fog with hollow eyes, distorting the space around them
+Ashfloater — Drifting flakes of something that was once alive
+
+🌿 Flora (4 types): Twisted Voidtrees with glowing sap, bioluminescent Rootwhisper networks, swaying Amberkelp, and submerged Mireweed patches. Plus Blushspore clouds drifting upward through the fog.
+World Systems: A living Veil distortion that warps everything, layered fog that parts as your cursor moves through it, whispering text that fades in from nowhere, an Omen system that changes creature behavior, a custom cursors, and messages that greet you when you first arrive. -->
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+
+<svg id="world" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<div id="hud">
+  <h1>Planet Vespera</h1>
+  <div id="h-veil">The Veil: <span id="veil-val">Thickening</span></div>
+  <div id="h-silence">Silence Level: <span id="sil-val">III</span></div>
+  <div id="h-omen">Omen: <span id="omen-val">—</span></div>
+  <div id="h-seen">Entities Seen: <span id="seen-val">0</span></div>
+  <div id="h-cycle">Dusk Cycle: <span id="cycle-val">0</span></div>
+</div>
+
+<div id="whisper"></div>
+<div id="entity-whisper"></div>
+
+<div id="codex">
+  <h2>The Codex</h2>
+  <div class="c-row"><div class="c-orb" style="background:rgba(180,140,255,0.9);box-shadow:0 0 6px rgba(180,140,255,0.8)"></div>Umbrakin (Sentient)</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(60,20,90,0.9)"></div>The Forgotten</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(200,230,180,0.7)"></div>Mirewalker</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(255,200,80,0.7)"></div>Lanternmoth</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(80,200,180,0.6)"></div>Veilfish</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(255,100,80,0.6)"></div>Cindersnail</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(140,180,255,0.6)"></div>Fog Wraith</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(255,150,200,0.6)"></div>Blushspore</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(100,255,150,0.5)"></div>Rootwhisper (flora)</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(200,160,255,0.5)"></div>Voidtree (flora)</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(255,220,160,0.5)"></div>Amberkelp (flora)</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(180,220,255,0.4)"></div>Mireweed (flora)</div>
+  <div class="c-row"><div class="c-orb" style="background:rgba(255,255,255,0.3)"></div>Ashfloater</div>
+</div>
+
+<div id="bottom-hint">move through the veil — hover to commune</div>
+
+<script>
+const svg = document.getElementById('world');
+const W = window.innerWidth, H = window.innerHeight;
+svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+
+let frame = 0, mouseX = W/2, mouseY = H/2;
+let veilThickness = 0.5, silenceLevel = 3;
+let omenTimer = 0, whisperTimer = 0;
+let seenCount = 0;
+
+const rand = (a,b)=>a+Math.random()*(b-a);
+const randInt = (a,b)=>Math.floor(rand(a,b+1));
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+
+function el(tag,attrs={}) {
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+
+// Custom cursor
+const cur = document.getElementById('cursor');
+const curDot = document.getElementById('cursor-dot');
+document.addEventListener('mousemove',e=>{
+  mouseX=e.clientX; mouseY=e.clientY;
+  cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px';
+  curDot.style.left=e.clientX+'px'; curDot.style.top=e.clientY+'px';
+});
+
+// ── LAYERS ─────────────────────────────────────────────────────────────────
+const L = {};
+['void','sky','fog-far','mire','flora','fog-near','creatures','sapient','veil','particles','whispers'].forEach(n=>{
+  const g=el('g',{id:n.replace('-','_')});
+  svg.appendChild(g); L[n]=g;
+});
+
+// ── DEFS ───────────────────────────────────────────────────────────────────
+const defs=el('defs'); svg.insertBefore(defs,svg.firstChild);
+
+// Sky gradient - perpetual dusk
+const skyG=el('linearGradient',{id:'sky',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+skyG.innerHTML=`
+  <stop id="sk0" offset="0%" stop-color="#04020a"/>
+  <stop id="sk1" offset="35%" stop-color="#0d051e"/>
+  <stop id="sk2" offset="65%" stop-color="#1a0828"/>
+  <stop id="sk3" offset="100%" stop-color="#0a0414"/>
+`;
+defs.appendChild(skyG);
+
+// Ground mire
+const mireG=el('linearGradient',{id:'mire',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+mireG.innerHTML=`
+  <stop offset="0%" stop-color="#080518"/>
+  <stop offset="100%" stop-color="#020108"/>
+`;
+defs.appendChild(mireG);
+
+// Fog gradient
+const fogG=el('radialGradient',{id:'fog',cx:'50%',cy:'60%',r:'60%'});
+fogG.innerHTML=`
+  <stop offset="0%" stop-color="rgba(100,70,150,0.18)"/>
+  <stop offset="100%" stop-color="rgba(40,20,80,0)"/>
+`;
+defs.appendChild(fogG);
+
+// Filters
+[
+  ['f2','2'],['f4','4'],['f8','8'],['f15','15'],['f25','25']
+].forEach(([id,blur])=>{
+  const f=el('filter',{id,x:'-80%',y:'-80%',width:'260%',height:'260%'});
+  f.innerHTML=`<feGaussianBlur stdDeviation="${blur}" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+  defs.appendChild(f);
+});
+
+// Soft only (no source graphic)
+const fsoft=el('filter',{id:'fsoft',x:'-50%',y:'-50%',width:'200%',height:'200%'});
+fsoft.innerHTML=`<feGaussianBlur stdDeviation="12"/>`;
+defs.appendChild(fsoft);
+
+// Veil distortion - slow turbulence
+const veiltf=el('feTurbulence',{id:'vtf',type:'fractalNoise',baseFrequency:'0.008 0.012',numOctaves:3,seed:7,result:'noise'});
+const veildm=el('feDisplacementMap',{in:'SourceGraphic',in2:'noise',scale:0,xChannelSelector:'R',yChannelSelector:'G',result:'displaced'});
+const veilBlur=el('feGaussianBlur',{in:'displaced',stdDeviation:1.5});
+const veilFilter=el('filter',{id:'veil-dist',x:'-30%',y:'-30%',width:'160%',height:'160%'});
+[veiltf,veildm,veilBlur].forEach(e=>veilFilter.appendChild(e));
+defs.appendChild(veilFilter);
+
+// ── VOID BACKGROUND ─────────────────────────────────────────────────────────
+const bg=el('rect',{x:0,y:0,width:W,height:H,fill:'url(#sky)'});
+L['void'].appendChild(bg);
+
+// Stars - dim, barely visible through veil
+const stars=[];
+for(let i=0;i<120;i++){
+  const s=el('circle',{
+    cx:rand(0,W),cy:rand(0,H*0.55),
+    r:rand(0.3,1.2),
+    fill:`hsl(${rand(220,300)},${rand(20,60)}%,${rand(60,90)}%)`,
+    opacity:rand(0.05,0.25)
+  });
+  L['sky'].appendChild(s);
+  stars.push({el:s,base:parseFloat(s.getAttribute('opacity')),phase:rand(0,Math.PI*2)});
+}
+
+// Dual moons - partially obscured
+const moon1=el('circle',{cx:W*0.22,cy:H*0.15,r:28,fill:'rgba(180,160,220,0.12)',filter:'url(#f15)'});
+const moon1c=el('circle',{cx:W*0.22,cy:H*0.15,r:22,fill:'rgba(200,180,240,0.08)'});
+L['sky'].appendChild(moon1); L['sky'].appendChild(moon1c);
+
+const moon2=el('circle',{cx:W*0.78,cy:H*0.22,r:18,fill:'rgba(140,200,200,0.1)',filter:'url(#f15)'});
+const moon2c=el('circle',{cx:W*0.78,cy:H*0.22,r:14,fill:'rgba(160,220,220,0.07)'});
+L['sky'].appendChild(moon2); L['sky'].appendChild(moon2c);
+
+// ── FOG LAYERS ─────────────────────────────────────────────────────────────
+const groundY = H*0.65;
+const fogBands = [];
+
+// Far fog bands (slow)
+for(let i=0;i<6;i++){
+  const fy=H*0.3+i*H*0.07;
+  const band=el('ellipse',{
+    cx:W/2, cy:fy,
+    rx:W*rand(0.6,1.2), ry:rand(30,80),
+    fill:`hsla(${rand(240,290)},${rand(20,50)}%,${rand(8,18)}%,${rand(0.15,0.35)})`,
+    filter:'url(#fsoft)'
+  });
+  L['fog-far'].appendChild(band);
+  fogBands.push({el:band,baseY:fy,phase:rand(0,Math.PI*2),speed:rand(0.003,0.008),cx:W/2});
+}
+
+// Near fog (denser, closer)
+for(let i=0;i<8;i++){
+  const fy=groundY-rand(10,100);
+  const band=el('ellipse',{
+    cx:rand(0,W), cy:fy,
+    rx:rand(150,400), ry:rand(20,60),
+    fill:`hsla(${rand(250,300)},${rand(30,60)}%,${rand(5,12)}%,${rand(0.2,0.5)})`,
+    filter:'url(#fsoft)'
+  });
+  L['fog-near'].appendChild(band);
+  fogBands.push({el:band,baseY:fy,phase:rand(0,Math.PI*2),speed:rand(0.005,0.015),cx:parseFloat(band.getAttribute('cx'))});
+}
+
+// ── MIRE (ground) ──────────────────────────────────────────────────────────
+// Reflective dark swamp ground
+function mirePath(y,jitter){
+  let pts=[[0,y]];
+  let x=0;
+  while(x<W+60){pts.push([x,y+rand(-jitter,jitter)]);x+=rand(20,60);}
+  pts.push([W,y],[W,H+10],[0,H+10]);
+  return `M${pts.map(p=>p.join(',')).join('L')}Z`;
+}
+const mireEl=el('path',{d:mirePath(groundY,25),fill:'url(#mire)'});
+L['mire'].appendChild(mireEl);
+
+// Mire puddle reflections
+for(let i=0;i<12;i++){
+  const px=rand(0,W),py=groundY+rand(5,30),pw=rand(20,80),ph=rand(5,20);
+  const puddle=el('ellipse',{cx:px,cy:py,rx:pw,ry:ph,
+    fill:`rgba(${randInt(20,40)},${randInt(10,25)},${randInt(40,70)},0.4)`,
+    filter:'url(#f4)'});
+  L['mire'].appendChild(puddle);
+}
+
+// ── FLORA ──────────────────────────────────────────────────────────────────
+const floraAll=[];
+
+// Voidtrees - twisted dead trees with impossible geometry
+for(let i=0;i<10;i++){
+  const x=rand(0,W),y=groundY+rand(0,15);
+  const g=el('g');
+  function branch(px,py,angle,len,depth,hue){
+    if(depth<=0||len<3)return;
+    const ex=px+Math.cos(angle)*len,ey=py+Math.sin(angle)*len;
+    const b=el('line',{x1:px,y1:py,x2:ex,y2:ey,
+      stroke:`hsla(${hue},${30+depth*10}%,${15+depth*8}%,0.7)`,
+      'stroke-width':depth*1.2,'stroke-linecap':'round'});
+    g.appendChild(b);
+    // Occasional ghostly leaf
+    if(depth===1&&Math.random()<0.4){
+      const leaf=el('circle',{cx:ex,cy:ey,r:rand(2,5),
+        fill:`hsla(${hue},50%,40%,0.3)`,filter:'url(#f4)'});
+      g.appendChild(leaf);
+    }
+    branch(ex,ey,angle-rand(0.3,0.7),len*rand(0.55,0.75),depth-1,hue);
+    if(Math.random()<0.7)
+      branch(ex,ey,angle+rand(0.2,0.6),len*rand(0.5,0.7),depth-1,hue);
+  }
+  const hue=rand(240,290);
+  branch(x,y,-Math.PI/2,rand(40,90),5,hue);
+  // Glowing sap drips
+  for(let j=0;j<3;j++){
+    const drip=el('circle',{cx:x+rand(-30,30),cy:y-rand(10,70),r:rand(1.5,3),
+      fill:`hsla(${hue},80%,60%,0.5)`,filter:'url(#f4)'});
+    g.appendChild(drip);
+  }
+  L['flora'].appendChild(g);
+  floraAll.push({type:'voidtree',el:g,x,y,phase:rand(0,Math.PI*2)});
+}
+
+// Rootwhisper - bioluminescent root networks on ground
+for(let i=0;i<15;i++){
+  const x=rand(0,W),y=groundY+rand(2,18);
+  const g=el('g');
+  function root(px,py,angle,len,depth){
+    if(depth<=0||len<4)return;
+    const ex=px+Math.cos(angle)*len,ey=py+Math.sin(angle)*len;
+    if(ey<groundY)return;
+    const r=el('line',{x1:px,y1:py,x2:ex,y2:ey,
+      stroke:`hsla(${rand(120,160)},70%,${25+depth*8}%,0.6)`,
+      'stroke-width':depth*0.8,'stroke-linecap':'round',filter:'url(#f2)'});
+    g.appendChild(r);
+    const spread=rand(0.4,0.9);
+    root(ex,ey,angle-spread,len*0.7,depth-1);
+    if(Math.random()<0.6)root(ex,ey,angle+spread*0.7,len*0.65,depth-1);
+  }
+  root(x,y,rand(-0.3,Math.PI+0.3),rand(15,35),4);
+  L['flora'].appendChild(g);
+  floraAll.push({type:'rootwhisper',el:g,x,y,phase:rand(0,Math.PI*2)});
+}
+
+// Amberkelp - tall luminescent stalks
+for(let i=0;i<20;i++){
+  const x=rand(0,W),y=groundY+rand(5,15);
+  const h=rand(30,100);
+  const g=el('g');
+  // Waving stalk
+  const stalk=el('path',{
+    d:`M${x},${y} Q${x+rand(-20,20)},${y-h*0.5} ${x+rand(-15,15)},${y-h}`,
+    stroke:`hsla(${rand(30,60)},${rand(60,90)}%,${rand(40,60)}%,0.6)`,
+    'stroke-width':rand(1.5,3),'fill':'none','stroke-linecap':'round',filter:'url(#f2)'
+  });
+  const tip=el('ellipse',{cx:x+rand(-15,15),cy:y-h,rx:rand(4,10),ry:rand(3,7),
+    fill:`hsla(${rand(30,55)},90%,65%,0.5)`,filter:'url(#f4)'});
+  g.appendChild(stalk); g.appendChild(tip);
+  L['flora'].appendChild(g);
+  floraAll.push({type:'amberkelp',el:g,x,y,phase:rand(0,Math.PI*2),stalkEl:stalk,tipEl:tip,h,hue:rand(30,60)});
+}
+
+// Mireweed - submerged glowing patches
+for(let i=0;i<12;i++){
+  const x=rand(0,W),y=groundY+rand(8,25);
+  const g=el('g');
+  for(let j=0;j<6;j++){
+    const blob=el('ellipse',{cx:x+rand(-25,25),cy:y+rand(-5,8),
+      rx:rand(5,20),ry:rand(3,9),
+      fill:`hsla(${rand(180,220)},50%,${rand(15,30)}%,0.5)`,filter:'url(#f4)'});
+    g.appendChild(blob);
+  }
+  L['flora'].appendChild(g);
+  floraAll.push({type:'mireweed',el:g,x,y,phase:rand(0,Math.PI*2)});
+}
+
+// Blushspores - floating luminous spore clouds (technically flora)
+const blushClouds=[];
+for(let i=0;i<25;i++){
+  const x=rand(0,W),y=rand(groundY-200,groundY+10);
+  const s=el('circle',{cx:x,cy:y,r:rand(3,10),
+    fill:`hsla(${rand(300,360)},${rand(60,90)}%,${rand(50,75)}%,${rand(0.2,0.5)})`,
+    filter:'url(#f8)'});
+  L['flora'].appendChild(s);
+  blushClouds.push({el:s,x,y,phase:rand(0,Math.PI*2),vy:rand(-0.15,0.05)});
+}
+
+// ── CREATURE BASE ──────────────────────────────────────────────────────────
+class Entity {
+  constructor(opts){
+    Object.assign(this,{
+      x:rand(50,W-50),y:rand(groundY-100,groundY-20),
+      vx:0,vy:0,speed:0.8,type:'entity',
+      label:'Unknown',whispers:['...'],
+      phase:rand(0,Math.PI*2),age:0,
+      parentLayer:'creatures'
+    },opts);
+    this.el=el('g',{cursor:'pointer'});
+    this.vx = this.vx || 0;
+    this.vy = this.vy || 0;
+    this.phase = this.phase || 0;
+    L[this.parentLayer].appendChild(this.el);
+    this.el.addEventListener('mouseenter',()=>{
+      seenCount++;
+      document.getElementById('seen-val').textContent=seenCount;
+      this.commune(true);
+    });
+    this.el.addEventListener('mouseleave',()=>this.commune(false));
+  }
+  commune(on){
+    const ew=document.getElementById('entity-whisper');
+    ew.style.display=on?'block':'none';
+    if(on){
+      ew.textContent=this.whispers[randInt(0,this.whispers.length-1)];
+      ew.style.left=(this.x+25)+'px';
+      ew.style.top=(this.y-55)+'px';
+    }
+  }
+  build(){}
+  wander(x0=0,x1=W,y0=H*0.05,y1=groundY-10){
+    if(Math.random()<0.015){
+      this.vx+=rand(-this.speed,this.speed)*0.4;
+      this.vy+=rand(-this.speed,this.speed)*0.3;
+    }
+    this.vx=clamp(this.vx,-this.speed,this.speed);
+    this.vy=clamp(this.vy,-this.speed*0.5,this.speed*0.5);
+    this.x+=this.vx; this.y+=this.vy;
+    this.x=clamp(this.x,x0,x1); this.y=clamp(this.y,y0,y1);
+    this.vx*=0.97; this.vy*=0.97;
+  }
+  tick(){this.age++;this.phase+=0.04;this.update();this.el.setAttribute('transform',`translate(${this.x},${this.y})`);}
+  update(){this.wander();}
+}
+
+// ── UMBRAKIN (Sentient) ────────────────────────────────────────────────────
+class Umbrakin extends Entity {
+  constructor(){
+    super({type:'umbrakin',label:'Umbrakin',speed:0.9,
+      parentLayer:'sapient',
+      whispers:[
+        'The veil remembers what you forgot.',
+        'We were here before the light.',
+        'Silence is our only tongue.',
+        'The moons weep for the Forgotten.',
+        'I have seen your kind before... once.',
+        'Between heartbeats, we live entire ages.',
+        'Do not follow the lanterns.',
+        'The mire knows every secret.',
+        'We do not die. We thin.',
+        'Something watches from the second moon.',
+      ]
+    });
+    this.shadowTrail=[];
+    this.resonance=rand(0.3,1.0);
+    this.shiftTimer=0;
+    this.parts = [];
+    this.build();
+  }
+
+  build(){
+    // Shadow body - fluid, indistinct
+    this.bodyEl=el('ellipse',{cx:0,cy:0,rx:15,ry:22,
+      fill:'rgba(80,40,140,0.85)',filter:'url(#veil-dist)'});
+    // Inner soul light
+    this.soulEl=el('ellipse',{cx:0,cy:-5,rx:8,ry:10,
+      fill:'rgba(180,140,255,0.4)',filter:'url(#f8)'});
+    // Void eyes - three vertical
+    this.eyes=[];
+    [[-5,-10],[0,-14],[5,-10]].forEach(([ex,ey])=>{
+      const eye=el('ellipse',{cx:ex,cy:ey,rx:2,ry:3.5,
+        fill:'rgba(220,190,255,0.9)',filter:'url(#f4)'});
+      this.eyes.push(eye);
+      this.el.appendChild(eye);
+    });
+    // Tendril hands
+    this.tendrils=[];
+    for(let i=0;i<4;i++){
+      const side=i<2?-1:1, off=(i%2)*8;
+      const t=el('path',{
+        d:`M${side*12},${off} Q${side*25},${off+rand(5,15)} ${side*30},${off+rand(10,25)}`,
+        stroke:'rgba(140,100,220,0.6)','stroke-width':2,'fill':'none','stroke-linecap':'round',
+        filter:'url(#f2)'});
+      this.tendrils.push({el:t,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(t);
+    }
+    // Cloak shadow
+    this.cloakEl=el('ellipse',{cx:0,cy:18,rx:22,ry:12,
+      fill:'rgba(40,15,80,0.7)',filter:'url(#f8)'});
+    // Aura ring
+    this.auraEl=el('circle',{r:32,fill:'none',
+      stroke:'rgba(160,120,255,0.08)','stroke-width':12,filter:'url(#f15)'});
+
+    [this.auraEl,this.cloakEl,this.bodyEl,this.soulEl].forEach(e=>this.el.appendChild(e));
+
+    // Shadow trail elements
+    for(let i=0;i<6;i++){
+      const sh=el('ellipse',{cx:0,cy:0,rx:10,ry:15,
+        fill:`rgba(60,30,110,${0.12-i*0.02})`,filter:'url(#fsoft)'});
+      L['creatures'].insertBefore(sh,L['creatures'].firstChild);
+      this.shadowTrail.push({el:sh,delay:i});
+    }
+  }
+
+  update(){
+    // Drift with purpose - seek darkness areas
+    if(Math.random()<0.01){
+      this.vx=rand(-this.speed,this.speed);
+      this.vy=rand(-0.5,0.5);
+    }
+    this.x+=this.vx; this.y+=this.vy;
+    this.x=clamp(this.x,20,W-20);
+    this.y=clamp(this.y,H*0.15,groundY-30);
+    this.vx*=0.97; this.vy*=0.97;
+
+    // Tendril writhing
+    this.tendrils.forEach((t,i)=>{
+      t.phase+=0.03;
+      const side=i<2?-1:1,off=(i%2)*8;
+      const sw=Math.sin(t.phase)*12;
+      t.el.setAttribute('d',
+        `M${side*12},${off} Q${side*22+sw},${off+12+sw*0.5} ${side*28+sw*0.7},${off+22+sw*0.3}`);
+    });
+
+    // Eye pulse
+    this.eyes.forEach((e,i)=>{
+      e.setAttribute('ry',3.5+Math.sin(this.phase*1.2+i)*1.2);
+      e.setAttribute('opacity',0.7+Math.sin(this.phase+i)*0.3);
+    });
+
+    // Soul light flicker
+    this.soulEl.setAttribute('opacity',0.3+Math.sin(this.phase*0.7)*0.2+this.resonance*0.2);
+    this.auraEl.setAttribute('r',30+Math.sin(this.phase*0.5)*6);
+
+    // Shadow trail
+    this.shadowTrail.forEach((s,i)=>{
+      s.el.setAttribute('cx',this.x+Math.sin(this.phase+i)*5);
+      s.el.setAttribute('cy',this.y+i*4);
+    });
+
+    // Occasional shift - flicker out of reality
+    this.shiftTimer++;
+    if(this.shiftTimer>200&&Math.random()<0.005){
+      this.shiftTimer=0;
+      const origX=this.x,origY=this.y;
+      this.el.setAttribute('opacity',0);
+      setTimeout(()=>{
+        this.x=rand(50,W-50);
+        this.y=rand(H*0.15,groundY-30);
+        this.el.setAttribute('opacity',1);
+        // leave void impression
+        const imp=el('ellipse',{cx:origX,cy:origY,rx:20,ry:28,
+          fill:'rgba(120,80,200,0.15)',filter:'url(#f15)'});
+        L['veil'].appendChild(imp);
+        let op=0.15;
+        const ai=setInterval(()=>{op-=0.005;imp.setAttribute('fill',`rgba(120,80,200,${op})`);
+          if(op<=0){clearInterval(ai);imp.remove();}},50);
+      },800);
+    }
+  }
+  tick(){this.age++;this.phase+=0.04;this.update();}
+}
+
+// ── THE FORGOTTEN ──────────────────────────────────────────────────────────
+class Forgotten extends Entity {
+  constructor(){
+    super({type:'forgotten',label:'The Forgotten',speed:0.3,
+      whispers:[
+        '...name... what was...',
+        'I cannot... remember...',
+        '...still here... somewhere...',
+        'Please... do not look...',
+        '...was I... alive...?',
+      ]
+    });
+    this.opacity=rand(0.08,0.22);
+  }
+  build(){
+    // Barely visible humanoid silhouette
+    const body=el('ellipse',{cx:0,cy:0,rx:8,ry:14,fill:'rgba(60,30,90,0.9)'});
+    const head=el('circle',{cx:0,cy:-20,r:7,fill:'rgba(70,40,100,0.8)'});
+    // Fragmented, missing parts
+    for(let i=0;i<5;i++){
+      const frag=el('rect',{
+        x:rand(-10,4),y:rand(-28,10),width:rand(4,12),height:rand(2,8),
+        fill:'rgba(40,20,70,0.7)',
+        transform:`rotate(${rand(-30,30)},0,0)`});
+      this.el.appendChild(frag);
+    }
+    [body,head].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('opacity',this.opacity);
+    this.el.setAttribute('filter','url(#fsoft)');
+  }
+  update(){
+    this.wander(0,W,H*0.1,groundY-20);
+    // Slowly fade in and out
+    const osc=this.opacity*0.5+Math.abs(Math.sin(this.phase*0.15))*this.opacity*0.5;
+    this.el.setAttribute('opacity',osc);
+  }
+}
+
+// ── MIREWALKER ─────────────────────────────────────────────────────────────
+class Mirewalker extends Entity {
+  constructor(){
+    super({type:'mirewalker',label:'Mirewalker',speed:0.7,
+      y:groundY-rand(10,30),
+      whispers:[
+        'The mire feeds me.',
+        'Slow... always slow...',
+        'My roots know the deep.',
+        'Surface creatures fear depth.',
+        'I have walked since the first fog.',
+      ]
+    });
+    this.build();
+  }
+  build(){
+    // Tall stilted creature
+    const torso=el('ellipse',{cx:0,cy:-30,rx:10,ry:16,fill:'rgba(150,200,140,0.7)',filter:'url(#f2)'});
+    const head=el('ellipse',{cx:0,cy:-50,rx:8,ry:10,fill:'rgba(170,220,160,0.8)',filter:'url(#f4)'});
+    // Long stilt legs
+    this.legs=[];
+    [[-8,0],[-4,0],[4,0],[8,0]].forEach(([lx,ly],i)=>{
+      const l=el('line',{x1:lx,y1:-14,x2:lx+rand(-5,5),y2:rand(15,30),
+        stroke:'rgba(120,170,110,0.7)','stroke-width':2,'stroke-linecap':'round'});
+      this.legs.push({el:l,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(l);
+    });
+    // Many eyes on head
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2;
+      const eye=el('circle',{cx:Math.cos(a)*5,cy:-50+Math.sin(a)*6,r:1.5,
+        fill:'rgba(200,255,180,0.9)',filter:'url(#f2)'});
+      this.el.appendChild(eye);
+    }
+    // Tendrils trailing behind
+    for(let i=0;i<3;i++){
+      const t=el('path',{d:`M0,-20 Q${rand(-20,20)},${rand(-10,10)} ${rand(-30,30)},${rand(10,30)}`,
+        stroke:'rgba(100,160,90,0.4)','stroke-width':1.5,'fill':'none','stroke-linecap':'round'});
+      this.el.appendChild(t);
+    }
+    [torso,head].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.legs.forEach((l,i)=>{
+      l.phase+=0.05;
+      const step=Math.sin(l.phase+i*0.8)*8;
+      l.el.setAttribute('y2',20+step);
+      l.el.setAttribute('x2',parseFloat(l.el.getAttribute('x1'))+step*0.5);
+    });
+    this.wander(0,W,groundY-50,groundY-5);
+  }
+}
+
+// ── LANTERNMOTH ────────────────────────────────────────────────────────────
+class Lanternmoth extends Entity {
+  constructor(){
+    super({type:'lanternmoth',label:'Lanternmoth',speed:1.8,
+      y:rand(H*0.05,groundY-80),
+      whispers:[
+        'Follow the light... follow...',
+        'I am the last warmth here.',
+        'Do not follow the light.',
+        'The flame knows the way.',
+        'We dance for no one.',
+      ]
+    });
+    this.flapPhase=rand(0,Math.PI*2);
+    this.lureTarget={x:rand(0,W),y:rand(H*0.1,groundY-60)};
+    this.build();
+  }
+  build(){
+    const hue=rand(40,70);
+    this.wL=el('ellipse',{cx:-14,cy:0,rx:16,ry:7,fill:`hsla(${hue},80%,55%,0.55)`,filter:'url(#f4)'});
+    this.wR=el('ellipse',{cx:14,cy:0,rx:16,ry:7,fill:`hsla(${hue},80%,55%,0.55)`,filter:'url(#f4)'});
+    // Wing patterns
+    [this.wL,this.wR].forEach((w,wi)=>{
+      for(let i=0;i<3;i++){
+        const dot=el('circle',{cx:(wi===0?-14:14)+rand(-8,8),cy:rand(-4,4),r:rand(1,3),
+          fill:`hsla(${hue+20},90%,70%,0.6)`,filter:'url(#f2)'});
+        this.el.appendChild(dot);
+      }
+    });
+    const body=el('ellipse',{cx:0,cy:0,rx:5,ry:8,fill:`hsla(${hue+10},60%,40%,0.9)`});
+    this.lanternEl=el('circle',{cx:0,cy:-12,r:5,fill:`hsla(${hue},100%,70%,0.9)`,filter:'url(#f8)'});
+    const ant1=el('line',{x1:-2,y1:-16,x2:-6,y2:-26,stroke:`hsla(${hue},60%,50%,0.7)`,'stroke-width':1.2});
+    const ant2=el('line',{x1:2,y1:-16,x2:6,y2:-26,stroke:`hsla(${hue},60%,50%,0.7)`,'stroke-width':1.2});
+    const tip1=el('circle',{cx:-6,cy:-26,r:2,fill:`hsla(${hue},100%,75%,0.8)`,filter:'url(#f2)'}),
+          tip2=el('circle',{cx:6,cy:-26,r:2,fill:`hsla(${hue},100%,75%,0.8)`,filter:'url(#f2)'});
+    [this.wL,this.wR,body,this.lanternEl,ant1,ant2,tip1,tip2].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.flapPhase+=0.12;
+    const flap=Math.sin(this.flapPhase)*10;
+    this.wL.setAttribute('cy',flap); this.wR.setAttribute('cy',-flap);
+    this.wL.setAttribute('ry',7+Math.abs(flap)*0.3); this.wR.setAttribute('ry',7+Math.abs(flap)*0.3);
+
+    // Lantern flicker
+    this.lanternEl.setAttribute('r',4+Math.abs(Math.sin(this.phase*3))*2);
+
+    // Drift toward lure target
+    const dx=this.lureTarget.x-this.x,dy=this.lureTarget.y-this.y;
+    const d=Math.hypot(dx,dy);
+    if(d<30){this.lureTarget={x:rand(0,W),y:rand(H*0.08,groundY-60)};}
+    this.vx+=dx/d*0.04; this.vy+=dy/d*0.04;
+    this.vx=clamp(this.vx,-this.speed,this.speed);
+    this.vy=clamp(this.vy,-this.speed,this.speed);
+    this.x+=this.vx; this.y+=this.vy;
+    this.x=clamp(this.x,0,W); this.y=clamp(this.y,H*0.03,groundY-30);
+    this.vx*=0.96; this.vy*=0.96;
+  }
+}
+
+// ── VEILFISH ───────────────────────────────────────────────────────────────
+class Veilfish extends Entity {
+  constructor(){
+    super({type:'veilfish',label:'Veilfish',speed:2.2,
+      y:rand(H*0.1,groundY-40),
+      whispers:[
+        'I swim in air as in water.',
+        'The boundary is an illusion.',
+        'I taste memories here.',
+        'Between worlds, I slip.',
+      ]
+    });
+    this.hue=rand(160,200);
+  }
+  build(){
+    const body=el('ellipse',{cx:0,cy:0,rx:18,ry:7,
+      fill:`hsla(${this.hue},80%,50%,0.55)`,filter:'url(#f4)'});
+    const tail=el('polygon',{points:'-18,0 -25,-9 -28,0 -25,9',
+      fill:`hsla(${this.hue},80%,40%,0.6)`});
+    const fin1=el('polygon',{points:'-4,-7 2,-16 8,-7',
+      fill:`hsla(${this.hue},70%,55%,0.5)`});
+    const eye=el('circle',{cx:14,cy:-2,r:3.5,
+      fill:`hsla(${this.hue},100%,80%,0.9)`,filter:'url(#f2)'});
+    const ep=el('circle',{cx:14,cy:-2,r:1.8,fill:'rgba(0,0,0,0.8)'});
+    // Translucent scales
+    for(let i=0;i<6;i++){
+      const sc=el('ellipse',{cx:rand(-12,12),cy:rand(-5,5),rx:rand(3,7),ry:rand(2,4),
+        fill:`hsla(${this.hue},60%,70%,0.15)`,stroke:`hsla(${this.hue},80%,70%,0.2)`,'stroke-width':0.5});
+      this.el.appendChild(sc);
+    }
+    // Ghostly duplicate
+    const ghost=el('ellipse',{cx:rand(-8,8),cy:rand(-5,5),rx:16,ry:6,
+      fill:`hsla(${this.hue},60%,70%,0.08)`,filter:'url(#f8)'});
+    this.el.appendChild(ghost);
+    [body,tail,fin1,eye,ep].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('opacity',0.7);
+  }
+  update(){
+    this.wander(0,W,H*0.05,groundY-30);
+    // Fade at edges
+    const fadeX=Math.min(this.x/100,1,(W-this.x)/100);
+    this.el.setAttribute('opacity',0.4+fadeX*0.4);
+    const scaleX=this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.05;this.update();}
+}
+
+// ── CINDERSNAIL ────────────────────────────────────────────────────────────
+class Cindersnail extends Entity {
+  constructor(){
+    super({type:'cindersnail',label:'Cindersnail',speed:0.2,
+      y:groundY-rand(5,20),
+      whispers:[
+        'Ember feeds ember.',
+        'I carry my home, my flame.',
+        'Ash is only fire... resting.',
+        'Slow. But certain.',
+      ]
+    });
+  }
+  build(){
+    // Shell spiral
+    const hue=rand(10,30);
+    const shellPts=[];
+    for(let a=0;a<Math.PI*4;a+=0.2){
+      const r=a*2.5;
+      shellPts.push(`${Math.cos(a)*r},${Math.sin(a)*r}`);
+    }
+    const shell=el('path',{
+      d:`M${shellPts.join('L')}`,
+      stroke:`hsla(${hue},80%,55%,0.7)`,'stroke-width':2.5,'fill':'none','stroke-linecap':'round',filter:'url(#f2)'});
+    // Body
+    const body=el('ellipse',{cx:-5,cy:5,rx:12,ry:6,fill:`hsla(${hue+10},60%,35%,0.8)`});
+    const head=el('ellipse',{cx:10,cy:3,rx:6,ry:4,fill:`hsla(${hue+5},70%,40%,0.9)`});
+    // Eyestalks
+    const es1=el('line',{x1:12,y1:0,x2:14,y2:-8,stroke:`hsla(${hue},50%,50%,0.8)`,'stroke-width':1.5});
+    const es2=el('line',{x1:14,y1:0,x2:17,y2:-7,stroke:`hsla(${hue},50%,50%,0.8)`,'stroke-width':1.5});
+    const eye1=el('circle',{cx:14,cy:-8,r:2.5,fill:`hsla(${hue},100%,70%,0.9)`,filter:'url(#f2)'}),
+          eye2=el('circle',{cx:17,cy:-7,r:2.5,fill:`hsla(${hue},100%,70%,0.9)`,filter:'url(#f2)'});
+    // Ember glow trail
+    this.emberEl=el('ellipse',{cx:-15,cy:5,rx:8,ry:4,fill:`hsla(${hue},100%,60%,0.3)`,filter:'url(#f8)'});
+    [this.emberEl,shell,body,head,es1,es2,eye1,eye2].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    // Drop embers
+    if(Math.random()<0.05){
+      const em=el('circle',{cx:this.x+rand(-5,5),cy:this.y+rand(-3,3),r:rand(1,3),
+        fill:`hsla(${rand(10,40)},100%,${rand(50,70)}%,0.5)`,filter:'url(#f4)'});
+      L['particles'].appendChild(em);
+      let ly=0;
+      const ai=setInterval(()=>{ly++;em.setAttribute('cy',this.y+ly);em.setAttribute('opacity',1-ly/20);
+        if(ly>=20){clearInterval(ai);em.remove();}},40);
+    }
+    this.wander(0,W,groundY-35,groundY-5);
+  }
+}
+
+// ── FOG WRAITH ─────────────────────────────────────────────────────────────
+class FogWraith extends Entity {
+  constructor(){
+    super({type:'fogwraith',label:'Fog Wraith',speed:0.5,
+      y:rand(groundY-120,groundY-30),
+      whispers:[
+        'I am the fog.',
+        'You breathe me in.',
+        'No boundary holds me.',
+        'Cold... always cold...',
+        'I was a storm once.',
+      ]
+    });
+    this.parts=[];
+  }
+  build(){
+    // Made entirely of fog blobs
+    for(let i=0;i<8;i++){
+      const blob=el('ellipse',{
+        cx:rand(-20,20),cy:rand(-25,10),
+        rx:rand(8,22),ry:rand(6,16),
+        fill:`rgba(${randInt(60,110)},${randInt(40,80)},${randInt(120,180)},${rand(0.08,0.18)})`,
+        filter:'url(#fsoft)'
+      });
+      this.parts.push({el:blob,phase:rand(0,Math.PI*2),bx:parseFloat(blob.getAttribute('cx'))});
+      this.el.appendChild(blob);
+    }
+    // Two hollow eyes
+    const e1=el('ellipse',{cx:-5,cy:-10,rx:3,ry:5,fill:'rgba(200,180,255,0.15)',filter:'url(#f8)'}),
+          e2=el('ellipse',{cx:5,cy:-10,rx:3,ry:5,fill:'rgba(200,180,255,0.15)',filter:'url(#f8)'});
+    this.el.appendChild(e1); this.el.appendChild(e2);
+    this.el.setAttribute('filter','url(#veil-dist)');
+  }
+  update(){
+    this.parts.forEach(p=>{
+      p.phase+=0.02;
+      p.el.setAttribute('cx',p.bx+Math.sin(p.phase)*8);
+      p.el.setAttribute('ry',parseFloat(p.el.getAttribute('ry'))*0.995+rand(6,16)*0.005);
+    });
+    this.el.setAttribute('opacity',0.4+Math.sin(this.phase*0.4)*0.3);
+    this.wander(0,W,H*0.1,groundY-10);
+  }
+}
+
+// ── ASHFLOATER ─────────────────────────────────────────────────────────────
+class Ashfloater extends Entity {
+  constructor(){
+    super({type:'ashfloater',label:'Ashfloater',speed:0.15,
+      y:rand(H*0.05,groundY-20),
+      whispers:[
+        '...drifting...',
+        'I am the remains.',
+        '...warm once...',
+        'Ash remembers fire.',
+      ]
+    });
+    this.build();
+  }
+  build(){
+    const flakes=[];
+    for(let i=0;i<12;i++){
+      const f=el('ellipse',{cx:rand(-18,18),cy:rand(-18,18),
+        rx:rand(1,5),ry:rand(1,3),
+        fill:`rgba(${randInt(200,240)},${randInt(190,230)},${randInt(200,255)},${rand(0.2,0.6)})`,
+        transform:`rotate(${rand(0,180)})`,filter:'url(#f2)'});
+      flakes.push({el:f,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(f);
+    }
+    this.flakes=flakes;
+    this.el.setAttribute('filter','url(#fsoft)');
+  }
+  update(){
+    this.flakes.forEach(f=>{
+      f.phase+=0.01;
+      f.el.setAttribute('opacity',rand(0.1,0.6));
+      f.el.setAttribute('transform',`rotate(${f.phase*20})`);
+    });
+    this.wander(0,W,H*0.02,groundY-10);
+    this.el.setAttribute('opacity',0.3+Math.sin(this.phase*0.2)*0.2);
+  }
+}
+
+// ── POPULATE ───────────────────────────────────────────────────────────────
+const entities=[];
+for(let i=0;i<7;i++) entities.push(new Umbrakin());
+for(let i=0;i<8;i++) entities.push(new Forgotten());
+for(let i=0;i<5;i++) entities.push(new Mirewalker());
+for(let i=0;i<12;i++) entities.push(new Lanternmoth());
+for(let i=0;i<10;i++) entities.push(new Veilfish());
+for(let i=0;i<8;i++) entities.push(new Cindersnail());
+for(let i=0;i<6;i++) entities.push(new FogWraith());
+for(let i=0;i<20;i++) entities.push(new Ashfloater());
+
+// ── WHISPERS SYSTEM ────────────────────────────────────────────────────────
+const globalWhispers=[
+  'something stirs in the veil',
+  'the fog has memory',
+  'do not follow the lanterns',
+  'they were here before us',
+  'the moons know your name',
+  'between dusk and nothing',
+  'listen to the silence',
+  'the mire keeps its secrets',
+  'they watch from the second layer',
+  'what you see is not all that exists',
+  'the forgotten are still here',
+  'the veil thickens at thought',
+];
+
+function showWhisper(text){
+  const w=document.getElementById('whisper');
+  w.textContent=text;
+  w.style.color='rgba(180,150,255,0.7)';
+  setTimeout(()=>{w.style.color='rgba(180,150,255,0)';},3000);
+}
+
+// ── CLICK RITUAL ──────────────────────────────────────────────────────────
+svg.addEventListener('click',e=>{
+  const rect=svg.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+
+  // Void ripple
+  for(let i=0;i<4;i++){
+    setTimeout(()=>{
+      const ring=el('ellipse',{cx:x,cy:y,rx:8,ry:5,fill:'none',
+        stroke:`rgba(${randInt(100,180)},${randInt(60,120)},255,${0.5-i*0.08})`,'stroke-width':1.5,
+        filter:'url(#f4)'});
+      L['particles'].appendChild(ring);
+      let r=8,op=0.5-i*0.08;
+      const ai=setInterval(()=>{
+        r+=4; op-=0.012;
+        ring.setAttribute('rx',r); ring.setAttribute('ry',r*0.6);
+        ring.setAttribute('opacity',op);
+        if(op<=0){clearInterval(ai);ring.remove();}
+      },18);
+    },i*90);
+  }
+
+  // Ash particles
+  for(let i=0;i<6;i++){
+    const ash=el('circle',{cx:x,cy:y,r:rand(1,4),
+      fill:`rgba(200,180,255,${rand(0.2,0.6)})`,filter:'url(#f2)'});
+    L['particles'].appendChild(ash);
+    const vx=rand(-1.5,1.5),vy=rand(-2,-0.5);
+    let lf=60;
+    const ai=setInterval(()=>{
+      lf--;
+      ash.setAttribute('cx',parseFloat(ash.getAttribute('cx'))+vx);
+      ash.setAttribute('cy',parseFloat(ash.getAttribute('cy'))+vy+lf*0.01);
+      ash.setAttribute('opacity',lf/60*0.6);
+      if(lf<=0){clearInterval(ai);ash.remove();}
+    },20);
+  }
+
+  showWhisper(globalWhispers[randInt(0,globalWhispers.length-1)]);
+});
+
+// ── VEIL LAYER - morphing overlay ─────────────────────────────────────────
+const veilClouds=[];
+for(let i=0;i<15;i++){
+  const vc=el('ellipse',{cx:rand(0,W),cy:rand(H*0.3,H),
+    rx:rand(100,350),ry:rand(30,120),
+    fill:`rgba(${randInt(20,50)},${randInt(10,30)},${randInt(50,100)},${rand(0.04,0.1)})`,
+    filter:'url(#fsoft)'});
+  L['veil'].appendChild(vc);
+  veilClouds.push({el:vc,phase:rand(0,Math.PI*2),speed:rand(0.002,0.006),
+    baseX:parseFloat(vc.getAttribute('cx')),baseY:parseFloat(vc.getAttribute('cy'))});
+}
+
+// ── MAIN LOOP ──────────────────────────────────────────────────────────────
+let duskCycle=0;
+const omens=['None','The Second Moon Weeps','The Fog Speaks','A Forgetting Stirs','Lanterns Gather','Silence Deepens'];
+let currentOmen='None', omenIndex=0;
+
+function animate(){
+  frame++;
+  if(frame%3600===0) duskCycle++;
+
+  // Veil thickness oscillation
+  veilThickness=0.5+Math.sin(frame*0.001)*0.3;
+  veildm.setAttribute('scale',veilThickness*25);
+
+  // Fog bands drift
+  fogBands.forEach(f=>{
+    f.phase+=f.speed;
+    f.el.setAttribute('cy',f.baseY+Math.sin(f.phase)*20);
+    f.el.setAttribute('cx',f.baseX+Math.sin(f.phase*0.7)*40);
+    f.el.setAttribute('opacity',0.12+Math.sin(f.phase)*0.08);
+  });
+
+  // Veil clouds
+  veilClouds.forEach(v=>{
+    v.phase+=v.speed;
+    v.el.setAttribute('cx',v.baseX+Math.sin(v.phase)*60);
+    v.el.setAttribute('cy',v.baseY+Math.cos(v.phase*0.6)*25);
+    v.el.setAttribute('opacity',0.04+Math.abs(Math.sin(v.phase))*0.08);
+  });
+
+  // Flora
+  floraAll.forEach(f=>{
+    f.phase+=0.015;
+    if(f.type==='amberkelp'&&f.stalkEl){
+      const sway=Math.sin(f.phase)*12;
+      const tx=f.x+rand(-15,15),ty=f.y-f.h;
+      f.stalkEl.setAttribute('d',`M${f.x},${f.y} Q${f.x+sway},${f.y-f.h*0.5} ${f.x+sway*0.7},${f.y-f.h}`);
+      f.tipEl.setAttribute('cx',f.x+sway*0.7); f.tipEl.setAttribute('opacity',0.4+Math.abs(Math.sin(f.phase))*0.4);
+    }
+  });
+
+  // Blush spores
+  blushClouds.forEach(b=>{
+    b.phase+=0.02;
+    b.y+=b.vy;
+    if(b.y<-20) b.y=groundY+20;
+    b.el.setAttribute('cy',b.y+Math.sin(b.phase)*5);
+    b.el.setAttribute('cx',parseFloat(b.el.getAttribute('cx'))+Math.sin(b.phase*0.7)*0.3);
+    b.el.setAttribute('opacity',0.15+Math.abs(Math.sin(b.phase))*0.4);
+  });
+
+  // Stars
+  stars.forEach(s=>{
+    s.phase+=0.02;
+    s.el.setAttribute('opacity',s.base*(0.3+Math.abs(Math.sin(s.phase))*0.7)*(1-veilThickness*0.6));
+  });
+
+  // Moon pulse
+  moon1.setAttribute('opacity',0.08+Math.sin(frame*0.005)*0.05);
+  moon2.setAttribute('opacity',0.06+Math.cos(frame*0.007)*0.04);
+
+  // Entities
+  entities.forEach(e=>e.tick());
+
+  // Whispers
+  whisperTimer++;
+  if(whisperTimer>400){
+    whisperTimer=0;
+    if(Math.random()<0.4) showWhisper(globalWhispers[randInt(0,globalWhispers.length-1)]);
+  }
+
+  // Omens
+  omenTimer++;
+  if(omenTimer>800){
+    omenTimer=0;
+    omenIndex=(omenIndex+1)%omens.length;
+    currentOmen=omens[omenIndex];
+    // Omen effect
+    if(currentOmen==='Lanterns Gather'){
+      entities.filter(e=>e.type==='lanternmoth').forEach(e=>{
+        e.lureTarget={x:W/2+rand(-100,100),y:H*0.4};
+      });
+    }
+  }
+
+  // Cursor interaction - disturb fog nearby
+  veilClouds.forEach(v=>{
+    const bx=parseFloat(v.el.getAttribute('cx')),by=parseFloat(v.el.getAttribute('cy'));
+    const d=Math.hypot(bx-mouseX,by-mouseY);
+    if(d<150) v.el.setAttribute('opacity',Math.max(0,parseFloat(v.el.getAttribute('opacity'))-0.01));
+  });
+
+  // HUD
+  const veilLabel=veilThickness>0.7?'Dense':veilThickness>0.5?'Thickening':'Thinning';
+  document.getElementById('veil-val').textContent=veilLabel;
+  document.getElementById('sil-val').textContent='I'.repeat(Math.floor(silenceLevel));
+  document.getElementById('omen-val').textContent=currentOmen;
+  document.getElementById('seen-val').textContent=seenCount;
+  document.getElementById('cycle-val').textContent=duskCycle;
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+// Intro whisper
+setTimeout(()=>showWhisper('you have entered the veil'),1200);
+setTimeout(()=>showWhisper('they already know you are here'),5000);
+</script>
+</body>
+</html>

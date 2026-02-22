@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orveth — The Membrane World</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,300&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#04010a; overflow:hidden; }
+  canvas { display:block; }
+
+  #ui {
+    position:fixed; inset:0; pointer-events:none;
+    display:flex; flex-direction:column;
+    justify-content:space-between; padding:36px 48px;
+  }
+
+  #title-block { max-width:340px; }
+
+  #title-block h1 {
+    font-family:'Playfair Display', serif;
+    font-size:2.2rem; font-weight:400;
+    color:#e8d4ff; letter-spacing:0.06em;
+    line-height:1.1;
+    text-shadow: 0 0 40px rgba(180,100,255,0.5);
+  }
+
+  #title-block h2 {
+    font-family:'IM Fell English', serif;
+    font-style:italic;
+    font-size:0.85rem;
+    color:#b090d0;
+    letter-spacing:0.2em;
+    opacity:0.6;
+    margin-top:6px;
+  }
+
+  #lore {
+    max-width:300px;
+    align-self:flex-end;
+    text-align:right;
+  }
+
+  #lore p {
+    font-family:'IM Fell English', serif;
+    font-style:italic;
+    font-size:0.82rem;
+    color:#c0a0e0;
+    line-height:1.9;
+    opacity:0.45;
+    letter-spacing:0.03em;
+  }
+
+  #zone-labels {
+    position:fixed;
+    left:36px; top:50%;
+    transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:22px;
+    pointer-events:none;
+  }
+
+  .zone-label {
+    font-family:'IM Fell English', serif;
+    font-size:0.7rem;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:10px;
+    opacity:0.35;
+  }
+
+  .zone-label .dot {
+    width:5px; height:5px;
+    border-radius:50%;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<!-- Meet Orveth — The Membrane World.
+The core concept: the "ground" of this planet is a planetary-scale living biological membrane that floats mid-atmosphere above an eternal ammonia ocean. Everything evolved on it, through it, or beneath it. The world is divided into four zones you can see in the scene:
+☁ Sky Canopy — a blazing white-gold atmosphere above the membrane, with shafts of diffuse light and rising spore clouds
+🟣 Membrane Layer — the undulating, veined, translucent living surface itself. It breathes and ripples. Skinweavers emerge from it — some as fleshy domed creatures with single eyes, others as luminous whip-tendrils that wave in atmospheric currents. Bloom Node rupture events flash open periodically, explosively releasing spores before the membrane heals itself shut
+🌌 Void Zone — the dark underspace beneath the membrane where Void Bells drift — inverted bioluminescent jellyfish that feed on membrane secretions, their tentacles hanging down, nematocyst bulbs glowing. Threadwhales arc through this zone — enormous colonial organisms made of thousands of linked individuals forming sinuous cable-bodies hundreds of meters long
+🌊 Ammonia Deep — the abyssal ocean at the bottom, lit only by bioluminescent creatures and deep thermal vents, with slow ripples of light from pressure-sensitive organisms nobody has named yet -->
+<div id="ui">
+  <div id="title-block">
+    <h1>Orveth</h1>
+    <h2>The Membrane World</h2>
+  </div>
+  <div id="lore">
+    <p>
+      The ground is alive.<br>
+      The sky breathes.<br>
+      Nothing here ends —<br>
+      it only transforms.
+    </p>
+  </div>
+</div>
+
+<div id="zone-labels">
+  <div class="zone-label" style="color:#ffe0a0">
+    <div class="dot" style="background:#ffe0a0"></div> sky canopy
+  </div>
+  <div class="zone-label" style="color:#d080ff">
+    <div class="dot" style="background:#d080ff"></div> membrane layer
+  </div>
+  <div class="zone-label" style="color:#4060dd">
+    <div class="dot" style="background:#4060dd"></div> void zone
+  </div>
+  <div class="zone-label" style="color:#20a0a0">
+    <div class="dot" style="background:#20a0a0"></div> ammonia deep
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  buildScene();
+}
+
+// ── Seeded rand ────────────────────────────────────────────
+function seededRng(seed) {
+  let s = seed + 1;
+  return () => { s = (s * 16807 + 13) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+// ── Scene constants, rebuilt on resize ────────────────────
+let MEMBRANE_Y, VOID_Y, OCEAN_Y;
+let membranePoints = [];
+let membranePoints2 = [];
+let skinweavers = [];
+let voidBells = [];
+let threadwhales = [];
+let bloomNodes = [];
+let sporeFields = [];
+let deepCreatures = [];
+let aboveCreatures = [];
+
+function buildScene() {
+  MEMBRANE_Y = H * 0.48;
+  VOID_Y = H * 0.68;
+  OCEAN_Y = H * 0.82;
+
+  // Membrane surface control points
+  const rM = seededRng(3);
+  membranePoints = Array.from({length: Math.ceil(W / 18) + 2}, (_, i) => ({
+    x: (i - 1) * 18,
+    baseY: MEMBRANE_Y + (rM() - 0.5) * 30,
+    amp: 8 + rM() * 20,
+    freq: 0.003 + rM() * 0.006,
+    phase: rM() * Math.PI * 2,
+    speed: 0.008 + rM() * 0.012
+  }));
+
+  // Second membrane layer (lower)
+  const rM2 = seededRng(7);
+  membranePoints2 = Array.from({length: Math.ceil(W / 22) + 2}, (_, i) => ({
+    x: (i - 1) * 22,
+    baseY: MEMBRANE_Y + 28 + (rM2() - 0.5) * 15,
+    amp: 5 + rM2() * 12,
+    freq: 0.004 + rM2() * 0.005,
+    phase: rM2() * Math.PI * 2,
+    speed: 0.006 + rM2() * 0.01
+  }));
+
+  // Skinweavers — bumps/tendrils ON the membrane
+  const rS = seededRng(11);
+  skinweavers = Array.from({length: 18}, (_, i) => ({
+    x: rS() * W,
+    type: rS() > 0.5 ? 'bump' : 'tendril',
+    size: 15 + rS() * 45,
+    phase: rS() * Math.PI * 2,
+    speed: 0.01 + rS() * 0.02,
+    hue: 260 + rS() * 60,
+    pulseSpeed: 0.015 + rS() * 0.025
+  }));
+
+  // Void Bells — below the membrane, in darkness
+  const rV = seededRng(17);
+  voidBells = Array.from({length: 12}, () => ({
+    x: rV() * W,
+    y: MEMBRANE_Y + 60 + rV() * (VOID_Y - MEMBRANE_Y - 60),
+    r: 18 + rV() * 40,
+    driftX: (rV() - 0.5) * 0.3,
+    driftY: (rV() - 0.5) * 0.15,
+    phase: rV() * Math.PI * 2,
+    hue: 180 + rV() * 80,
+    tentCount: 6 + Math.floor(rV() * 8),
+    pulseSpeed: 0.02 + rV() * 0.03
+  }));
+
+  // Threadwhales — long colonial cable organisms
+  const rT = seededRng(23);
+  threadwhales = Array.from({length: 3}, (_, i) => ({
+    segments: Array.from({length: 40 + i * 15}, (_, j) => ({
+      x: (rT() * 0.4 + i * 0.25) * W + j * 22,
+      y: MEMBRANE_Y + 80 + i * 60 + (rT() - 0.5) * 30,
+      angle: 0
+    })),
+    speed: (0.4 + rT() * 0.6) * (rT() > 0.5 ? 1 : -1),
+    hue: 200 + i * 30,
+    phase: rT() * Math.PI * 2,
+    depth: i
+  }));
+
+  // Bloom nodes — rupture events in the membrane
+  const rB = seededRng(31);
+  bloomNodes = Array.from({length: 5}, () => ({
+    x: rB() * W,
+    life: rB(), // 0–1 cycle
+    speed: 0.004 + rB() * 0.006,
+    r: 20 + rB() * 35,
+    hue: 40 + rB() * 30
+  }));
+
+  // Spore clouds above membrane (in the bright zone)
+  const rSp = seededRng(37);
+  sporeFields = Array.from({length: 80}, () => ({
+    x: rSp() * W,
+    y: rSp() * MEMBRANE_Y,
+    vx: (rSp() - 0.5) * 0.3,
+    vy: -(0.05 + rSp() * 0.2),
+    r: 0.8 + rSp() * 2.5,
+    life: rSp(),
+    hue: 50 + rSp() * 40
+  }));
+
+  // Deep ocean creatures (bottom zone)
+  const rD = seededRng(41);
+  deepCreatures = Array.from({length: 8}, () => ({
+    x: rD() * W,
+    y: VOID_Y + rD() * (H - VOID_Y),
+    speed: (rD() - 0.5) * 0.4,
+    r: 8 + rD() * 22,
+    phase: rD() * Math.PI * 2,
+    hue: 170 + rD() * 40
+  }));
+}
+
+// ── Sky / atmosphere zones ─────────────────────────────────
+function drawBackground() {
+  // Upper zone — bright, diffuse white/gold sky
+  const skyG = ctx.createLinearGradient(0, 0, 0, MEMBRANE_Y);
+  skyG.addColorStop(0, '#f5f0e8');
+  skyG.addColorStop(0.3, '#ede0c8');
+  skyG.addColorStop(0.7, '#d4b8e0');
+  skyG.addColorStop(1, '#9060b0');
+  ctx.fillStyle = skyG;
+  ctx.fillRect(0, 0, W, MEMBRANE_Y + 20);
+
+  // Void zone — deep indigo/black
+  const voidG = ctx.createLinearGradient(0, MEMBRANE_Y, 0, VOID_Y);
+  voidG.addColorStop(0, '#0e0420');
+  voidG.addColorStop(0.5, '#060215');
+  voidG.addColorStop(1, '#04010e');
+  ctx.fillStyle = voidG;
+  ctx.fillRect(0, MEMBRANE_Y, W, VOID_Y - MEMBRANE_Y);
+
+  // Deep ocean zone
+  const deepG = ctx.createLinearGradient(0, VOID_Y, 0, H);
+  deepG.addColorStop(0, '#030518');
+  deepG.addColorStop(0.4, '#040a14');
+  deepG.addColorStop(0.8, '#030c10');
+  deepG.addColorStop(1, '#010806');
+  ctx.fillStyle = deepG;
+  ctx.fillRect(0, VOID_Y, W, H - VOID_Y);
+}
+
+// ── Sky particles / spores above membrane ─────────────────
+function drawSkySpores() {
+  sporeFields.forEach(s => {
+    s.life += 0.003 + Math.abs(s.vy) * 0.01;
+    s.x += s.vx;
+    s.y += s.vy;
+    if (s.life > 1 || s.y < -10 || s.x < -10 || s.x > W + 10) {
+      s.x = Math.random() * W;
+      s.y = MEMBRANE_Y - 10;
+      s.life = 0;
+      s.vy = -(0.05 + Math.random() * 0.2);
+    }
+    const alpha = Math.sin(s.life * Math.PI) * 0.55;
+    const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 2.5);
+    grd.addColorStop(0, `hsla(${s.hue}, 90%, 70%, ${alpha})`);
+    grd.addColorStop(1, `hsla(${s.hue}, 80%, 50%, 0)`);
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ── Sky diffuse light shafts ───────────────────────────────
+function drawLightShafts() {
+  const shafts = [0.15, 0.35, 0.55, 0.78];
+  shafts.forEach((sx, i) => {
+    const x = sx * W + Math.sin(t * 0.006 + i) * 20;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.008 + i * 1.5);
+    const w = (60 + i * 30) * pulse;
+
+    const lg = ctx.createLinearGradient(x, 0, x, MEMBRANE_Y);
+    lg.addColorStop(0, `rgba(255,240,200,${0.08 * pulse})`);
+    lg.addColorStop(0.5, `rgba(240,210,180,${0.05 * pulse})`);
+    lg.addColorStop(1, `rgba(200,150,255,0)`);
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.2, 0);
+    ctx.lineTo(x - w, MEMBRANE_Y);
+    ctx.lineTo(x + w, MEMBRANE_Y);
+    ctx.lineTo(x + w * 0.2, 0);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+// ── Get membrane Y at x ─────────────────────────────────────
+function getMembraneY(x) {
+  let y = MEMBRANE_Y;
+  membranePoints.forEach(p => {
+    const dist = Math.abs(x - p.x);
+    if (dist < 80) {
+      const w = 1 - dist / 80;
+      y += Math.sin(t * p.speed + p.phase + x * p.freq) * p.amp * w;
+    }
+  });
+  return y;
+}
+
+// ── Draw membrane layers ────────────────────────────────────
+function drawMembrane() {
+  // Glow ABOVE membrane (from below, shining up through)
+  const topGlow = ctx.createLinearGradient(0, MEMBRANE_Y - 60, 0, MEMBRANE_Y);
+  topGlow.addColorStop(0, 'rgba(180,100,255,0)');
+  topGlow.addColorStop(0.6, 'rgba(160,80,230,0.08)');
+  topGlow.addColorStop(1, 'rgba(140,60,210,0.2)');
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, MEMBRANE_Y - 60, W, 60);
+
+  // ── Membrane layer 1 (main)
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, getMembraneY(0));
+
+  for (let x = 0; x <= W; x += 8) {
+    ctx.lineTo(x, getMembraneY(x));
+  }
+  ctx.lineTo(W, getMembraneY(W));
+  ctx.lineTo(W, H);
+  ctx.closePath();
+
+  const memG = ctx.createLinearGradient(0, MEMBRANE_Y - 20, 0, MEMBRANE_Y + 60);
+  memG.addColorStop(0, 'rgba(190,110,255,0.95)');
+  memG.addColorStop(0.15, 'rgba(150,70,220,0.9)');
+  memG.addColorStop(0.4, 'rgba(100,40,180,0.85)');
+  memG.addColorStop(0.7, 'rgba(70,20,140,0.9)');
+  memG.addColorStop(1, 'rgba(40,10,100,0.95)');
+  ctx.fillStyle = memG;
+  ctx.fill();
+  ctx.restore();
+
+  // Membrane surface sheen line
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, getMembraneY(0));
+  for (let x = 0; x <= W; x += 6) {
+    ctx.lineTo(x, getMembraneY(x));
+  }
+  const sheen = ctx.createLinearGradient(0, 0, W, 0);
+  sheen.addColorStop(0, 'rgba(240,200,255,0.3)');
+  sheen.addColorStop(0.3, 'rgba(200,150,255,0.6)');
+  sheen.addColorStop(0.6, 'rgba(240,200,255,0.4)');
+  sheen.addColorStop(1, 'rgba(200,150,255,0.3)');
+  ctx.strokeStyle = sheen;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // ── Second membrane layer (inner)
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  let first2 = true;
+  for (let x = 0; x <= W; x += 10) {
+    const my = membranePoints2.reduce((acc, p) => {
+      const dist = Math.abs(x - p.x);
+      if (dist < 100) {
+        const w = 1 - dist / 100;
+        return acc + Math.sin(t * p.speed + p.phase + x * p.freq) * p.amp * w;
+      }
+      return acc;
+    }, MEMBRANE_Y + 30);
+    if (first2) { ctx.moveTo(x, my); first2 = false; }
+    else ctx.lineTo(x, my);
+  }
+  ctx.strokeStyle = 'rgba(220,160,255,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 12]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Membrane subsurface veins
+  drawMembraneVeins();
+}
+
+function drawMembraneVeins() {
+  const veinCount = 12;
+  for (let v = 0; v < veinCount; v++) {
+    const vx = (v / veinCount) * W + Math.sin(t * 0.005 + v) * 30;
+    const mY = getMembraneY(vx);
+    const vlen = 25 + Math.sin(t * 0.02 + v * 1.3) * 12;
+    const pulse = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.025 + v * 0.8));
+
+    // Downward vein
+    ctx.beginPath();
+    ctx.moveTo(vx, mY);
+    ctx.bezierCurveTo(
+      vx + Math.sin(v) * 15, mY + vlen * 0.4,
+      vx + Math.sin(v + 1) * 10, mY + vlen * 0.8,
+      vx + Math.cos(v * 0.7) * 8, mY + vlen
+    );
+    const vg = ctx.createLinearGradient(vx, mY, vx, mY + vlen);
+    vg.addColorStop(0, `rgba(220,150,255,${pulse * 0.7})`);
+    vg.addColorStop(1, `rgba(150,80,255,0)`);
+    ctx.strokeStyle = vg;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Node at tip
+    ctx.beginPath();
+    ctx.arc(vx + Math.cos(v * 0.7) * 8, mY + vlen, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,130,255,${pulse * 0.8})`;
+    ctx.fill();
+  }
+}
+
+// ── Skinweavers on the membrane ────────────────────────────
+function drawSkinweavers() {
+  skinweavers.forEach(sw => {
+    const mY = getMembraneY(sw.x);
+    const pulse = 0.5 + 0.5 * Math.sin(t * sw.pulseSpeed + sw.phase);
+
+    if (sw.type === 'bump') {
+      // Fleshy dome emerging from membrane surface
+      const bumpH = sw.size * pulse;
+      ctx.save();
+      ctx.translate(sw.x, mY);
+
+      // Body dome
+      const dg = ctx.createRadialGradient(0, -bumpH * 0.4, 0, 0, 0, sw.size * 0.7);
+      dg.addColorStop(0, `hsla(${sw.hue}, 80%, 80%, 0.9)`);
+      dg.addColorStop(0.4, `hsla(${sw.hue + 20}, 70%, 55%, 0.8)`);
+      dg.addColorStop(0.8, `hsla(${sw.hue + 40}, 60%, 35%, 0.6)`);
+      dg.addColorStop(1, `hsla(${sw.hue + 60}, 50%, 20%, 0)`);
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.ellipse(0, -bumpH * 0.4, sw.size * 0.55 * pulse, bumpH * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye-like structure on top
+      const eyeY = -bumpH * 0.75;
+      ctx.beginPath();
+      ctx.arc(0, eyeY, sw.size * 0.14, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${sw.hue - 40}, 100%, 85%, ${0.6 + 0.4 * pulse})`;
+      ctx.fill();
+      // Iris
+      ctx.beginPath();
+      ctx.arc(0, eyeY, sw.size * 0.07, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(10,0,30,0.9)`;
+      ctx.fill();
+      // Scleral glow
+      const eg = ctx.createRadialGradient(0, eyeY, 0, 0, eyeY, sw.size * 0.3);
+      eg.addColorStop(0, `hsla(${sw.hue - 30}, 100%, 80%, ${pulse * 0.3})`);
+      eg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = eg;
+      ctx.beginPath(); ctx.arc(0, eyeY, sw.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    } else {
+      // Tendril — whip-like arm emerging upward
+      const segCount = 12;
+      ctx.save();
+      ctx.beginPath();
+      let px = sw.x, py = mY;
+      ctx.moveTo(px, py);
+      for (let i = 1; i <= segCount; i++) {
+        const prog = i / segCount;
+        const angle = -Math.PI / 2 + Math.sin(t * sw.speed + sw.phase + prog * 3) * (0.8 * prog);
+        const segLen = sw.size / segCount * (1 - prog * 0.4);
+        px += Math.cos(angle) * segLen;
+        py += Math.sin(angle) * segLen;
+        ctx.lineTo(px, py);
+      }
+      const tg = ctx.createLinearGradient(sw.x, mY, px, py);
+      tg.addColorStop(0, `hsla(${sw.hue}, 90%, 60%, 0.9)`);
+      tg.addColorStop(0.6, `hsla(${sw.hue + 30}, 80%, 70%, 0.7)`);
+      tg.addColorStop(1, `hsla(${sw.hue + 50}, 100%, 85%, ${pulse * 0.5})`);
+      ctx.strokeStyle = tg;
+      ctx.lineWidth = 3 * (1 - 0) + 0.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Tip bulb
+      ctx.beginPath();
+      ctx.arc(px, py, 4 * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${sw.hue + 50}, 100%, 90%, ${pulse * 0.9})`;
+      ctx.fill();
+      const tipG = ctx.createRadialGradient(px, py, 0, px, py, 14 * pulse);
+      tipG.addColorStop(0, `hsla(${sw.hue + 40}, 100%, 80%, ${pulse * 0.4})`);
+      tipG.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = tipG;
+      ctx.beginPath(); ctx.arc(px, py, 14 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
+// ── Void Bells — inverted jellyfish below membrane ─────────
+function drawVoidBells() {
+  voidBells.forEach(vb => {
+    vb.x += vb.driftX + Math.sin(t * 0.008 + vb.phase) * 0.15;
+    vb.y += vb.driftY + Math.cos(t * 0.01 + vb.phase) * 0.08;
+    // Wrap
+    if (vb.x < -vb.r * 2) vb.x = W + vb.r;
+    if (vb.x > W + vb.r * 2) vb.x = -vb.r;
+    vb.y = Math.max(MEMBRANE_Y + vb.r + 5, Math.min(VOID_Y - vb.r - 5, vb.y));
+
+    const pulse = 0.5 + 0.5 * Math.sin(t * vb.pulseSpeed + vb.phase);
+    const scaleX = 0.85 + 0.15 * pulse;
+    const scaleY = 0.9 + 0.1 * (1 - pulse);
+
+    ctx.save();
+    ctx.translate(vb.x, vb.y);
+
+    // Bell body (inverted — opening faces UP toward membrane)
+    const bg = ctx.createRadialGradient(0, vb.r * 0.3, 0, 0, 0, vb.r);
+    bg.addColorStop(0, `hsla(${vb.hue}, 100%, 80%, ${0.15 + 0.1 * pulse})`);
+    bg.addColorStop(0.5, `hsla(${vb.hue + 20}, 90%, 55%, ${0.25 * pulse})`);
+    bg.addColorStop(1, `hsla(${vb.hue + 40}, 80%, 30%, 0)`);
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, vb.r * scaleX * 0.9, vb.r * scaleY * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bell rim (glowing ring)
+    ctx.beginPath();
+    ctx.ellipse(0, -vb.r * 0.5 * scaleY, vb.r * scaleX * 0.9, vb.r * scaleY * 0.15, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${vb.hue}, 100%, 80%, ${0.5 + 0.3 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Rim glow
+    const rimG = ctx.createRadialGradient(0, -vb.r * 0.5, 0, 0, -vb.r * 0.5, vb.r * 0.9);
+    rimG.addColorStop(0, `hsla(${vb.hue}, 100%, 90%, ${0.15 * pulse})`);
+    rimG.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rimG;
+    ctx.beginPath(); ctx.arc(0, -vb.r * 0.5, vb.r * 0.9, 0, Math.PI * 2); ctx.fill();
+
+    // Tentacles hanging down
+    for (let ten = 0; ten < vb.tentCount; ten++) {
+      const ta = (ten / vb.tentCount) * Math.PI * 2;
+      const tx = Math.cos(ta) * vb.r * 0.8 * scaleX;
+      const tentLen = (vb.r * 1.2 + Math.sin(ten * 1.7) * vb.r * 0.4) * (0.8 + 0.2 * pulse);
+      const sway = Math.sin(t * 0.015 + ten * 0.8 + vb.phase) * 10;
+
+      ctx.beginPath();
+      ctx.moveTo(tx, 0);
+      ctx.quadraticCurveTo(tx + sway * 0.5, tentLen * 0.5, tx + sway, tentLen);
+      const tentG = ctx.createLinearGradient(tx, 0, tx + sway, tentLen);
+      tentG.addColorStop(0, `hsla(${vb.hue + 10}, 100%, 70%, ${0.5 * pulse})`);
+      tentG.addColorStop(0.5, `hsla(${vb.hue + 30}, 90%, 60%, ${0.3 * pulse})`);
+      tentG.addColorStop(1, `hsla(${vb.hue + 50}, 80%, 50%, 0)`);
+      ctx.strokeStyle = tentG;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Nematocyst bulbs along tentacle
+      for (let b = 0; b < 3; b++) {
+        const bp = (b + 1) / 4;
+        const bx = tx + sway * bp;
+        const by = tentLen * bp;
+        ctx.beginPath();
+        ctx.arc(bx, by, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${vb.hue + 60}, 100%, 90%, ${pulse * 0.6})`;
+        ctx.fill();
+      }
+    }
+
+    // Bioluminescent core
+    const coreG = ctx.createRadialGradient(0, 0, 0, 0, 0, vb.r * 0.4);
+    coreG.addColorStop(0, `hsla(${vb.hue}, 100%, 90%, ${pulse * 0.5})`);
+    coreG.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = coreG;
+    ctx.beginPath(); ctx.arc(0, 0, vb.r * 0.4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+// ── Threadwhales — long colonial cable organisms ────────────
+function drawThreadwhales() {
+  threadwhales.forEach(tw => {
+    // Move head
+    const head = tw.segments[0];
+    head.x += tw.speed;
+    if (head.x > W + 600) head.x = -600;
+    if (head.x < -600) head.x = W + 600;
+
+    // Undulate body — each segment follows the previous
+    for (let i = 1; i < tw.segments.length; i++) {
+      const prev = tw.segments[i - 1];
+      const seg = tw.segments[i];
+      const targetX = prev.x - Math.sign(tw.speed) * 18;
+      const targetY = prev.y + Math.sin(t * 0.012 + i * 0.25 + tw.phase) * 2.5;
+      seg.x += (targetX - seg.x) * 0.15;
+      seg.y += (targetY - seg.y) * 0.15;
+    }
+
+    // Draw
+    ctx.save();
+    ctx.globalAlpha = 0.65;
+
+    // Body path
+    ctx.beginPath();
+    ctx.moveTo(tw.segments[0].x, tw.segments[0].y);
+    for (let i = 1; i < tw.segments.length; i++) {
+      const p = tw.segments[i];
+      ctx.lineTo(p.x, p.y);
+    }
+
+    const bodyG = ctx.createLinearGradient(
+      tw.segments[0].x, tw.segments[0].y,
+      tw.segments[tw.segments.length - 1].x, tw.segments[tw.segments.length - 1].y
+    );
+    bodyG.addColorStop(0, `hsla(${tw.hue}, 90%, 70%, 0.9)`);
+    bodyG.addColorStop(0.3, `hsla(${tw.hue + 20}, 80%, 55%, 0.7)`);
+    bodyG.addColorStop(0.7, `hsla(${tw.hue + 40}, 70%, 40%, 0.5)`);
+    bodyG.addColorStop(1, `hsla(${tw.hue + 60}, 60%, 25%, 0)`);
+    ctx.strokeStyle = bodyG;
+    ctx.lineWidth = 5 - tw.depth * 1.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Individual segment nodes
+    for (let i = 0; i < tw.segments.length; i += 3) {
+      const seg = tw.segments[i];
+      const nodePulse = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.04 + i * 0.3 + tw.phase));
+      ctx.beginPath();
+      ctx.arc(seg.x, seg.y, 2.5 - tw.depth * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${tw.hue + 30}, 100%, 85%, ${nodePulse * 0.6})`;
+      ctx.fill();
+    }
+
+    // Head glow
+    ctx.globalAlpha = 0.5;
+    const headG = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 20);
+    headG.addColorStop(0, `hsla(${tw.hue}, 100%, 90%, 0.8)`);
+    headG.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = headG;
+    ctx.beginPath(); ctx.arc(head.x, head.y, 20, 0, Math.PI * 2); ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+// ── Bloom nodes — membrane rupture events ─────────────────
+function drawBloomNodes() {
+  bloomNodes.forEach(bn => {
+    bn.life = (bn.life + bn.speed) % 1;
+    const mY = getMembraneY(bn.x);
+
+    if (bn.life < 0.15) {
+      // Build-up phase — membrane swells
+      const swell = bn.life / 0.15;
+      const sg = ctx.createRadialGradient(bn.x, mY, 0, bn.x, mY, bn.r * swell * 1.5);
+      sg.addColorStop(0, `hsla(${bn.hue}, 100%, 90%, ${swell * 0.5})`);
+      sg.addColorStop(0.5, `hsla(${bn.hue + 20}, 80%, 60%, ${swell * 0.3})`);
+      sg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.ellipse(bn.x, mY - bn.r * swell * 0.3, bn.r * swell, bn.r * swell * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (bn.life < 0.35) {
+      // RUPTURE — burst of spores!
+      const burst = (bn.life - 0.15) / 0.2;
+      const maxR = bn.r * 4;
+      const alpha = (1 - burst) * 0.8;
+
+      // Shockwave ring
+      ctx.beginPath();
+      ctx.arc(bn.x, mY, maxR * burst, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${bn.hue}, 100%, 85%, ${alpha * 0.6})`;
+      ctx.lineWidth = 3 * (1 - burst);
+      ctx.stroke();
+
+      // Spore burst particles
+      for (let p = 0; p < 20; p++) {
+        const pa = (p / 20) * Math.PI * 2;
+        const pr = maxR * burst * (0.3 + Math.sin(p * 2.3) * 0.7);
+        const px = bn.x + Math.cos(pa) * pr;
+        const py = mY - Math.abs(Math.sin(pa)) * pr * 0.8;
+        const pg = ctx.createRadialGradient(px, py, 0, px, py, 5);
+        pg.addColorStop(0, `hsla(${bn.hue + p * 3}, 100%, 90%, ${alpha})`);
+        pg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = pg;
+        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+      }
+
+    } else if (bn.life < 0.6) {
+      // Healing — membrane knitting closed
+      const heal = (bn.life - 0.35) / 0.25;
+      const scar = ctx.createRadialGradient(bn.x, mY, 0, bn.x, mY, bn.r * (1 - heal * 0.8));
+      scar.addColorStop(0, `hsla(${bn.hue + 30}, 80%, 85%, ${(1 - heal) * 0.6})`);
+      scar.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = scar;
+      ctx.beginPath(); ctx.arc(bn.x, mY, bn.r * (1 - heal * 0.8), 0, Math.PI * 2); ctx.fill();
+    }
+    // Rest of cycle: quiescent
+  });
+}
+
+// ── Deep ocean creatures ────────────────────────────────────
+function drawDeepCreatures() {
+  deepCreatures.forEach(dc => {
+    dc.x += dc.speed;
+    if (dc.x > W + 100) dc.x = -100;
+    if (dc.x < -100) dc.x = W + 100;
+
+    const pulse = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.03 + dc.phase));
+    const y = dc.y + Math.sin(t * 0.02 + dc.phase) * 12;
+
+    ctx.save();
+    ctx.translate(dc.x, y);
+    if (dc.speed < 0) ctx.scale(-1, 1);
+
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0, 0, dc.r * 1.5, dc.r * 0.5, 0, 0, Math.PI * 2);
+    const bg = ctx.createRadialGradient(0, 0, 0, 0, 0, dc.r * 1.5);
+    bg.addColorStop(0, `hsla(${dc.hue}, 70%, 60%, ${0.35 * pulse})`);
+    bg.addColorStop(1, `hsla(${dc.hue + 30}, 60%, 30%, 0)`);
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    // Photophores (bioluminescent spots)
+    for (let ph = 0; ph < 6; ph++) {
+      const px = (ph / 6 - 0.5) * dc.r * 2.5;
+      const phGlow = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.05 + ph * 0.9 + dc.phase));
+      ctx.beginPath();
+      ctx.arc(px, 0, 2, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${dc.hue + 50}, 100%, 80%, ${phGlow * 0.7})`;
+      ctx.fill();
+    }
+
+    ctx.restore();
+  });
+}
+
+// ── Deep ocean bioluminescent haze ─────────────────────────
+function drawDeepHaze() {
+  // Subtle ripple patterns in the deep
+  for (let r = 0; r < 5; r++) {
+    const ry = VOID_Y + (r / 5) * (H - VOID_Y);
+    const pulse = 0.3 + 0.3 * Math.sin(t * 0.01 + r * 1.5);
+    const hg = ctx.createLinearGradient(0, ry, 0, ry + 30);
+    hg.addColorStop(0, `rgba(20,100,120,0)`);
+    hg.addColorStop(0.5, `rgba(20,100,120,${pulse * 0.05})`);
+    hg.addColorStop(1, `rgba(20,100,120,0)`);
+    ctx.fillStyle = hg;
+    const waveOffset = Math.sin(t * 0.008 + r) * 20;
+    ctx.fillRect(waveOffset, ry, W, 30);
+  }
+
+  // Deep ambient glow clusters
+  for (let g = 0; g < 8; g++) {
+    const gx = ((g / 8) * 1.2 + Math.sin(t * 0.003 + g) * 0.05) * W;
+    const gy = VOID_Y + 40 + (g * 37 % (H - VOID_Y - 40));
+    const gr = 30 + g * 8;
+    const gpulse = 0.2 + 0.2 * Math.sin(t * 0.015 + g * 2.1);
+    const gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+    gg.addColorStop(0, `rgba(30,180,160,${gpulse})`);
+    gg.addColorStop(1, 'rgba(10,80,80,0)');
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── Void zone ambient glow ─────────────────────────────────
+function drawVoidGlow() {
+  // Rim glow at membrane underside
+  const rimG = ctx.createLinearGradient(0, MEMBRANE_Y + 20, 0, MEMBRANE_Y + 80);
+  rimG.addColorStop(0, `rgba(180,100,255,${0.12 + 0.05 * Math.sin(t * 0.02)})`);
+  rimG.addColorStop(1, 'rgba(80,20,200,0)');
+  ctx.fillStyle = rimG;
+  ctx.fillRect(0, MEMBRANE_Y + 20, W, 60);
+}
+
+// ── Horizon glow zones ─────────────────────────────────────
+function drawZoneLines() {
+  // Void to deep transition
+  const transG = ctx.createLinearGradient(0, VOID_Y - 20, 0, VOID_Y + 20);
+  transG.addColorStop(0, 'rgba(20,10,80,0)');
+  transG.addColorStop(0.5, 'rgba(10,40,100,0.3)');
+  transG.addColorStop(1, 'rgba(5,30,60,0)');
+  ctx.fillStyle = transG;
+  ctx.fillRect(0, VOID_Y - 20, W, 40);
+}
+
+// ── RENDER ─────────────────────────────────────────────────
+function render() {
+  t++;
+  ctx.clearRect(0, 0, W, H);
+
+  drawBackground();
+  drawLightShafts();
+  drawSkySpores();
+
+  // Below membrane, in void
+  drawVoidGlow();
+  drawDeepHaze();
+  drawZoneLines();
+  drawDeepCreatures();
+  drawThreadwhales();
+  drawVoidBells();
+
+  // Membrane layers + surface life
+  drawMembrane();
+  drawSkinweavers();
+  drawBloomNodes();
+
+  // Final atmospheric overlay
+  const atmos = ctx.createLinearGradient(0, 0, 0, H);
+  atmos.addColorStop(0, 'rgba(255,250,240,0.06)');
+  atmos.addColorStop(MEMBRANE_Y / H * 0.9, 'rgba(200,150,255,0.04)');
+  atmos.addColorStop(MEMBRANE_Y / H * 1.05, 'rgba(80,20,160,0.05)');
+  atmos.addColorStop(1, 'rgba(10,30,60,0.1)');
+  ctx.fillStyle = atmos;
+  ctx.fillRect(0, 0, W, H);
+
+  requestAnimationFrame(render);
+}
+
+// Initialise dimensions before buildScene so W/H are never undefined
+W = canvas.width  = window.innerWidth;
+H = canvas.height = window.innerHeight;
+buildScene();
+render();
+window.addEventListener('resize', resize);
+</script>
+</body>
+</html>

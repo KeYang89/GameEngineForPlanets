@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Solara — The Radiant World</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Quicksand:wght@400;500;600&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #fff7d6;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+    cursor: none;
+  }
+
+  #world { width:100%; height:100%; display:block; }
+
+  #cursor {
+    position: fixed;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,220,50,0.9) 0%, rgba(255,160,0,0.4) 60%, transparent 100%);
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%,-50%);
+    box-shadow: 0 0 12px rgba(255,200,0,0.7), 0 0 30px rgba(255,160,0,0.3);
+    mix-blend-mode: multiply;
+  }
+
+  #hud {
+    position: absolute;
+    top: 16px; left: 16px;
+    font-family: 'Baloo 2', cursive;
+    font-size: 12px;
+    color: #5a3200;
+    background: rgba(255,248,210,0.88);
+    border: 2px solid rgba(255,185,0,0.5);
+    border-radius: 12px;
+    padding: 12px 18px;
+    line-height: 2;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 20px rgba(255,160,0,0.2);
+  }
+
+  #hud h1 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #e85000;
+    letter-spacing: 2px;
+    border-bottom: 2px solid rgba(255,185,0,0.4);
+    padding-bottom: 5px;
+    margin-bottom: 4px;
+  }
+
+  #codex {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 10.5px;
+    color: #5a3200;
+    background: rgba(255,248,210,0.88);
+    border: 2px solid rgba(255,185,0,0.4);
+    border-radius: 12px;
+    padding: 12px 16px;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 20px rgba(255,160,0,0.15);
+    max-width: 220px;
+    line-height: 1.85;
+  }
+
+  #codex h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 12px;
+    font-weight: 800;
+    color: #e85000;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+    border-bottom: 1.5px solid rgba(255,185,0,0.4);
+    padding-bottom: 4px;
+  }
+
+  .c-row { display:flex; align-items:center; gap:7px; margin-bottom:2px; font-weight:500; }
+  .c-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  #bubble {
+    position: absolute;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #5a2800;
+    background: rgba(255,252,220,0.95);
+    border: 2px solid rgba(255,185,0,0.6);
+    border-radius: 14px;
+    padding: 7px 13px;
+    pointer-events: none;
+    z-index: 30;
+    display: none;
+    max-width: 190px;
+    line-height: 1.5;
+    box-shadow: 0 3px 16px rgba(255,160,0,0.25);
+  }
+
+  #hint {
+    position: absolute;
+    bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Quicksand', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(180,90,0,0.5);
+    pointer-events: none;
+    z-index: 10;
+    letter-spacing: 2px;
+  }
+
+  #joy-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-family: 'Baloo 2', cursive;
+    font-size: clamp(14px, 2vw, 22px);
+    font-weight: 800;
+    color: rgba(230,110,0,0);
+    pointer-events: none;
+    z-index: 50;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(255,180,0,0.5);
+    transition: color 1.5s, opacity 1.5s;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<!-- Welcome to Planet Solara ☀ — the happiest world in the universe! Everything here is warm, golden, and bursting with life and colour.
+✦ Sentient Species
+
+Solari — Round, radiant little beings with spinning sun-ray crowns, big joyful eyes, and arm-swinging walks. They carry flowers and occasionally burst into spontaneous celebrations, shooting confetti sparkles into the air.
+
+🌞 Fauna (9 species)
+
+Blazemane — Galloping fire-maned beasts that kick up golden dust clouds as they run
+Sunfloater — Happy floating sun-faced creatures with spinning petal rings, bobbing gently in the air
+Goldpouncer — Spotted, quick-footed cat-like creatures with swishing tails
+Meadowglider — Colourful flapping birds that ride warm thermals across the sky
+Rosewing — Pink butterfly-like beings with petal wings, dancing in pairs
+Dewsprite — Tiny glassy-winged sprites that leave sparkle trails wherever they zoom
+Honeyback — Fuzzy striped buzzing creatures visiting every flower
+Shimmerboa — Rainbow-shifting serpents whose colour cycles through the entire spectrum
+Cinderfly — Fast little fireflies leaving trails of warm embers
+
+🌿 Flora (4 types): Wind-swaying Goldengrass, many-petalled Suncatchers, spiral-climbing Petalspires, and fluffy round Cloudpuff bushes — plus floating spore puffs drifting skyward.
+World Systems: animated sun with pulsing rays, drifting clouds, Bloom Events (Petal Rain, Spore Burst, Golden Hour…), a Joy Level meter, and a sunshine burst when you click! ☀ -->
+<div id="cursor"></div>
+<svg id="world" xmlns="http://www.w3.org/2000/svg"></svg>
+<div id="hud">
+  <h1>☀ PLANET SOLARA</h1>
+  <div id="h-temp">Temperature: <b id="temp-v">Warm</b></div>
+  <div id="h-sol">Solar Intensity: <b id="sol-v">Bright</b></div>
+  <div id="h-bloom">Bloom Event: <b id="bloom-v">—</b></div>
+  <div id="h-joy">Joy Level: <b id="joy-v">100%</b></div>
+  <div id="h-cycle">Season Cycle: <b id="cyc-v">0</b></div>
+</div>
+<div id="codex">
+  <h2>✦ SPECIES LOG</h2>
+  <div class="c-row"><div class="c-dot" style="background:#ff8c00;box-shadow:0 0 5px #ffaa00"></div>Solari (Sapient)</div>
+  <div class="c-row"><div class="c-dot" style="background:#ff5050"></div>Blazemane</div>
+  <div class="c-row"><div class="c-dot" style="background:#ffe44d"></div>Sunfloater</div>
+  <div class="c-row"><div class="c-dot" style="background:#ff9933"></div>Goldpouncer</div>
+  <div class="c-row"><div class="c-dot" style="background:#44dd88"></div>Meadowglider</div>
+  <div class="c-row"><div class="c-dot" style="background:#ff6688"></div>Rosewing</div>
+  <div class="c-row"><div class="c-dot" style="background:#66eecc"></div>Dewsprite</div>
+  <div class="c-row"><div class="c-dot" style="background:#ffcc44"></div>Honeyback</div>
+  <div class="c-row"><div class="c-dot" style="background:#cc88ff"></div>Shimmerboa</div>
+  <div class="c-row"><div class="c-dot" style="background:#ff4444"></div>Cinderfly</div>
+  <div class="c-row"><div class="c-dot" style="background:#aaff44"></div>Suncatcher (flora)</div>
+  <div class="c-row"><div class="c-dot" style="background:#ff88cc"></div>Petalspire (flora)</div>
+  <div class="c-row"><div class="c-dot" style="background:#ffee88"></div>Goldengrass (flora)</div>
+  <div class="c-row"><div class="c-dot" style="background:#55ddff"></div>Cloudpuff (flora)</div>
+</div>
+<div id="bubble"></div>
+<div id="joy-text"></div>
+<div id="hint">click to scatter sunshine ✦</div>
+
+<script>
+const svg = document.getElementById('world');
+const W = window.innerWidth, H = window.innerHeight;
+svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+
+let frame=0, mouseX=W/2, mouseY=H/2;
+let joyLevel=100, bloomTimer=0, bloomEvent='—', seasonCycle=0;
+
+const rand=(a,b)=>a+Math.random()*(b-a);
+const randInt=(a,b)=>Math.floor(rand(a,b+1));
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+function el(tag,attrs={}){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+
+const cur=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{
+  mouseX=e.clientX; mouseY=e.clientY;
+  cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px';
+});
+
+// ── LAYERS ────────────────────────────────────────────────────────────────
+const L={};
+['sky','clouds-far','sun-rays','mountains','ground','water','flora','creatures','sapient','particles','fx'].forEach(n=>{
+  const g=el('g'); svg.appendChild(g); L[n]=g;
+});
+
+// ── DEFS ─────────────────────────────────────────────────────────────────
+const defs=el('defs'); svg.insertBefore(defs,svg.firstChild);
+
+// Sky gradient - warm golden sky
+const skyG=el('linearGradient',{id:'sky',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+skyG.innerHTML=`
+  <stop id="sk0" offset="0%" stop-color="#87ceeb"/>
+  <stop id="sk1" offset="40%" stop-color="#ffe0a0"/>
+  <stop id="sk2" offset="100%" stop-color="#ffcc60"/>
+`;
+defs.appendChild(skyG);
+
+// Ground gradient - lush meadow
+const gndG=el('linearGradient',{id:'gnd',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+gndG.innerHTML=`
+  <stop offset="0%" stop-color="#7ecf50"/>
+  <stop offset="60%" stop-color="#5aaa30"/>
+  <stop offset="100%" stop-color="#3a8010"/>
+`;
+defs.appendChild(gndG);
+
+// Water
+const watG=el('linearGradient',{id:'wat',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+watG.innerHTML=`
+  <stop offset="0%" stop-color="#55ccff"/>
+  <stop offset="100%" stop-color="#2288cc"/>
+`;
+defs.appendChild(watG);
+
+// Sun radial
+const sunG=el('radialGradient',{id:'sungrad',cx:'50%',cy:'50%',r:'50%'});
+sunG.innerHTML=`
+  <stop offset="0%" stop-color="#fffde0"/>
+  <stop offset="40%" stop-color="#ffe040"/>
+  <stop offset="100%" stop-color="#ff9900"/>
+`;
+defs.appendChild(sunG);
+
+// Filters
+function mkF(id,blur){
+  const f=el('filter',{id,x:'-80%',y:'-80%',width:'260%',height:'260%'});
+  f.innerHTML=`<feGaussianBlur stdDeviation="${blur}" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+  defs.appendChild(f);
+}
+mkF('f2',2); mkF('f5',5); mkF('f10',10); mkF('f18',18); mkF('f30',30);
+
+// ── SKY ───────────────────────────────────────────────────────────────────
+const skyRect=el('rect',{x:0,y:0,width:W,height:H,fill:'url(#sky)'});
+L['sky'].appendChild(skyRect);
+
+// Sun
+const groundY=H*0.62;
+const sunX=W*0.78, sunY=H*0.18;
+const sunGlow=el('circle',{cx:sunX,cy:sunY,r:90,fill:'rgba(255,200,0,0.12)',filter:'url(#f30)'});
+const sunOuter=el('circle',{cx:sunX,cy:sunY,r:55,fill:'rgba(255,180,0,0.25)',filter:'url(#f18)'});
+const sunEl=el('circle',{cx:sunX,cy:sunY,r:38,fill:'url(#sungrad)',filter:'url(#f5)'});
+L['sky'].appendChild(sunGlow); L['sky'].appendChild(sunOuter); L['sky'].appendChild(sunEl);
+
+// Sun rays
+const rayEls=[];
+for(let i=0;i<18;i++){
+  const angle=(i/18)*Math.PI*2;
+  const ray=el('line',{
+    x1:sunX+Math.cos(angle)*42, y1:sunY+Math.sin(angle)*42,
+    x2:sunX+Math.cos(angle)*rand(70,110), y2:sunY+Math.sin(angle)*rand(70,110),
+    stroke:`rgba(255,220,80,${rand(0.3,0.7)})`,'stroke-width':rand(1.5,3.5),'stroke-linecap':'round',
+    filter:'url(#f2)'
+  });
+  L['sun-rays'].appendChild(ray);
+  rayEls.push({el:ray,angle,baseLen:rand(70,110),phase:rand(0,Math.PI*2)});
+}
+
+// ── CLOUDS ────────────────────────────────────────────────────────────────
+const clouds=[];
+function makeCloud(x,y,scale=1,speed=0.3){
+  const g=el('g');
+  const col=`rgba(255,252,240,${rand(0.7,0.95)})`;
+  const blobs=[
+    [0,0,rand(30,45)*scale],
+    [rand(30,50)*scale,rand(-12,5)*scale,rand(22,35)*scale],
+    [rand(-40,-20)*scale,rand(-8,5)*scale,rand(20,32)*scale],
+    [rand(55,75)*scale,rand(-5,8)*scale,rand(18,28)*scale],
+    [rand(-60,-40)*scale,rand(-3,8)*scale,rand(16,25)*scale],
+  ];
+  blobs.forEach(([bx,by,r])=>{
+    const b=el('circle',{cx:x+bx,cy:y+by,r,fill:col,filter:'url(#f5)'});
+    g.appendChild(b);
+  });
+  // Highlight
+  const hl=el('ellipse',{cx:x-10*scale,cy:y-10*scale,rx:20*scale,ry:10*scale,fill:'rgba(255,255,255,0.4)',filter:'url(#f5)'});
+  g.appendChild(hl);
+  L['clouds-far'].appendChild(g);
+  clouds.push({el:g,x,y,baseX:x,phase:rand(0,Math.PI*2),speed});
+  return g;
+}
+for(let i=0;i<8;i++) makeCloud(rand(-100,W+100),rand(H*0.03,H*0.28),rand(0.5,1.4),rand(0.15,0.5));
+
+// ── MOUNTAINS ─────────────────────────────────────────────────────────────
+function makeMtn(pts,color){
+  const d=`M${pts.map(p=>p.join(',')).join('L')}Z`;
+  const m=el('path',{d,fill:color});
+  L['mountains'].appendChild(m); return m;
+}
+// Back range - warm purples
+let bpts=[[0,groundY+10]]; let bx=0;
+while(bx<W+80){bpts.push([bx,rand(H*0.25,groundY)]);bx+=rand(50,130);}
+bpts.push([W,groundY+10],[W,H+10],[0,H+10]);
+makeMtn(bpts,'rgba(180,140,200,0.55)');
+
+// Mid range - warm orange
+let mpts=[[0,groundY+10]]; let mx=0;
+while(mx<W+60){mpts.push([mx,rand(H*0.35,groundY)]);mx+=rand(35,90);}
+mpts.push([W,groundY+10],[W,H+10],[0,H+10]);
+makeMtn(mpts,'rgba(220,160,80,0.45)');
+
+// ── GROUND ────────────────────────────────────────────────────────────────
+let gpts=[[0,groundY]]; let gx=0;
+while(gx<W+40){gpts.push([gx,groundY+rand(-8,8)]);gx+=rand(15,45);}
+gpts.push([W,groundY],[W,H+10],[0,H+10]);
+const gndEl=el('path',{d:`M${gpts.map(p=>p.join(',')).join('L')}Z`,fill:'url(#gnd)'});
+L['ground'].appendChild(gndEl);
+
+// Ground shine/texture patches
+for(let i=0;i<20;i++){
+  const px=rand(0,W),py=groundY+rand(5,50);
+  const shine=el('ellipse',{cx:px,cy:py,rx:rand(20,80),ry:rand(5,20),
+    fill:`rgba(${randInt(150,200)},${randInt(220,255)},${randInt(50,120)},${rand(0.1,0.25)})`});
+  L['ground'].appendChild(shine);
+}
+
+// Water pond
+const pondX=W*0.35, pondY=groundY+rand(15,30), pondW=rand(W*0.12,W*0.2), pondH=rand(25,50);
+const pond=el('ellipse',{cx:pondX,cy:pondY,rx:pondW,ry:pondH,fill:'url(#wat)',opacity:0.85,filter:'url(#f2)'});
+// Pond shimmer
+const pondShimmer=el('ellipse',{cx:pondX-pondW*0.2,cy:pondY-pondH*0.2,rx:pondW*0.4,ry:pondH*0.3,
+  fill:'rgba(255,255,255,0.25)',filter:'url(#f5)'});
+L['water'].appendChild(pond); L['water'].appendChild(pondShimmer);
+
+// ── FLORA ─────────────────────────────────────────────────────────────────
+const floraAll=[];
+
+// Goldengrass - wind-swept long grass
+for(let i=0;i<50;i++){
+  const x=rand(0,W), y=groundY+rand(2,20);
+  const h=rand(15,55), hue=rand(55,90);
+  const g=el('g');
+  const blade=el('path',{
+    d:`M${x},${y} Q${x+rand(-10,10)},${y-h*0.5} ${x+rand(-12,15)},${y-h}`,
+    stroke:`hsl(${hue},80%,${rand(45,65)}%)`,
+    'stroke-width':rand(1.5,3),'fill':'none','stroke-linecap':'round'
+  });
+  g.appendChild(blade);
+  L['flora'].appendChild(g);
+  floraAll.push({type:'grass',el:g,bladeEl:blade,x,y,h,phase:rand(0,Math.PI*2)});
+}
+
+// Suncatcher - big bright flowers
+for(let i=0;i<30;i++){
+  const x=rand(0,W), y=groundY+rand(5,25);
+  const h=rand(25,60), hue=rand(20,80);
+  const g=el('g');
+  const stem=el('line',{x1:x,y1:y,x2:x+rand(-5,5),y2:y-h,
+    stroke:`hsl(${hue+20},60%,35%)`,'stroke-width':2,'stroke-linecap':'round'});
+  // Petals
+  const np=randInt(6,10);
+  for(let j=0;j<np;j++){
+    const angle=(j/np)*Math.PI*2;
+    const pr=rand(8,18);
+    const petal=el('ellipse',{
+      cx:x+rand(-5,5)+Math.cos(angle)*pr, cy:y-h+Math.sin(angle)*pr,
+      rx:rand(5,10),ry:rand(3,6),
+      fill:`hsl(${hue},${rand(80,100)}%,${rand(55,75)}%)`,
+      transform:`rotate(${angle*180/Math.PI},${x+Math.cos(angle)*pr},${y-h+Math.sin(angle)*pr})`
+    });
+    g.appendChild(petal);
+  }
+  const center=el('circle',{cx:x+rand(-5,5),cy:y-h,r:rand(5,9),
+    fill:`hsl(${hue+rand(30,60)},90%,60%)`,filter:'url(#f2)'});
+  g.appendChild(stem); g.appendChild(center);
+  L['flora'].appendChild(g);
+  floraAll.push({type:'suncatcher',el:g,x,y,h,phase:rand(0,Math.PI*2),hue});
+}
+
+// Petalspire - tall spiral flowering towers
+for(let i=0;i<12;i++){
+  const x=rand(0,W), y=groundY+rand(5,15);
+  const h=rand(50,130);
+  const g=el('g');
+  const trunk=el('rect',{x:x-4,y:y-h,width:8,height:h,
+    fill:`hsl(${rand(90,130)},50%,30%)`,rx:3});
+  g.appendChild(trunk);
+  // Spiral petals climbing up
+  for(let j=0;j<8;j++){
+    const pct=j/8;
+    const angle=(j/8)*Math.PI*6;
+    const hue=rand(280,360);
+    const petalX=x+Math.cos(angle)*rand(10,22);
+    const petalY=y-h*pct-rand(5,15);
+    const petal=el('ellipse',{cx:petalX,cy:petalY,rx:rand(6,14),ry:rand(4,8),
+      fill:`hsl(${hue},${rand(80,100)}%,${rand(60,80)}%)`,
+      transform:`rotate(${angle*30},${petalX},${petalY})`,
+      filter:'url(#f2)',opacity:rand(0.7,1)});
+    g.appendChild(petal);
+  }
+  L['flora'].appendChild(g);
+  floraAll.push({type:'petalspire',el:g,x,y,phase:rand(0,Math.PI*2)});
+}
+
+// Cloudpuff - fluffy round bushes
+for(let i=0;i<18;i++){
+  const x=rand(0,W), y=groundY+rand(8,30);
+  const g=el('g');
+  const hue=rand(90,180);
+  const nr=randInt(5,10);
+  for(let j=0;j<nr;j++){
+    const bx=x+rand(-30,30),by=y+rand(-20,5);
+    const blob=el('circle',{cx:bx,cy:by,r:rand(10,25),
+      fill:`hsl(${hue},${rand(60,90)}%,${rand(55,75)}%)`,
+      opacity:rand(0.6,0.95)});
+    g.appendChild(blob);
+  }
+  L['flora'].appendChild(g);
+  floraAll.push({type:'cloudpuff',el:g,x,y,phase:rand(0,Math.PI*2)});
+}
+
+// Floating spore puffs
+const sporePuffs=[];
+for(let i=0;i<35;i++){
+  const x=rand(0,W),y=rand(groundY-200,groundY+20);
+  const hue=rand(30,100);
+  const sp=el('circle',{cx:x,cy:y,r:rand(2,7),
+    fill:`hsla(${hue},90%,70%,${rand(0.4,0.8)})`,
+    filter:'url(#f2)'});
+  L['flora'].appendChild(sp);
+  sporePuffs.push({el:sp,x,y,vy:rand(-0.3,-0.05),vx:rand(-0.2,0.2),phase:rand(0,Math.PI*2)});
+}
+
+// ── CREATURE BASE ─────────────────────────────────────────────────────────
+class Being {
+  constructor(opts){
+    Object.assign(this,{
+      x:rand(50,W-50),y:groundY-20,
+      vx:0,vy:0,speed:1.2,type:'being',
+      label:'Unknown',says:['...'],
+      phase:rand(0,Math.PI*2),age:0,
+      layer:'creatures'
+    },opts);
+    this.el=el('g',{cursor:'pointer'});
+    L[this.layer].appendChild(this.el);
+    this.build();
+    this.el.addEventListener('mouseenter',()=>this.talk(true));
+    this.el.addEventListener('mouseleave',()=>this.talk(false));
+  }
+  talk(on){
+    const b=document.getElementById('bubble');
+    b.style.display=on?'block':'none';
+    if(on){
+      b.textContent=this.says[randInt(0,this.says.length-1)];
+      b.style.left=(this.x+20)+'px';
+      b.style.top=(this.y-50)+'px';
+    }
+  }
+  build(){}
+  wander(x0=0,x1=W,y0=H*0.05,y1=groundY-5){
+    if(Math.random()<0.018){
+      this.vx+=rand(-this.speed,this.speed)*0.4;
+      this.vy+=rand(-this.speed*0.4,this.speed*0.4)*0.3;
+    }
+    this.vx=clamp(this.vx,-this.speed,this.speed);
+    this.vy=clamp(this.vy,-this.speed*0.4,this.speed*0.4);
+    this.x+=this.vx; this.y+=this.vy;
+    this.x=clamp(this.x,x0,x1); this.y=clamp(this.y,y0,y1);
+    this.vx*=0.96; this.vy*=0.96;
+  }
+  tick(){this.age++;this.phase+=0.05;this.update();this.el.setAttribute('transform',`translate(${this.x},${this.y})`);}
+  update(){this.wander();}
+}
+
+// ── SOLARI (Sapient) ──────────────────────────────────────────────────────
+class Solari extends Being {
+  constructor(){
+    super({type:'solari',label:'Solari ☀',speed:1.1,layer:'sapient',
+      y:groundY-rand(15,30),
+      says:[
+        '☀ The sun feeds us all!',
+        '🌸 Bloom season is coming!',
+        '✦ We built our city from light.',
+        '🌊 The pond sings today.',
+        '🌿 Good harvest this cycle!',
+        '☁ A cloud! How rare and precious.',
+        '🐝 The Honeybacks visited again.',
+        '✦ Light is our language.',
+        '🌺 Have you seen the Petalspires bloom?',
+        '☀ Every day is a gift here!',
+      ]
+    });
+    this.walkPhase=rand(0,Math.PI*2);
+    this.dir=1;
+    this.celebrateTimer=0;
+  }
+  build(){
+    // Radiant aura
+    this.auraEl=el('circle',{r:28,fill:'rgba(255,200,50,0.12)',filter:'url(#f10)'});
+    // Body - round warm creature
+    const body=el('ellipse',{cx:0,cy:-8,rx:11,ry:14,fill:'#ff9933',filter:'url(#f2)'});
+    // Belly lighter
+    const belly=el('ellipse',{cx:0,cy:-4,rx:7,ry:9,fill:'rgba(255,220,120,0.6)'});
+    // Head
+    const head=el('circle',{cx:0,cy:-26,r:12,fill:'#ffb344',filter:'url(#f2)'});
+    // Sun crown on head
+    this.crownEl=el('g');
+    for(let i=0;i<8;i++){
+      const a=(i/8)*Math.PI*2;
+      const ray=el('line',{
+        x1:Math.cos(a)*12,y1:-26+Math.sin(a)*12,
+        x2:Math.cos(a)*18,y2:-26+Math.sin(a)*18,
+        stroke:'#ffe044','stroke-width':2,'stroke-linecap':'round',filter:'url(#f2)'});
+      this.crownEl.appendChild(ray);
+    }
+    // Eyes - big happy
+    const e1=el('circle',{cx:-4,cy:-28,r:3.5,fill:'#fff'}),
+          e2=el('circle',{cx:4,cy:-28,r:3.5,fill:'#fff'});
+    const ep1=el('circle',{cx:-3.5,cy:-27.5,r:2,fill:'#6a3000'}),
+          ep2=el('circle',{cx:4.5,cy:-27.5,r:2,fill:'#6a3000'});
+    // Shine in eyes
+    const sh1=el('circle',{cx:-2.5,cy:-28.5,r:0.8,fill:'#fff'}),
+          sh2=el('circle',{cx:5.5,cy:-28.5,r:0.8,fill:'#fff'});
+    // Happy smile
+    this.smileEl=el('path',{d:'M-4,-22 Q0,-18 4,-22',stroke:'#7a4000','stroke-width':1.8,'fill':'none','stroke-linecap':'round'});
+    // Arms
+    this.armL=el('line',{x1:-11,y1:-12,x2:-20,y2:-6,stroke:'#ff9933','stroke-width':4,'stroke-linecap':'round'});
+    this.armR=el('line',{x1:11,y1:-12,x2:20,y2:-6,stroke:'#ff9933','stroke-width':4,'stroke-linecap':'round'});
+    // Legs
+    this.legL=el('line',{x1:-5,y1:6,x2:-7,y2:16,stroke:'#e07020','stroke-width':4,'stroke-linecap':'round'});
+    this.legR=el('line',{x1:5,y1:6,x2:7,y2:16,stroke:'#e07020','stroke-width':4,'stroke-linecap':'round'});
+    // Tiny carried flower
+    const flo=el('circle',{cx:22,cy:-10,r:4,fill:'#ff5588',filter:'url(#f2)'});
+    [this.auraEl,body,belly,this.crownEl,head,e1,e2,ep1,ep2,sh1,sh2,this.smileEl,
+     this.armL,this.armR,this.legL,this.legR,flo].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.walkPhase+=0.08;
+    // Walking arm/leg swing
+    const sw=Math.sin(this.walkPhase)*8;
+    this.armL.setAttribute('y2',-6+sw); this.armR.setAttribute('y2',-6-sw);
+    this.legL.setAttribute('x2',-7+sw*0.5); this.legL.setAttribute('y2',16+Math.abs(sw)*0.3);
+    this.legR.setAttribute('x2',7-sw*0.5); this.legR.setAttribute('y2',16+Math.abs(-sw)*0.3);
+    // Crown pulse
+    this.crownEl.setAttribute('transform',`rotate(${this.phase*5*180/Math.PI})`);
+    this.auraEl.setAttribute('r',26+Math.sin(this.phase)*5);
+
+    // Celebrate occasionally
+    this.celebrateTimer++;
+    if(this.celebrateTimer>300&&Math.random()<0.008){
+      this.celebrateTimer=0;
+      this.celebrate();
+    }
+    this.wander(0,W,groundY-45,groundY-8);
+    const scaleX=this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  celebrate(){
+    // Shoot sparkles
+    for(let i=0;i<8;i++){
+      const sp=el('circle',{cx:this.x,cy:this.y-30,r:rand(2,5),
+        fill:`hsl(${rand(20,80)},100%,65%)`});
+      L['particles'].appendChild(sp);
+      const angle=rand(0,Math.PI*2),spd=rand(2,5);
+      let vx=Math.cos(angle)*spd,vy=Math.sin(angle)*spd-3,lf=50;
+      const ai=setInterval(()=>{
+        lf--;vy+=0.12;
+        sp.setAttribute('cx',parseFloat(sp.getAttribute('cx'))+vx);
+        sp.setAttribute('cy',parseFloat(sp.getAttribute('cy'))+vy);
+        sp.setAttribute('opacity',lf/50);
+        if(lf<=0){clearInterval(ai);sp.remove();}
+      },16);
+    }
+  }
+  tick(){this.age++;this.phase+=0.04;this.update();}
+}
+
+// ── BLAZEMANE ─────────────────────────────────────────────────────────────
+class Blazemane extends Being {
+  constructor(){
+    super({type:'blazemane',label:'Blazemane',speed:2.5,
+      y:groundY-rand(20,40),
+      says:['ROAR! ☀','Fastest on Solara!','I run with the sun!','Fire in my veins!']
+    });
+    this.gallop=rand(0,Math.PI*2);
+  }
+  build(){
+    // 4-legged big sunny creature
+    const body=el('ellipse',{cx:0,cy:0,rx:28,ry:16,fill:'#dd4400',filter:'url(#f2)'});
+    const neck=el('rect',{x:18,y:-22,width:12,height:24,fill:'#cc3300',rx:5});
+    const head=el('ellipse',{cx:26,cy:-26,rx:14,ry:11,fill:'#ee5511',filter:'url(#f2)'});
+    // Mane of flames
+    this.maneEl=el('g');
+    for(let i=0;i<10;i++){
+      const a=rand(-0.8,0.8);
+      const flame=el('path',{
+        d:`M${20+rand(-5,5)},-18 Q${30+rand(-10,10)},${-35+rand(-10,5)} ${25+rand(-8,8)},${-50+rand(-10,5)}`,
+        stroke:`hsl(${rand(20,55)},100%,${rand(55,75)}%)`,'stroke-width':rand(2,5),'fill':'none','stroke-linecap':'round',filter:'url(#f2)',opacity:rand(0.7,1)});
+      this.maneEl.appendChild(flame);
+    }
+    const eye=el('circle',{cx:33,cy:-28,r:4,fill:'#fff7aa',filter:'url(#f2)'}),ep=el('circle',{cx:34,cy:-28,r:2,fill:'#550000'});
+    const nostril=el('ellipse',{cx:38,cy:-22,rx:3,ry:2,fill:'#aa2200'});
+    // Legs
+    this.legs=[];
+    [[-18,12],[-8,14],[8,14],[18,12]].forEach(([lx],i)=>{
+      const l=el('line',{x1:lx,y1:14,x2:lx+rand(-3,3),y2:32,stroke:'#bb3300','stroke-width':5,'stroke-linecap':'round'});
+      this.legs.push({el:l,phase:rand(0,Math.PI*2),bx:lx});
+      this.el.appendChild(l);
+    });
+    const tail=el('path',{d:'M-28,0 Q-45,-15 -50,5',stroke:'#ff6622','stroke-width':5,'fill':'none','stroke-linecap':'round',filter:'url(#f2)'});
+    [body,neck,head,this.maneEl,eye,ep,nostril,tail].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.gallop+=0.12;
+    this.legs.forEach((l,i)=>{
+      const step=Math.sin(this.gallop+i*1.2)*12;
+      l.el.setAttribute('x2',l.bx+step*0.4);
+      l.el.setAttribute('y2',32-Math.abs(step));
+    });
+    // Dust puff when galloping
+    if(Math.abs(this.vx)>1.5&&frame%6===0){
+      const dust=el('circle',{cx:this.x+rand(-20,0),cy:groundY+rand(-5,5),r:rand(4,10),
+        fill:'rgba(220,160,80,0.35)',filter:'url(#f5)'});
+      L['particles'].appendChild(dust);
+      let op=0.35;
+      const ai=setInterval(()=>{op-=0.02;dust.setAttribute('opacity',op);dust.setAttribute('r',parseFloat(dust.getAttribute('r'))+1);if(op<=0){clearInterval(ai);dust.remove();}},30);
+    }
+    this.wander(0,W,groundY-55,groundY-15);
+    const scaleX=this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.08;this.update();}
+}
+
+// ── SUNFLOATER ────────────────────────────────────────────────────────────
+class Sunfloater extends Being {
+  constructor(){
+    super({type:'sunfloater',label:'Sunfloater',speed:0.6,y:rand(H*0.1,groundY-60),
+      says:['I absorb pure light!','Drifting is my calling.','Warm... so warm...','Sun energy: 100%!']
+    });
+    this.hue=rand(40,70);
+  }
+  build(){
+    this.bodyEl=el('circle',{r:18,fill:`hsl(${this.hue},90%,65%)`,filter:'url(#f5)'});
+    this.innerEl=el('circle',{r:10,fill:`hsl(${this.hue+10},100%,80%)`});
+    // Radiating petals
+    this.petals=[];
+    for(let i=0;i<12;i++){
+      const a=(i/12)*Math.PI*2;
+      const p=el('ellipse',{cx:Math.cos(a)*22,cy:Math.sin(a)*22,rx:8,ry:4,
+        fill:`hsl(${this.hue},100%,70%)`,
+        transform:`rotate(${a*180/Math.PI},${Math.cos(a)*22},${Math.sin(a)*22})`,opacity:0.85});
+      this.petals.push({el:p,a,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(p);
+    }
+    const eye1=el('circle',{cx:-4,cy:-2,r:2.5,fill:'#fff'}),eye2=el('circle',{cx:4,cy:-2,r:2.5,fill:'#fff'});
+    const ep1=el('circle',{cx:-3.5,cy:-1.5,r:1.4,fill:'#333'}),ep2=el('circle',{cx:4.5,cy:-1.5,r:1.4,fill:'#333'});
+    const smile=el('path',{d:'M-4,4 Q0,8 4,4',stroke:'#885500','stroke-width':1.5,'fill':'none','stroke-linecap':'round'});
+    [this.bodyEl,this.innerEl,eye1,eye2,ep1,ep2,smile].forEach(e=>this.el.appendChild(e));
+    [this.bodyEl,...this.petals.map(p=>p.el)].forEach((e,i)=>this.el.insertBefore(e,this.el.firstChild));
+  }
+  update(){
+    // Slowly spin petals
+    this.petals.forEach((p,i)=>{
+      p.phase+=0.02;
+      const a=p.a+this.phase*0.3;
+      const dist=22+Math.sin(p.phase)*4;
+      p.el.setAttribute('cx',Math.cos(a)*dist);
+      p.el.setAttribute('cy',Math.sin(a)*dist);
+      p.el.setAttribute('transform',`rotate(${a*180/Math.PI},${Math.cos(a)*dist},${Math.sin(a)*dist})`);
+    });
+    this.bodyEl.setAttribute('r',17+Math.sin(this.phase)*2);
+    this.wander(0,W,H*0.05,groundY-40);
+    // Float bob
+    this.el.setAttribute('transform',`translate(${this.x},${this.y+Math.sin(this.phase)*6})`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.03;this.update();}
+}
+
+// ── GOLDPOUNCER ───────────────────────────────────────────────────────────
+class Goldpouncer extends Being {
+  constructor(){
+    super({type:'goldpouncer',label:'Goldpouncer',speed:3.5,y:groundY-rand(15,30),
+      says:['Pounce!','Spotted something shiny!','Quick as sunlight!','Hehehe!']
+    });
+  }
+  build(){
+    const body=el('ellipse',{cx:0,cy:0,rx:14,ry:8,fill:'#ff9900',filter:'url(#f2)'});
+    const head=el('circle',{cx:12,cy:-5,r:8,fill:'#ffaa22',filter:'url(#f2)'});
+    const ear1=el('polygon',{points:'8,-12 12,-20 16,-12',fill:'#ff8800'}),
+          ear2=el('polygon',{points:'16,-12 20,-19 23,-12',fill:'#ff8800'});
+    const eye=el('circle',{cx:16,cy:-7,r:3,fill:'#fff'}),ep=el('circle',{cx:17,cy:-7,r:1.5,fill:'#330000'});
+    const nose=el('circle',{cx:20,cy:-3,r:1.5,fill:'#ff6666'});
+    this.tailEl=el('path',{d:'M-14,0 Q-28,10 -32,-5',stroke:'#ffcc44','stroke-width':5,'fill':'none','stroke-linecap':'round'});
+    this.legEls=[];
+    [[-8,8],[0,8],[8,8],[-4,8]].forEach(([lx,ly],i)=>{
+      const l=el('line',{x1:lx,y1:ly,x2:lx+rand(-2,2),y2:ly+18,stroke:'#ee8800','stroke-width':3,'stroke-linecap':'round'});
+      this.legEls.push({el:l,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(l);
+    });
+    // Spots
+    for(let i=0;i<5;i++){
+      const spot=el('circle',{cx:rand(-10,10),cy:rand(-5,5),r:rand(2,4),fill:'rgba(200,80,0,0.4)'});
+      this.el.appendChild(spot);
+    }
+    [body,head,ear1,ear2,eye,ep,nose,this.tailEl].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.legEls.forEach((l,i)=>{
+      l.phase+=0.1;
+      l.el.setAttribute('y2',20+Math.sin(l.phase+i)*8);
+      l.el.setAttribute('x2',parseFloat(l.el.getAttribute('x1'))+Math.sin(l.phase+i)*3);
+    });
+    const tailSway=Math.sin(this.phase*1.5)*15;
+    this.tailEl.setAttribute('d',`M-14,0 Q-28,${8+tailSway} -32,${-5+tailSway*0.5}`);
+    this.wander(0,W,groundY-40,groundY-10);
+    const scaleX=this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.1;this.update();}
+}
+
+// ── MEADOWGLIDER ──────────────────────────────────────────────────────────
+class Meadowglider extends Being {
+  constructor(){
+    super({type:'meadowglider',label:'Meadowglider',speed:1.8,y:rand(H*0.1,groundY-50),
+      says:['Soaring above the meadow!','The wind is sweet today.','I love this planet!','Wheee!']
+    });
+    this.flapP=rand(0,Math.PI*2);
+  }
+  build(){
+    const hue=rand(100,160);
+    this.wL=el('path',{d:'M0,0 Q-25,-20 -45,5 Q-25,18 0,8',fill:`hsla(${hue},80%,55%,0.85)`,filter:'url(#f2)'});
+    this.wR=el('path',{d:'M0,0 Q25,-20 45,5 Q25,18 0,8',fill:`hsla(${hue},80%,55%,0.85)`,filter:'url(#f2)'});
+    const body=el('ellipse',{cx:0,cy:4,rx:9,ry:5,fill:`hsl(${hue+20},70%,40%)`});
+    const head=el('circle',{cx:0,cy:-4,r:6,fill:`hsl(${hue+10},80%,50%)`});
+    const beak=el('line',{x1:0,y1:-4,x2:0,y2:-12,stroke:`hsl(${hue+30},70%,60%)`,'stroke-width':3,'stroke-linecap':'round'});
+    const eye1=el('circle',{cx:-3,cy:-5,r:2,fill:'#fff'}),eye2=el('circle',{cx:3,cy:-5,r:2,fill:'#fff'});
+    const ep1=el('circle',{cx:-2.5,cy:-4.5,r:1.2,fill:'#000'}),ep2=el('circle',{cx:3.5,cy:-4.5,r:1.2,fill:'#000'});
+    // Tail feathers
+    for(let i=-2;i<=2;i++){
+      const feather=el('line',{x1:i*3,y1:12,x2:i*4,y2:24,stroke:`hsl(${hue+i*10},80%,60%)`,'stroke-width':2.5,'stroke-linecap':'round'});
+      this.el.appendChild(feather);
+    }
+    [this.wL,this.wR,body,head,beak,eye1,eye2,ep1,ep2].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.flapP+=0.14;
+    const flap=Math.sin(this.flapP)*14;
+    this.wL.setAttribute('d',`M0,0 Q-25,${-20+flap} -45,${5+flap*0.5} Q-25,18 0,8`);
+    this.wR.setAttribute('d',`M0,0 Q25,${-20+flap} 45,${5+flap*0.5} Q25,18 0,8`);
+    this.wander(0,W,H*0.05,groundY-50);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y+Math.sin(this.phase)*4}) rotate(${this.vy*15})`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.04;this.update();}
+}
+
+// ── ROSEWING ──────────────────────────────────────────────────────────────
+class Rosewing extends Being {
+  constructor(){
+    super({type:'rosewing',label:'Rosewing',speed:2.2,y:rand(H*0.08,groundY-60),
+      says:['Pretty pretty!','I smell flowers from above!','Pink is power!','Dancing in thermals!']
+    });
+  }
+  build(){
+    const hue=rand(330,360);
+    // 4 large petal wings
+    [0,1,2,3].forEach(i=>{
+      const side=i<2?-1:1,off=i%2===0?-1:1;
+      const w=el('ellipse',{cx:side*22,cy:off*12,rx:22,ry:10,
+        fill:`hsla(${hue},${rand(70,100)}%,${rand(60,80)}%,0.8)`,
+        transform:`rotate(${side*off*30},${side*22},${off*12})`,filter:'url(#f2)'});
+      this.el.appendChild(w);
+    });
+    const body=el('ellipse',{cx:0,cy:0,rx:7,ry:10,fill:`hsl(${hue},60%,40%)`});
+    const head=el('circle',{cx:0,cy:-13,r:6,fill:`hsl(${hue},70%,55%)`});
+    const ant1=el('line',{x1:-2,y1:-18,x2:-6,y2:-26,stroke:`hsl(${hue},60%,50%)`,'stroke-width':1.5});
+    const ant2=el('line',{x1:2,y1:-18,x2:6,y2:-26,stroke:`hsl(${hue},60%,50%)`,'stroke-width':1.5});
+    const tip1=el('circle',{cx:-6,cy:-26,r:2.5,fill:`hsl(${hue},90%,65%)`,filter:'url(#f2)'}),
+          tip2=el('circle',{cx:6,cy:-26,r:2.5,fill:`hsl(${hue},90%,65%)`,filter:'url(#f2)'});
+    const eye1=el('circle',{cx:-2,cy:-14,r:2,fill:'#fff'}),eye2=el('circle',{cx:2,cy:-14,r:2,fill:'#fff'});
+    [body,head,ant1,ant2,tip1,tip2,eye1,eye2].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.wander(0,W,H*0.04,groundY-50);
+    const bob=Math.sin(this.phase)*8;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y+bob}) rotate(${bob*0.5})`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.06;this.update();}
+}
+
+// ── DEWSPRITE (tiny) ──────────────────────────────────────────────────────
+class Dewsprite extends Being {
+  constructor(){
+    super({type:'dewsprite',label:'Dewsprite',speed:1.5,y:rand(groundY-80,groundY-10),
+      says:['Dew!','Sparkle!','So tiny!','Morning light!','Zoooom!']
+    });
+  }
+  build(){
+    const hue=rand(160,200);
+    const body=el('circle',{r:5,fill:`hsl(${hue},90%,65%)`,filter:'url(#f2)'});
+    // 4 glassy wings
+    [[-8,-4],[8,-4],[-7,4],[7,4]].forEach(([wx,wy])=>{
+      const w=el('ellipse',{cx:wx,cy:wy,rx:8,ry:4,fill:`hsla(${hue},80%,80%,0.5)`,filter:'url(#f2)',
+        transform:`rotate(${Math.atan2(wy,wx)*180/Math.PI},${wx},${wy})`});
+      this.el.appendChild(w);
+    });
+    const eye=el('circle',{cx:2,cy:-1,r:1.5,fill:'#fff'}),ep=el('circle',{cx:2.5,cy:-1,r:0.8,fill:'#003366'});
+    [body,eye,ep].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    this.wander(0,W,groundY-100,groundY-5);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y+Math.sin(this.phase*2)*4})`);
+    // Leave sparkle trail
+    if(Math.random()<0.1){
+      const sp=el('circle',{cx:this.x,cy:this.y,r:rand(1,2.5),fill:`hsl(${rand(160,220)},100%,75%)`,opacity:0.7});
+      L['particles'].appendChild(sp);
+      let op=0.7;const ai=setInterval(()=>{op-=0.04;sp.setAttribute('opacity',op);if(op<=0){clearInterval(ai);sp.remove();}},30);
+    }
+    return;
+  }
+  tick(){this.age++;this.phase+=0.1;this.update();}
+}
+
+// ── HONEYBACK ─────────────────────────────────────────────────────────────
+class Honeyback extends Being {
+  constructor(){
+    super({type:'honeyback',label:'Honeyback',speed:1.0,y:rand(groundY-100,groundY-20),
+      says:['Buzzzz!','Collecting pollen!','The flowers called me!','Honey for everyone!','Bzzz bzzz!']
+    });
+    this.target=null;
+    this.targetTimer=0;
+  }
+  build(){
+    const hue=45;
+    this.bodyEl=el('ellipse',{cx:0,cy:0,rx:10,ry:7,fill:`hsl(${hue},90%,55%)`});
+    // Stripes
+    for(let i=0;i<4;i++){
+      const stripe=el('rect',{x:-9+i*4,y:-7,width:3,height:14,fill:'rgba(60,30,0,0.5)',rx:1});
+      this.el.appendChild(stripe);
+    }
+    const head=el('circle',{cx:10,cy:-2,r:6,fill:`hsl(${hue},80%,60%)`});
+    const eye=el('circle',{cx:13,cy:-4,r:2.5,fill:'#fff'}),ep=el('circle',{cx:13.5,cy:-4,r:1.3,fill:'#330000'});
+    const antenna=el('path',{d:'M8,-7 Q10,-14 13,-12',stroke:'rgba(60,30,0,0.7)','stroke-width':1.5,'fill':'none','stroke-linecap':'round'});
+    this.wL=el('ellipse',{cx:-2,cy:-10,rx:12,ry:5,fill:'rgba(200,240,255,0.55)',filter:'url(#f2)'});
+    this.wR=el('ellipse',{cx:4,cy:-10,rx:10,ry:4,fill:'rgba(200,240,255,0.45)',filter:'url(#f2)'});
+    const stinger=el('line',{x1:-10,y1:0,x2:-16,y2:3,stroke:`hsl(${hue+20},70%,40%)`,'stroke-width':2,'stroke-linecap':'round'});
+    [this.wL,this.wR,this.bodyEl,head,eye,ep,antenna,stinger].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    // Wing buzz
+    const buzz=Math.sin(this.phase*8)*5;
+    this.wL.setAttribute('cy',-10+buzz); this.wR.setAttribute('cy',-10-buzz);
+    this.wander(0,W,groundY-120,groundY-15);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y+Math.sin(this.phase)*3})`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.08;this.update();}
+}
+
+// ── SHIMMERBOA ────────────────────────────────────────────────────────────
+class Shimmerboa extends Being {
+  constructor(){
+    super({type:'shimmerboa',label:'Shimmerboa',speed:1.2,y:groundY-rand(5,20),
+      says:['Sssunlight is delicioussss.','I am made of rainbowsss.','Watch my colorsss shift!','Ssso warm here!']
+    });
+    this.hue=rand(240,320);
+  }
+  build(){
+    this.segs=[];
+    for(let i=0;i<16;i++){
+      const seg=el('ellipse',{cx:-i*8,cy:0,rx:10-i*0.3,ry:7-i*0.2,
+        fill:`hsl(${this.hue+i*8},90%,${65-i*2}%)`,filter:i<3?'url(#f2)':''});
+      this.segs.push(seg);
+      this.el.appendChild(seg);
+    }
+    // Head
+    const head=el('ellipse',{cx:10,cy:0,rx:12,ry:8,fill:`hsl(${this.hue},90%,60%)`,filter:'url(#f2)'});
+    const eye=el('circle',{cx:17,cy:-4,r:3.5,fill:'#ffffaa',filter:'url(#f2)'}),ep=el('circle',{cx:18,cy:-4,r:1.8,fill:'#220033'});
+    const tongue=el('path',{d:'M20,0 Q26,-2 28,-6',stroke:'#ff3366','stroke-width':2,'fill':'none','stroke-linecap':'round'});
+    const tongue2=el('line',{x1:28,y1:-6,x2:30,y2:-9,stroke:'#ff3366','stroke-width':1.5,'stroke-linecap':'round'});
+    this.el.appendChild(head); this.el.appendChild(eye); this.el.appendChild(ep); this.el.appendChild(tongue); this.el.appendChild(tongue2);
+  }
+  update(){
+    this.hue=(this.hue+0.3)%360;
+    this.segs.forEach((s,i)=>{
+      const t=this.phase-i*0.35;
+      s.setAttribute('cx',-i*8+Math.sin(t)*15*i*0.06);
+      s.setAttribute('cy',Math.cos(t)*8*i*0.08);
+      s.setAttribute('fill',`hsl(${this.hue+i*8},90%,${65-i*2}%)`);
+    });
+    this.wander(0,W,groundY-35,groundY-5);
+    const scaleX=this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.07;this.update();}
+}
+
+// ── CINDERFLY ─────────────────────────────────────────────────────────────
+class Cinderfly extends Being {
+  constructor(){
+    super({type:'cinderfly',label:'Cinderfly',speed:3,y:rand(groundY-150,groundY-20),
+      says:['Bright!','I burn bright!','Leave sparks everywhere!','Too fast!']
+    });
+  }
+  build(){
+    const body=el('ellipse',{cx:0,cy:0,rx:6,ry:3,fill:'#ff3300',filter:'url(#f5)'});
+    const head=el('circle',{cx:6,cy:-1,r:4,fill:'#ff5500',filter:'url(#f2)'});
+    this.wL=el('ellipse',{cx:0,cy:-6,rx:9,ry:4,fill:'rgba(255,150,50,0.5)',filter:'url(#f2)'});
+    this.wR=el('ellipse',{cx:0,cy:6,rx:9,ry:4,fill:'rgba(255,100,30,0.4)',filter:'url(#f2)'});
+    const glow=el('circle',{r:10,fill:'rgba(255,80,0,0.12)',filter:'url(#f10)'});
+    const tail=el('circle',{cx:-8,cy:0,r:3,fill:'#ffaa00',filter:'url(#f5)'});
+    [glow,this.wL,this.wR,body,head,tail].forEach(e=>this.el.appendChild(e));
+  }
+  update(){
+    const buzz=Math.sin(this.phase*10)*6;
+    this.wL.setAttribute('cy',-6+buzz); this.wR.setAttribute('cy',6-buzz);
+    // Fire trail
+    if(Math.random()<0.2){
+      const sp=el('circle',{cx:this.x,cy:this.y,r:rand(2,5),
+        fill:`hsl(${rand(10,45)},100%,${rand(55,70)}%)`,filter:'url(#f2)',opacity:0.7});
+      L['particles'].appendChild(sp);
+      let op=0.7;const ai=setInterval(()=>{op-=0.05;sp.setAttribute('opacity',op);sp.setAttribute('r',parseFloat(sp.getAttribute('r'))*1.05);if(op<=0){clearInterval(ai);sp.remove();}},20);
+    }
+    this.wander(0,W,groundY-180,groundY-10);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) rotate(${Math.atan2(this.vy,this.vx)*180/Math.PI})`);
+    return;
+  }
+  tick(){this.age++;this.phase+=0.12;this.update();}
+}
+
+// ── POPULATE ─────────────────────────────────────────────────────────────
+const beings=[];
+for(let i=0;i<8;i++) beings.push(new Solari());
+for(let i=0;i<3;i++) beings.push(new Blazemane());
+for(let i=0;i<6;i++) beings.push(new Sunfloater());
+for(let i=0;i<7;i++) beings.push(new Goldpouncer());
+for(let i=0;i<8;i++) beings.push(new Meadowglider());
+for(let i=0;i<10;i++) beings.push(new Rosewing());
+for(let i=0;i<20;i++) beings.push(new Dewsprite());
+for(let i=0;i<12;i++) beings.push(new Honeyback());
+for(let i=0;i<5;i++) beings.push(new Shimmerboa());
+for(let i=0;i<15;i++) beings.push(new Cinderfly());
+
+// ── JOY TEXTS ─────────────────────────────────────────────────────────────
+const joyWords=['WONDERFUL!','RADIANT!','SUNSHINE!','BLOOM!','GOLDEN!','JOY!','WARM!','BRIGHT!'];
+function showJoy(text){
+  const j=document.getElementById('joy-text');
+  j.textContent=text;
+  j.style.color='rgba(220,100,0,0.8)';
+  setTimeout(()=>{j.style.color='rgba(220,100,0,0)';},2500);
+}
+
+// ── CLICK ─────────────────────────────────────────────────────────────────
+svg.addEventListener('click',e=>{
+  const rect=svg.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  // Sunshine burst
+  for(let i=0;i<24;i++){
+    const angle=(i/24)*Math.PI*2;
+    const spd=rand(2,7),hue=rand(20,80);
+    const sp=el('circle',{cx:x,cy:y,r:rand(3,8),fill:`hsl(${hue},100%,65%)`});
+    L['particles'].appendChild(sp);
+    let vx=Math.cos(angle)*spd,vy=Math.sin(angle)*spd,lf=60;
+    const ai=setInterval(()=>{
+      lf--;vy+=0.1;
+      sp.setAttribute('cx',parseFloat(sp.getAttribute('cx'))+vx);
+      sp.setAttribute('cy',parseFloat(sp.getAttribute('cy'))+vy);
+      sp.setAttribute('opacity',lf/60);
+      sp.setAttribute('r',parseFloat(sp.getAttribute('r'))*(0.97));
+      if(lf<=0){clearInterval(ai);sp.remove();}
+    },16);
+  }
+  // Glow ring
+  const ring=el('circle',{cx:x,cy:y,r:10,fill:'none',stroke:'rgba(255,200,0,0.7)','stroke-width':3,filter:'url(#f5)'});
+  L['particles'].appendChild(ring);
+  let rr=10;
+  const ri=setInterval(()=>{rr+=6;ring.setAttribute('r',rr);ring.setAttribute('opacity',1-rr/180);if(rr>=180){clearInterval(ri);ring.remove();}},16);
+  showJoy(joyWords[randInt(0,joyWords.length-1)]);
+});
+
+// ── BLOOM EVENT ───────────────────────────────────────────────────────────
+const blooms=['Petal Rain','Sun Festival','Golden Hour','Spore Burst','Rainbow Mist'];
+function triggerBloom(b){
+  bloomEvent=b;
+  if(b==='Petal Rain'){
+    for(let i=0;i<40;i++){
+      setTimeout(()=>{
+        const petal=el('ellipse',{cx:rand(0,W),cy:-20,rx:rand(5,12),ry:rand(3,7),
+          fill:`hsl(${rand(300,360)},90%,${rand(60,80)}%)`,opacity:rand(0.6,0.9),
+          transform:`rotate(${rand(0,180)})`});
+        L['particles'].appendChild(petal);
+        let py=-20,vx=rand(-0.5,0.5),lf=150;
+        const ai=setInterval(()=>{
+          lf--;py+=1.5;
+          petal.setAttribute('cy',py); petal.setAttribute('cx',parseFloat(petal.getAttribute('cx'))+vx+Math.sin(lf*0.05)*0.5);
+          if(py>H+20||lf<=0){clearInterval(ai);petal.remove();}
+        },20);
+      },i*80);
+    }
+  }
+  if(b==='Spore Burst'){
+    for(let i=0;i<60;i++){
+      const sp=el('circle',{cx:rand(0,W),cy:rand(groundY-200,groundY),r:rand(2,8),
+        fill:`hsl(${rand(40,120)},90%,65%)`,opacity:rand(0.3,0.7),filter:'url(#f2)'});
+      L['particles'].appendChild(sp);
+      let vy=rand(-2,-0.3),lf=120;
+      const ai=setInterval(()=>{lf--;vy*=0.99;sp.setAttribute('cy',parseFloat(sp.getAttribute('cy'))+vy);sp.setAttribute('opacity',lf/120*0.7);if(lf<=0){clearInterval(ai);sp.remove();}},20);
+    }
+  }
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────────────
+function animate(){
+  frame++;
+  if(frame%3600===0) seasonCycle++;
+
+  // Sun rays animate
+  rayEls.forEach(r=>{
+    r.phase+=0.04;
+    const len=r.baseLen+Math.sin(r.phase)*15;
+    r.el.setAttribute('x2',sunX+Math.cos(r.angle)*len);
+    r.el.setAttribute('y2',sunY+Math.sin(r.angle)*len);
+    r.el.setAttribute('opacity',0.3+Math.abs(Math.sin(r.phase))*0.5);
+  });
+  sunEl.setAttribute('r',37+Math.sin(frame*0.02)*2);
+  sunGlow.setAttribute('r',88+Math.sin(frame*0.015)*8);
+
+  // Clouds drift
+  clouds.forEach(c=>{
+    c.phase+=c.speed*0.01;
+    const newX=c.baseX+Math.sin(c.phase)*30+frame*c.speed*0.1;
+    const dx=newX-c.x;
+    c.x=newX; c.phase+=0.003;
+    // Move all children
+    c.el.childNodes.forEach(child=>{
+      if(child.nodeName==='circle'||child.nodeName==='ellipse'){
+        child.setAttribute('cx',parseFloat(child.getAttribute('cx'))+dx);
+      }
+    });
+    if(c.x>W+200){c.baseX=-300; c.x=-300; c.el.childNodes.forEach(ch=>{if(ch.nodeName==='circle'||ch.nodeName==='ellipse'){ch.setAttribute('cx',parseFloat(ch.getAttribute('cx'))-W-500);}});}
+  });
+
+  // Flora
+  floraAll.forEach(f=>{
+    f.phase+=0.02;
+    if(f.type==='grass'&&f.bladeEl){
+      const sway=Math.sin(f.phase+f.x*0.01)*10;
+      f.bladeEl.setAttribute('d',`M${f.x},${f.y} Q${f.x+sway},${f.y-f.h*0.5} ${f.x+sway*0.7},${f.y-f.h}`);
+    }
+  });
+
+  // Spore puffs
+  sporePuffs.forEach(p=>{
+    p.phase+=0.02; p.y+=p.vy; p.x+=p.vx+Math.sin(p.phase)*0.2;
+    if(p.y<-20){p.y=groundY+10; p.x=rand(0,W);}
+    if(p.x<-20)p.x=W+20; if(p.x>W+20)p.x=-20;
+    p.el.setAttribute('cx',p.x); p.el.setAttribute('cy',p.y);
+    p.el.setAttribute('opacity',0.3+Math.abs(Math.sin(p.phase))*0.5);
+  });
+
+  // Beings
+  beings.forEach(b=>b.tick());
+
+  // Bloom events
+  bloomTimer++;
+  if(bloomTimer>700){bloomTimer=0; triggerBloom(blooms[randInt(0,blooms.length-1)]);}
+
+  // Sky color shifts slightly with time
+  const warmth=0.5+Math.sin(frame*0.001)*0.3;
+  document.getElementById('sk1').setAttribute('stop-color',`hsl(${38+warmth*10},100%,${75+warmth*5}%)`);
+
+  // HUD
+  const solInt=['Brilliant','Radiant','Bright','Blazing','Golden'][Math.floor((Math.sin(frame*0.002)*0.5+0.5)*5)%5];
+  document.getElementById('temp-v').textContent=['Warm','Hot','Balmy','Toasty','Perfect'][randInt(0,4)];
+  document.getElementById('sol-v').textContent=solInt;
+  document.getElementById('bloom-v').textContent=bloomEvent;
+  document.getElementById('joy-v').textContent=`${Math.floor(95+Math.sin(frame*0.01)*5)}%`;
+  document.getElementById('cyc-v').textContent=seasonCycle;
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+// Greeting
+setTimeout(()=>showJoy('WELCOME TO SOLARA! ☀'),800);
+</script>
+</body>
+</html>

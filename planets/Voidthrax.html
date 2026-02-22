@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vøid-Thræx · Vy'krath Home World</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ocean-deep:   #010a12;
+  --ocean-mid:    #021a2e;
+  --ocean-glow:   #003a5c;
+  --biolume:      #00ffe7;
+  --biolume2:     #7affb2;
+  --coral:        #ff4ea3;
+  --void-purple:  #6a0aff;
+  --sky-top:      #000510;
+  --sky-mid:      #010d1a;
+  --aurora1:      rgba(0,255,200,0.18);
+  --aurora2:      rgba(100,0,255,0.12);
+  --moon1:        #d4eeff;
+  --moon2:        #ffe8a0;
+  --island-rock:  #1a0a2e;
+  --island-soil:  #2a1040;
+  --sand:         #c8a87a;
+  --obsidian:     #0d0014;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--sky-top);
+  font-family: 'Crimson Pro', Georgia, serif;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position: fixed;
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--biolume);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, border-color 0.3s;
+  box-shadow: 0 0 8px var(--biolume);
+}
+#cursor-dot {
+  position: fixed;
+  width: 4px; height: 4px;
+  background: var(--biolume);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+}
+
+/* ── FULL SCENE CANVAS WRAPPER ── */
+#scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ── SKY LAYER ── */
+#sky {
+  position: absolute;
+  inset: 0;
+  height: 62%;
+  background: radial-gradient(ellipse at 30% 0%, #010d2a, #000510 55%, #000208);
+}
+
+/* ── AURORA BANDS ── */
+.aurora {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 180px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0;
+  animation: auroraFlow var(--dur) ease-in-out infinite alternate;
+}
+
+.aurora-1 {
+  top: 3%;
+  background: linear-gradient(90deg, transparent 0%, var(--aurora1) 30%, transparent 60%, var(--aurora2) 80%, transparent);
+  --dur: 9s;
+  animation-delay: 0s;
+}
+
+.aurora-2 {
+  top: 8%;
+  background: linear-gradient(90deg, var(--aurora2) 0%, transparent 40%, var(--aurora1) 70%, transparent);
+  --dur: 12s;
+  animation-delay: -4s;
+  height: 120px;
+}
+
+.aurora-3 {
+  top: 14%;
+  background: linear-gradient(90deg, transparent 20%, rgba(0,180,255,0.08) 50%, transparent 70%);
+  --dur: 15s;
+  animation-delay: -7s;
+  height: 90px;
+}
+
+@keyframes auroraFlow {
+  0%   { opacity: 0.3; transform: translateX(-5%) scaleY(0.8); }
+  50%  { opacity: 0.9; transform: translateX(3%) scaleY(1.2); }
+  100% { opacity: 0.4; transform: translateX(8%) scaleY(0.9); }
+}
+
+/* ── STARS ── */
+#stars {
+  position: absolute;
+  inset: 0;
+  height: 65%;
+}
+
+.star-px {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: starTwinkle var(--sd) infinite alternate;
+}
+
+@keyframes starTwinkle {
+  from { opacity: var(--sa); transform: scale(1); }
+  to   { opacity: 1; transform: scale(1.5); }
+}
+
+/* ── DISTANT PLANET ── */
+#distant-planet {
+  position: absolute;
+  top: 6%;
+  right: 12%;
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4a2060, #1a0830 60%, #0a0418);
+  box-shadow: 0 0 30px rgba(100,0,200,0.3), inset -15px -10px 30px rgba(0,0,0,0.6);
+  animation: planetDrift 40s ease-in-out infinite alternate;
+}
+
+#distant-planet::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -20%;
+  width: 140%;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(150,80,220,0.35);
+  transform: rotateX(72deg);
+}
+
+@keyframes planetDrift {
+  from { transform: translateY(0px); }
+  to   { transform: translateY(-8px); }
+}
+
+/* ── MOON 1 (large, pale blue) ── */
+#moon1 {
+  position: absolute;
+  top: 5%;
+  left: 8%;
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #e8f8ff, #a8d4ee 45%, #5090b0 75%, #204060);
+  box-shadow: 0 0 50px rgba(150,220,255,0.25), inset -22px -18px 40px rgba(0,20,40,0.5);
+  animation: moonBob 22s ease-in-out infinite alternate;
+}
+
+/* crater details */
+#moon1::before {
+  content: '';
+  position: absolute;
+  top: 28%; left: 55%;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(100,160,200,0.4);
+  box-shadow: -20px 18px 0 8px rgba(80,130,180,0.3), 12px 30px 0 5px rgba(80,130,180,0.25);
+}
+
+@keyframes moonBob {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-12px); }
+}
+
+/* ── MOON 2 (small, amber) ── */
+#moon2 {
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff0b0, #e8c060 50%, #a07020 80%, #4a3010);
+  box-shadow: 0 0 20px rgba(255,210,80,0.2), inset -8px -6px 16px rgba(0,0,0,0.5);
+  animation: moonBob2 17s ease-in-out infinite alternate;
+}
+
+@keyframes moonBob2 {
+  from { transform: translateY(0) rotate(0deg); }
+  to   { transform: translateY(-6px) rotate(3deg); }
+}
+
+/* ── ATMOSPHERIC HAZE ── */
+#atmo-haze {
+  position: absolute;
+  bottom: 38%;
+  left: 0; right: 0;
+  height: 120px;
+  background: linear-gradient(0deg, rgba(0,30,60,0.8), rgba(0,10,30,0.4) 40%, transparent);
+  filter: blur(4px);
+}
+
+/* ── OCEAN MAIN CANVAS ── */
+#ocean-canvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+}
+
+/* ── FLOATING SPORES ── */
+.spore {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sporeFloat var(--sf) ease-in-out infinite;
+}
+
+@keyframes sporeFloat {
+  0%   { transform: translate(0, 0) scale(1); opacity: var(--so); }
+  33%  { transform: translate(var(--sx), calc(var(--sy) * -1)) scale(1.2); }
+  66%  { transform: translate(calc(var(--sx) * -0.5), calc(var(--sy) * -1.8)) scale(0.9); }
+  100% { transform: translate(0, calc(var(--sy) * -3)) scale(0); opacity: 0; }
+}
+
+/* ── ISLAND LAYERS (CSS) ── */
+.island-label {
+  position: absolute;
+  font-family: 'Cinzel Decorative', serif;
+  color: rgba(0,255,230,0.7);
+  text-shadow: 0 0 12px rgba(0,255,200,0.5);
+  letter-spacing: 0.15em;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: labelPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes labelPulse {
+  from { opacity: 0.5; }
+  to   { opacity: 0.9; }
+}
+
+/* ── INFO PANEL ── */
+#info-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 280px;
+  background: rgba(1,8,20,0.88);
+  border-left: 1px solid rgba(0,255,230,0.12);
+  border-bottom: 1px solid rgba(0,255,230,0.12);
+  border-bottom-left-radius: 12px;
+  padding: 22px 20px 20px;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  animation: panelReveal 1.5s ease 0.5s backwards;
+}
+
+@keyframes panelReveal {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+#info-panel h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.05rem;
+  color: var(--biolume);
+  text-shadow: 0 0 12px var(--biolume);
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+.panel-glyph {
+  font-size: 0.72rem;
+  color: rgba(0,255,200,0.4);
+  letter-spacing: 0.2em;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.panel-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.78rem;
+}
+
+.panel-key { color: rgba(150,200,220,0.6); letter-spacing: 0.08em; }
+.panel-val { color: var(--biolume); font-family: 'Cinzel Decorative', serif; font-size: 0.65rem; }
+
+.panel-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,200,0.2), transparent);
+  margin: 12px 0;
+}
+
+#island-info {
+  font-size: 0.8rem;
+  color: rgba(170,220,210,0.7);
+  line-height: 1.7;
+  min-height: 60px;
+  font-style: italic;
+}
+
+#island-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.85rem;
+  color: var(--coral);
+  text-shadow: 0 0 10px rgba(255,78,163,0.4);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ── BOTTOM TITLE ── */
+#world-title {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(0deg, rgba(0,4,12,0.9), transparent);
+  pointer-events: none;
+  z-index: 50;
+}
+
+#world-title h1 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(1.2rem, 3.5vw, 2.2rem);
+  color: rgba(0,255,230,0.85);
+  text-shadow: 0 0 30px rgba(0,255,200,0.3), 0 0 60px rgba(0,200,180,0.15);
+  letter-spacing: 0.25em;
+}
+
+#world-title p {
+  font-size: 0.75rem;
+  letter-spacing: 0.35em;
+  color: rgba(0,200,180,0.4);
+  margin-top: 4px;
+}
+
+/* ── HOVER RIPPLE ── */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0,255,220,0.5);
+  pointer-events: none;
+  animation: rippleExpand 1.4s ease-out forwards;
+}
+
+@keyframes rippleExpand {
+  from { transform: translate(-50%,-50%) scale(0); opacity: 0.7; }
+  to   { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+
+/* ── SCAN LINE ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,200,0.008) 3px, rgba(0,255,200,0.008) 4px);
+  pointer-events: none;
+  z-index: 999;
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+
+<div id="scene">
+
+  <!-- Sky -->
+  <div id="sky"></div>
+
+  <!-- Stars -->
+  <div id="stars"></div>
+
+  <!-- Aurora bands -->
+  <div class="aurora aurora-1"></div>
+  <div class="aurora aurora-2"></div>
+  <div class="aurora aurora-3"></div>
+
+  <!-- Celestial bodies -->
+  <div id="moon1"></div>
+  <div id="moon2"></div>
+  <div id="distant-planet"></div>
+
+  <!-- Atmospheric haze at horizon -->
+  <div id="atmo-haze"></div>
+
+  <!-- Main canvas: ocean + islands -->
+  <canvas id="ocean-canvas"></canvas>
+
+  <!-- Spore container -->
+  <div id="spores"></div>
+
+  <!-- Island name labels -->
+  <div id="labels"></div>
+
+</div>
+
+<!-- Info Panel -->
+<div id="info-panel">
+  <h2>Vøid-Thræx</h2>
+  <span class="panel-glyph">ꗁ𒐫ꖐ𒀭ꗟ · VY'KRATH HOME WORLD</span>
+  <div class="panel-row"><span class="panel-key">ORBIT</span><span class="panel-val">Null-Star Ω</span></div>
+  <div class="panel-row"><span class="panel-key">OCEANS</span><span class="panel-val">97.4% SURFACE</span></div>
+  <div class="panel-row"><span class="panel-key">MOONS</span><span class="panel-val">2 · KETH & VRAAL</span></div>
+  <div class="panel-row"><span class="panel-key">ATMO</span><span class="panel-val">VOID-METHANE</span></div>
+  <div class="panel-row"><span class="panel-key">BIOLUME TIDE</span><span class="panel-val">PERPETUAL</span></div>
+  <div class="panel-row"><span class="panel-key">LAND MASS</span><span class="panel-val">2.6% — OBSIDIAN</span></div>
+  <div class="panel-divider"></div>
+  <span id="island-name">Hover over an island</span>
+  <div id="island-info">Move your cursor across the world to explore the obsidian islands of Vøid-Thræx…</div>
+</div>
+
+<!-- Title -->
+<div id="world-title">
+  <h1>V Ø I D - T H R Æ X</h1>
+  <p>ꗁ𒐫ꖐ𒀭ꗟ𒅒ꖸ𒐪 · HOME WORLD OF THE VY'KRATH-NULL · DARK SECTOR Ω-9</p>
+</div>
+
+<script>
+// ── Custom cursor
+const cursor = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursor-dot');
+let mx = 0, my = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+  cursorDot.style.left = mx + 'px';
+  cursorDot.style.top = my + 'px';
+});
+
+// ── Stars
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 280; i++) {
+  const s = document.createElement('div');
+  s.className = 'star-px';
+  const sz = Math.random() * 2 + 0.4;
+  const hue = Math.random() < 0.15 ? `hsl(${180+Math.random()*40},80%,90%)` : 'white';
+  s.style.cssText = `
+    width:${sz}px; height:${sz}px;
+    left:${Math.random()*100}%; top:${Math.random()*80}%;
+    background:${hue};
+    --sd:${Math.random()*4+2}s; --sa:${Math.random()*0.4+0.1};
+    animation-delay:${Math.random()*5}s;
+  `;
+  starsEl.appendChild(s);
+}
+
+// ── Canvas setup
+const canvas = document.getElementById('ocean-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+
+// Island data with lore
+const islands = [
+  {
+    name: "Keth'Vaur — 𒀭ꗁꖸ",
+    cx: 0.18, cy: 0.42,
+    rx: 110, ry: 55,
+    color: '#0d0018',
+    accent: '#1a0030',
+    flora: '#ff4ea3',
+    floraGlow: 'rgba(255,78,163,0.6)',
+    spireColor: '#3a005a',
+    lore: "The ancient capital island. Obsidian spires pierce the void-methane atmosphere. The Hive Mind signal originates from the deep crystal caverns beneath its shores.",
+    label: { ox: 0, oy: -70 }
+  },
+  {
+    name: "Vraal-Snek — ꗟꖡ𒐪",
+    cx: 0.52, cy: 0.35,
+    rx: 70, ry: 38,
+    color: '#0a0020',
+    accent: '#15003a',
+    flora: '#39ff14',
+    floraGlow: 'rgba(57,255,20,0.5)',
+    spireColor: '#204000',
+    lore: "A volatile island wracked with void-geysers. Bioluminescent spore-forests blanket the interior. Vy'krath war-forms are born and metamorphosed here in the hot springs.",
+    label: { ox: 0, oy: -55 }
+  },
+  {
+    name: "Nul-Thrix — ꖦ𒅒ꗥ",
+    cx: 0.76, cy: 0.50,
+    rx: 55, ry: 28,
+    color: '#100010',
+    accent: '#200020',
+    flora: '#00ffe7',
+    floraGlow: 'rgba(0,255,231,0.5)',
+    spireColor: '#004040',
+    lore: "A crescent-shaped atoll of razor obsidian. The Temporal Archive crystalline fields grow here, storing stolen timelines in formations that resemble frozen screams.",
+    label: { ox: 0, oy: -48 }
+  },
+  {
+    name: "Ψ-Fragment — 𒐫ꗥꖡ",
+    cx: 0.35, cy: 0.62,
+    rx: 38, ry: 18,
+    color: '#0a0012',
+    accent: '#180028',
+    flora: '#ff6a00',
+    floraGlow: 'rgba(255,106,0,0.5)',
+    spireColor: '#3a1500',
+    lore: "A shattered remnant of a larger continent, torn apart in the Void Rift incident 4,000 cycles ago. Soul extraction rituals are performed at its fractured edge.",
+    label: { ox: 0, oy: -38 }
+  },
+  {
+    name: "Krath-Spire — 𒐪ꗁꖸ",
+    cx: 0.62, cy: 0.68,
+    rx: 28, ry: 14,
+    color: '#080012',
+    accent: '#12001e',
+    flora: '#bf00ff',
+    floraGlow: 'rgba(191,0,255,0.5)',
+    spireColor: '#2a005a',
+    lore: "A single needle of void-glass rising from the deep. The Vy'krath use it as a psychic antenna, amplifying the Hive Mind signal across 40 star systems.",
+    label: { ox: 0, oy: -34 }
+  },
+];
+
+// ── Parallax offset
+let px = 0, py = 0;
+document.addEventListener('mousemove', e => {
+  px = (e.clientX / window.innerWidth - 0.5) * 18;
+  py = (e.clientY / window.innerHeight - 0.5) * 8;
+});
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = canvas.offsetHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Draw wave strip
+function drawWave(y, amp, period, speed, phase, color, alpha) {
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let x = 0; x <= W + 2; x += 2) {
+    const wx = x + px * 0.5;
+    const wy = y
+      + Math.sin((wx / period) + t * speed + phase) * amp
+      + Math.sin((wx / (period * 0.6)) + t * speed * 1.4 + phase * 2) * (amp * 0.4)
+      + Math.sin((wx / (period * 1.8)) + t * speed * 0.7) * (amp * 0.25);
+    ctx.lineTo(x, wy);
+  }
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ── Biolume glow on water surface
+function drawBiolumeSurface(y, amp, period, speed) {
+  for (let x = 0; x < W; x += 3) {
+    const wx = x + px * 0.5;
+    const wy = y
+      + Math.sin((wx / period) + t * speed) * amp
+      + Math.sin((wx / (period * 0.55)) + t * speed * 1.5) * (amp * 0.35);
+    const intensity = (Math.sin((wx / 120) + t * 0.8) + 1) * 0.5;
+    const alpha = 0.04 + intensity * 0.12;
+    ctx.beginPath();
+    ctx.arc(x, wy, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,255,200,${alpha})`;
+    ctx.fill();
+  }
+}
+
+// ── Draw an island
+function drawIsland(isl) {
+  const cx = isl.cx * W + px * (0.5 + isl.cy * 0.3);
+  const cy = isl.cy * H + py * 0.6;
+  const rx = isl.rx, ry = isl.ry;
+
+  // Glow halo under island
+  const glowR = ctx.createRadialGradient(cx, cy + ry * 0.3, 0, cx, cy + ry * 0.3, rx * 1.8);
+  glowR.addColorStop(0, isl.floraGlow.replace('0.5', '0.08'));
+  glowR.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + ry * 0.3, rx * 1.8, ry * 1.2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = glowR;
+  ctx.fill();
+
+  // Water reflection
+  const reflGrad = ctx.createLinearGradient(cx, cy + ry, cx, cy + ry * 2.5);
+  reflGrad.addColorStop(0, isl.floraGlow.replace('0.5', '0.12'));
+  reflGrad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + ry * 1.5, rx * 0.85, ry * 1.0, 0, 0, Math.PI * 2);
+  ctx.fillStyle = reflGrad;
+  ctx.fill();
+
+  // Shore shadow
+  const shoreGrad = ctx.createRadialGradient(cx, cy + ry * 0.1, rx * 0.3, cx, cy + ry * 0.1, rx * 1.1);
+  shoreGrad.addColorStop(0, isl.color);
+  shoreGrad.addColorStop(0.7, isl.color);
+  shoreGrad.addColorStop(1, 'rgba(0,40,60,0.6)');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + ry * 0.1, rx, ry * 0.9, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shoreGrad;
+  ctx.fill();
+
+  // Sandy/obsidian beach ring
+  const beachGrad = ctx.createRadialGradient(cx, cy, rx * 0.55, cx, cy, rx * 1.0);
+  beachGrad.addColorStop(0, isl.accent);
+  beachGrad.addColorStop(0.75, isl.color);
+  beachGrad.addColorStop(1, 'rgba(0,10,20,0)');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fillStyle = beachGrad;
+  ctx.fill();
+
+  // Main island body
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - ry * 0.08, rx * 0.88, ry * 0.82, 0, 0, Math.PI * 2);
+  ctx.fillStyle = isl.color;
+  ctx.fill();
+
+  // Terrain ridge detail
+  ctx.beginPath();
+  ctx.ellipse(cx + rx * 0.05, cy - ry * 0.2, rx * 0.55, ry * 0.55, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = isl.accent;
+  ctx.fill();
+
+  // Spires / rock formations
+  const numSpires = Math.floor(rx / 20) + 2;
+  for (let i = 0; i < numSpires; i++) {
+    const sx = cx + (Math.random() - 0.5) * rx * 1.1;
+    const sy = cy + (Math.random() - 0.5) * ry * 0.8;
+    const sh = rx * (0.18 + Math.random() * 0.32);
+    const sw = sh * (0.1 + Math.random() * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(sx - sw, sy);
+    ctx.lineTo(sx + sw, sy);
+    ctx.lineTo(sx, sy - sh);
+    ctx.closePath();
+    ctx.fillStyle = isl.spireColor;
+    ctx.fill();
+  }
+
+  // Bioluminescent flora dots / trees
+  const numFlora = Math.floor(rx / 8);
+  for (let i = 0; i < numFlora; i++) {
+    const angle = (i / numFlora) * Math.PI * 2;
+    const dist = rx * (0.25 + Math.random() * 0.5);
+    const fx = cx + Math.cos(angle) * dist;
+    const fy = cy + Math.sin(angle) * dist * (ry / rx);
+    const fr = 3 + Math.random() * 5;
+    const glowAlpha = 0.4 + Math.sin(t * 1.5 + i * 0.7) * 0.25;
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = isl.floraGlow.replace('0.5)', `${glowAlpha * 0.2})`);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+    ctx.fillStyle = isl.flora;
+    ctx.globalAlpha = glowAlpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Shoreline foam ring
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + ry * 0.05, rx * 1.05, ry * 1.0, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(0,255,200,${0.08 + Math.sin(t * 2) * 0.04})`;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// ── Hit test for islands
+function getIslandUnder(mx, my) {
+  const cx0 = canvas.getBoundingClientRect().top;
+  const relY = my - cx0;
+  for (const isl of islands) {
+    const cx = isl.cx * W + px * (0.5 + isl.cy * 0.3);
+    const cy = isl.cy * H + py * 0.6;
+    const dx = (mx - cx) / isl.rx;
+    const dy = (relY - cy) / isl.ry;
+    if (dx * dx + dy * dy < 1.2) return isl;
+  }
+  return null;
+}
+
+// ── Info panel
+const islandName = document.getElementById('island-name');
+const islandInfo = document.getElementById('island-info');
+let currentIsland = null;
+
+document.addEventListener('mousemove', e => {
+  const isl = getIslandUnder(e.clientX, e.clientY);
+  if (isl && isl !== currentIsland) {
+    currentIsland = isl;
+    islandName.textContent = isl.name;
+    islandInfo.textContent = isl.lore;
+    islandName.style.color = isl.flora;
+    islandName.style.textShadow = `0 0 10px ${isl.floraGlow}`;
+  } else if (!isl) {
+    currentIsland = null;
+    islandName.textContent = 'Hover over an island';
+    islandInfo.textContent = "Move your cursor across the world to explore the obsidian islands of Vøid-Thræx…";
+    islandName.style.color = '';
+    islandName.style.textShadow = '';
+  }
+});
+
+// ── Click ripple
+canvas.addEventListener('click', e => {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const size = 80 + Math.random() * 120;
+  r.style.cssText = `left:${e.clientX}px; top:${e.clientY}px; width:${size}px; height:${size}px;`;
+  document.getElementById('scene').appendChild(r);
+  setTimeout(() => r.remove(), 1500);
+});
+
+// ── Biolume sparkle particles on water
+const sparkles = [];
+function addSparkle() {
+  const canvasRect = canvas.getBoundingClientRect();
+  sparkles.push({
+    x: Math.random() * W,
+    y: canvasRect.top + Math.random() * H * 0.6 + H * 0.1,
+    life: 1,
+    size: Math.random() * 3 + 1,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: -Math.random() * 0.6 - 0.2,
+    color: Math.random() < 0.6 ? '0,255,200' : Math.random() < 0.5 ? '57,255,20' : '191,100,255',
+  });
+}
+setInterval(addSparkle, 60);
+
+// ── Spores (CSS particles)
+const sporeContainer = document.getElementById('spores');
+function addSpore() {
+  const s = document.createElement('div');
+  s.className = 'spore';
+  const x = Math.random() * 100;
+  const size = Math.random() * 5 + 2;
+  const colors = ['rgba(0,255,200', 'rgba(57,255,20', 'rgba(255,78,163', 'rgba(191,0,255'];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  const dur = Math.random() * 6 + 5;
+  const opacity = Math.random() * 0.6 + 0.2;
+  s.style.cssText = `
+    left:${x}%; bottom:${30 + Math.random() * 30}%;
+    width:${size}px; height:${size}px;
+    background:${color},${opacity});
+    box-shadow: 0 0 ${size * 3}px ${color},${opacity * 0.5});
+    --sf:${dur}s; --so:${opacity};
+    --sx:${(Math.random()-0.5)*30}px; --sy:${Math.random()*20+10}px;
+    animation-delay:${Math.random() * dur}s;
+  `;
+  sporeContainer.appendChild(s);
+  setTimeout(() => s.remove(), (dur + 2) * 1000);
+}
+setInterval(addSpore, 300);
+
+// ── Main render loop
+function draw() {
+  t += 0.006;
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep ocean base
+  const oceanGrad = ctx.createLinearGradient(0, 0, 0, H);
+  oceanGrad.addColorStop(0, '#010f20');
+  oceanGrad.addColorStop(0.4, '#010c18');
+  oceanGrad.addColorStop(1, '#000510');
+  ctx.fillStyle = oceanGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bioluminescent depth glow
+  for (let i = 0; i < 5; i++) {
+    const gx = (Math.sin(t * 0.2 + i * 1.3) * 0.5 + 0.5) * W;
+    const gy = H * (0.4 + i * 0.1);
+    const gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 200 + i * 80);
+    gr.addColorStop(0, `rgba(0,80,60,${0.06 + i * 0.01})`);
+    gr.addColorStop(1, 'transparent');
+    ctx.fillStyle = gr;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Wave layers — deep to surface
+  drawWave(H * 0.72 + py * 0.3, 18, 700, 0.12, 0.0, '#010c1a', 1);
+  drawWave(H * 0.65 + py * 0.3, 22, 500, 0.18, 1.2, '#011018', 0.8);
+  drawWave(H * 0.58 + py * 0.3, 28, 380, 0.25, 2.5, 'rgba(0,20,40,0.7)', 0.7);
+  drawWave(H * 0.52 + py * 0.3, 18, 260, 0.35, 0.8, 'rgba(0,15,30,0.5)', 0.5);
+
+  // Horizon glow
+  const hGrad = ctx.createLinearGradient(0, 0, 0, H * 0.25);
+  hGrad.addColorStop(0, 'rgba(0,80,70,0.18)');
+  hGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = hGrad;
+  ctx.fillRect(0, 0, W, H * 0.25);
+
+  // Draw islands (back to front)
+  const sortedIslands = [...islands].sort((a, b) => a.cy - b.cy);
+  for (const isl of sortedIslands) {
+    drawIsland(isl);
+  }
+
+  // Surface bioluminescence
+  drawBiolumeSurface(H * 0.48 + py * 0.3, 18, 380, 0.28);
+
+  // Fine wave highlights
+  for (let i = 0; i < 8; i++) {
+    const y = H * (0.15 + i * 0.1) + py * 0.2;
+    const amp = 6 + i * 2;
+    const per = 200 + i * 80;
+    const sp = 0.4 + i * 0.07;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 4) {
+      const wy = y + Math.sin((x / per) + t * sp + i) * amp;
+      if (x === 0) ctx.moveTo(x, wy); else ctx.lineTo(x, wy);
+    }
+    ctx.strokeStyle = `rgba(0,255,200,${0.015 + i * 0.008})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Sparkle particles
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    const sp = sparkles[i];
+    const canvasTop = canvas.getBoundingClientRect().top;
+    const localY = sp.y - canvasTop;
+    sp.x += sp.vx;
+    sp.y += sp.vy;
+    sp.life -= 0.018;
+    if (sp.life <= 0) { sparkles.splice(i, 1); continue; }
+    ctx.beginPath();
+    ctx.arc(sp.x, localY, sp.size * sp.life, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${sp.color},${sp.life * 0.8})`;
+    ctx.fill();
+    // glow
+    ctx.beginPath();
+    ctx.arc(sp.x, localY, sp.size * sp.life * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${sp.color},${sp.life * 0.15})`;
+    ctx.fill();
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ── Island labels (DOM overlay, sync with canvas)
+function updateLabels() {
+  const labelsEl = document.getElementById('labels');
+  labelsEl.innerHTML = '';
+  const canvasRect = canvas.getBoundingClientRect();
+  islands.forEach(isl => {
+    const cx = isl.cx * W + px * (0.5 + isl.cy * 0.3);
+    const cy = isl.cy * H + py * 0.6;
+    const screenX = cx;
+    const screenY = canvasRect.top + cy + isl.label.oy;
+    const label = document.createElement('div');
+    label.className = 'island-label';
+    label.style.cssText = `
+      left: ${screenX}px;
+      top: ${screenY}px;
+      transform: translateX(-50%);
+      font-size: ${0.55 + isl.rx * 0.003}rem;
+      color: ${isl.flora}aa;
+      text-shadow: 0 0 10px ${isl.floraGlow};
+    `;
+    label.textContent = isl.name.split(' — ')[0];
+    labelsEl.appendChild(label);
+  });
+}
+
+setInterval(updateLabels, 30);
+</script>
+</body>
+</html>

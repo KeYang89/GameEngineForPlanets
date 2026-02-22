@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yxara & Vel — The Twin Worlds</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yxara: #7fffd4;
+    --vel: #ff6b6b;
+    --deep: #03050f;
+    --text: #e8dcc8;
+    --glow-y: 0 0 40px #7fffd480;
+    --glow-v: 0 0 40px #ff6b6b80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  #cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: white;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    transition: transform 0.1s;
+  }
+
+  /* STARFIELD */
+  #stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* MAIN SCENE */
+  #scene {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  #orbit-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* PLANET WRAPPERS */
+  .planet-wrapper {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+  }
+
+  .planet-canvas {
+    border-radius: 50%;
+    transition: transform 0.4s ease;
+  }
+
+  .planet-wrapper:hover .planet-canvas {
+    transform: scale(1.06);
+  }
+
+  .planet-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+
+  .planet-wrapper:hover .planet-label { opacity: 1; }
+
+  /* INFO PANEL */
+  #panel {
+    position: fixed;
+    right: -420px;
+    top: 0;
+    bottom: 0;
+    width: 420px;
+    background: linear-gradient(135deg, rgba(5,10,30,0.97), rgba(10,5,25,0.97));
+    border-left: 1px solid rgba(255,255,255,0.08);
+    padding: 60px 40px;
+    z-index: 100;
+    overflow-y: auto;
+    transition: right 0.6s cubic-bezier(0.4,0,0.2,1);
+    backdrop-filter: blur(20px);
+  }
+
+  #panel.open { right: 0; }
+
+  #panel-close {
+    position: absolute;
+    top: 24px; right: 24px;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s;
+  }
+
+  #panel-close:hover { border-color: rgba(255,255,255,0.6); }
+
+  #panel-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.8rem;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  #panel-subtitle {
+    font-style: italic;
+    font-size: 1rem;
+    opacity: 0.5;
+    margin-bottom: 32px;
+    letter-spacing: 0.05em;
+  }
+
+  .panel-section { margin-bottom: 28px; }
+
+  .panel-section h3 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 10px;
+  }
+
+  .panel-section p {
+    font-size: 1rem;
+    line-height: 1.75;
+    font-weight: 300;
+    opacity: 0.85;
+  }
+
+  .life-form {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .life-icon {
+    width: 44px; height: 44px;
+    flex-shrink: 0;
+  }
+
+  .life-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+  }
+
+  .life-desc {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    opacity: 0.7;
+    font-weight: 300;
+  }
+
+  /* HEADER / TITLE */
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  #header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+    opacity: 0.4;
+  }
+
+  #header p {
+    font-style: italic;
+    font-size: 0.85rem;
+    opacity: 0.3;
+    letter-spacing: 0.1em;
+  }
+
+  /* BRIDGE CONNECTION */
+  #bridge-info {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  #bridge-info p {
+    font-style: italic;
+    font-size: 0.85rem;
+    opacity: 0.35;
+    letter-spacing: 0.15em;
+  }
+
+  /* Lifeform SVG animations */
+  .float-anim { animation: float 4s ease-in-out infinite; }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .pulse-anim { animation: pulse 2.5s ease-in-out infinite; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* scrollbar */
+  #panel::-webkit-scrollbar { width: 4px; }
+  #panel::-webkit-scrollbar-track { background: transparent; }
+  #panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* VISIT BUTTON */
+  #panel-visit {
+    display: block;
+    width: 100%;
+    margin-bottom: 32px;
+    padding: 16px 24px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, opacity 0.25s;
+    opacity: 0.7;
+  }
+  #panel-visit:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.5); opacity: 1; }
+
+  /* TRANSITION WIPE */
+  #wipe {
+    position: fixed; inset: 0;
+    background: #03050f;
+    z-index: 99999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  #wipe.go { opacity: 1; pointer-events: all; }
+</style>
+</head>
+<body>
+<!-- Yxara — The Crystal World
+A dense, aquamarine planet blanketed in 200-meter silicate crystal forests on its day-side and a frozen luminescent ocean on its night-side. Life clusters on the terminator ring. Its biosphere may be collectively sentient — the Chord Fungi form a 40,000 km neural network beneath the surface, with Spire Weavers as its antennae and Drift Mantas as its airborne couriers.
+Vel — The Ember World
+A thin-crusted volcanic hell where nothing lives on the ground. Life evolved 8–12 km above the surface on buoyant silicate sky-islands kept permanently aloft by superheated convection. Ashroot Anchors are the foundation trees; Magma Harvesters are thermosynthetic armored arthropods; Ember Drifters are balloon creatures that travel between sky islands — and occasionally catch Yxaran spores from the magnetic filament, creating hybrid organisms found on both worlds. -->
+<div id="wipe"></div>
+<div id="cursor"></div>
+
+<!-- Starfield -->
+<canvas id="stars"></canvas>
+
+<!-- Header -->
+<div id="header">
+  <h1>The Twin Worlds</h1>
+  <p>Click a planet to explore</p>
+</div>
+
+<!-- Main Scene -->
+<div id="scene">
+  <svg id="orbit-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- Planet YXARA -->
+  <div class="planet-wrapper" id="yxara-wrap" style="left:28%; top:50%; transform:translate(-50%,-50%)" onclick="openPanel('yxara')">
+    <canvas class="planet-canvas" id="yxara-canvas" width="220" height="220" style="box-shadow: 0 0 60px #7fffd450, 0 0 120px #7fffd420;"></canvas>
+    <div class="planet-label" style="color:#7fffd4">Yxara</div>
+  </div>
+
+  <!-- Planet VEL -->
+  <div class="planet-wrapper" id="vel-wrap" style="left:72%; top:50%; transform:translate(-50%,-50%)" onclick="openPanel('vel')">
+    <canvas class="planet-canvas" id="vel-canvas" width="180" height="180" style="box-shadow: 0 0 60px #ff6b6b50, 0 0 120px #ff6b6b20;"></canvas>
+    <div class="planet-label" style="color:#ff6b6b">Vel</div>
+  </div>
+</div>
+
+<!-- Bottom hint -->
+<div id="bridge-info">
+  <p>Tidally bound — 14,000 km apart — exchanging spores through a shared magnetic filament</p>
+</div>
+
+<!-- Info Panel -->
+<div id="panel">
+  <button id="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-title"></div>
+  <div id="panel-subtitle"></div>
+  <button id="panel-visit" onclick="visitPlanet()">Enter World →</button>
+  <div class="panel-section">
+    <h3>Classification</h3>
+    <div id="panel-class"></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Environment</h3>
+    <div id="panel-env"></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Dominant Life Forms</h3>
+    <div id="panel-life"></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Remarkable Feature</h3>
+    <div id="panel-feat"></div>
+  </div>
+ 
+</div>
+
+<script>
+// ─── CURSOR ───────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX - 6 + 'px';
+  cursor.style.top = e.clientY - 6 + 'px';
+});
+
+// ─── STARFIELD ────────────────────────────────────────────
+const starsCanvas = document.getElementById('stars');
+const sc = starsCanvas.getContext('2d');
+function resizeStars() {
+  starsCanvas.width = window.innerWidth;
+  starsCanvas.height = window.innerHeight;
+  drawStars();
+}
+
+let stars = [];
+function initStars() {
+  stars = [];
+  for (let i = 0; i < 320; i++) {
+    stars.push({
+      x: Math.random() * starsCanvas.width,
+      y: Math.random() * starsCanvas.height,
+      r: Math.random() * 1.4,
+      a: Math.random(),
+      sp: 0.003 + Math.random() * 0.007
+    });
+  }
+}
+
+function drawStars() {
+  sc.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+  stars.forEach(s => {
+    s.a += s.sp;
+    const alpha = 0.3 + 0.7 * Math.abs(Math.sin(s.a));
+    sc.beginPath();
+    sc.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    sc.fillStyle = `rgba(255,255,255,${alpha})`;
+    sc.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+
+resizeStars();
+initStars();
+window.addEventListener('resize', resizeStars);
+
+// ─── ORBITAL FILAMENT ────────────────────────────────────
+function drawOrbit() {
+  const svg = document.getElementById('orbit-svg');
+  const W = window.innerWidth, H = window.innerHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const x1 = W * 0.28, x2 = W * 0.72, y = H * 0.5;
+
+  // Dashed orbit ellipse
+  const cx = (x1 + x2) / 2;
+  const rx = (x2 - x1) / 2 + 40;
+  const ry = 60;
+  svg.innerHTML = `
+    <defs>
+      <radialGradient id="filGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#7fffd4" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#ff6b6b" stop-opacity="0.6"/>
+      </radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <!-- Orbital path -->
+    <ellipse cx="${cx}" cy="${y}" rx="${rx}" ry="${ry}" 
+      fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="6 8"/>
+    <!-- Magnetic filament -->
+    <path d="M${x1},${y} Q${cx},${y - 30} ${x2},${y}" 
+      fill="none" stroke="url(#filGrad)" stroke-width="1.5" 
+      stroke-dasharray="4 6" filter="url(#glow)" opacity="0.5"/>
+    <path d="M${x1},${y} Q${cx},${y + 25} ${x2},${y}" 
+      fill="none" stroke="url(#filGrad)" stroke-width="0.8" 
+      stroke-dasharray="2 10" filter="url(#glow)" opacity="0.3"/>
+  `;
+}
+
+drawOrbit();
+window.addEventListener('resize', drawOrbit);
+
+// ─── PLANET YXARA ─────────────────────────────────────────
+// Crystal-forest world. Teal/aquamarine. Giant silicate crystals, bioluminescent mist.
+const yc = document.getElementById('yxara-canvas').getContext('2d');
+let yT = 0;
+
+function drawYxara() {
+  const c = yc, W = 220, R = 110, cx = 110, cy = 110;
+  c.clearRect(0, 0, W, W);
+
+  // Base sphere
+  const grad = c.createRadialGradient(cx - 30, cy - 35, 10, cx, cy, R);
+  grad.addColorStop(0, '#a8ffe8');
+  grad.addColorStop(0.3, '#3dd4a8');
+  grad.addColorStop(0.6, '#0a8a6c');
+  grad.addColorStop(0.85, '#054030');
+  grad.addColorStop(1, '#021a14');
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2);
+  c.fillStyle = grad; c.fill();
+
+  // Crystal layers (silicate formations)
+  for (let i = 0; i < 18; i++) {
+    const angle = (i / 18) * Math.PI * 2 + yT * 0.004;
+    const dist = 60 + Math.sin(angle * 3 + yT * 0.01) * 22;
+    const x = cx + Math.cos(angle) * dist;
+    const y = cy + Math.sin(angle) * dist * 0.6;
+    const h = 14 + Math.sin(i * 2.5 + yT * 0.02) * 8;
+    const w = 3;
+
+    // Check inside sphere
+    if ((x - cx) ** 2 + (y - cy) ** 2 < (R - 6) ** 2) {
+      const alpha = 0.4 + 0.5 * Math.sin(i + yT * 0.03);
+      c.save();
+      c.translate(x, y);
+      c.rotate(angle + Math.PI / 2);
+      c.fillStyle = `rgba(127,255,212,${alpha})`;
+      c.fillRect(-w / 2, -h, w, h);
+      // Crystal tip
+      c.beginPath();
+      c.moveTo(-w / 2, -h);
+      c.lineTo(0, -h - 6);
+      c.lineTo(w / 2, -h);
+      c.fillStyle = `rgba(200,255,240,${alpha})`;
+      c.fill();
+      c.restore();
+    }
+  }
+
+  // Atmospheric mist bands
+  for (let b = 0; b < 5; b++) {
+    const by = cy - 40 + b * 18 + Math.sin(yT * 0.008 + b) * 5;
+    const bx = cx + Math.cos(yT * 0.005 + b * 1.2) * 20;
+    const bw = 70 + Math.sin(b + yT * 0.006) * 20;
+    const grad2 = c.createLinearGradient(bx - bw / 2, by, bx + bw / 2, by);
+    grad2.addColorStop(0, 'rgba(127,255,212,0)');
+    grad2.addColorStop(0.5, `rgba(127,255,212,${0.06 + b * 0.01})`);
+    grad2.addColorStop(1, 'rgba(127,255,212,0)');
+    c.save();
+    c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2);
+    c.clip();
+    c.fillStyle = grad2;
+    c.fillRect(bx - bw / 2, by - 4, bw, 8);
+    c.restore();
+  }
+
+  // Polar bioluminescent glow
+  const polarGrad = c.createRadialGradient(cx, cy - R + 20, 0, cx, cy - R + 20, 30);
+  polarGrad.addColorStop(0, 'rgba(127,255,212,0.4)');
+  polarGrad.addColorStop(1, 'rgba(127,255,212,0)');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+  c.fillStyle = polarGrad;
+  c.fillRect(cx - 30, cy - R + 5, 60, 40);
+  c.restore();
+
+  // Atmosphere rim
+  const rim = c.createRadialGradient(cx, cy, R - 12, cx, cy, R + 8);
+  rim.addColorStop(0, 'rgba(127,255,212,0)');
+  rim.addColorStop(0.7, 'rgba(127,255,212,0.12)');
+  rim.addColorStop(1, 'rgba(127,255,212,0)');
+  c.beginPath(); c.arc(cx, cy, R + 6, 0, Math.PI * 2);
+  c.fillStyle = rim; c.fill();
+
+  // Specular highlight
+  const spec = c.createRadialGradient(cx - 35, cy - 40, 0, cx - 35, cy - 40, 50);
+  spec.addColorStop(0, 'rgba(255,255,255,0.35)');
+  spec.addColorStop(1, 'rgba(255,255,255,0)');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+  c.fillStyle = spec; c.fillRect(0, 0, W, W);
+  c.restore();
+
+  yT++;
+  requestAnimationFrame(drawYxara);
+}
+drawYxara();
+
+// ─── PLANET VEL ───────────────────────────────────────────
+// Obsidian magma world with floating ash islands and fire-coral reefs.
+const vc = document.getElementById('vel-canvas').getContext('2d');
+let vT = 0;
+
+function drawVel() {
+  const c = vc, W = 180, R = 90, cx = 90, cy = 90;
+  c.clearRect(0, 0, W, W);
+
+  // Base
+  const grad = c.createRadialGradient(cx - 20, cy - 25, 5, cx, cy, R);
+  grad.addColorStop(0, '#ff9966');
+  grad.addColorStop(0.25, '#d94444');
+  grad.addColorStop(0.5, '#8b1a1a');
+  grad.addColorStop(0.75, '#3a0808');
+  grad.addColorStop(1, '#120202');
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2);
+  c.fillStyle = grad; c.fill();
+
+  // Magma veins
+  for (let v = 0; v < 8; v++) {
+    const startAngle = (v / 8) * Math.PI * 2 + vT * 0.002;
+    const x1 = cx + Math.cos(startAngle) * 10;
+    const y1 = cy + Math.sin(startAngle) * 10;
+    const x2 = cx + Math.cos(startAngle + 0.4) * (R - 15);
+    const y2 = cy + Math.sin(startAngle + 0.4) * (R - 15);
+    const pulse = 0.3 + 0.7 * Math.abs(Math.sin(vT * 0.04 + v));
+
+    c.save();
+    c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.quadraticCurveTo(
+      cx + Math.cos(startAngle + 0.2) * 50,
+      cy + Math.sin(startAngle + 0.2) * 50,
+      x2, y2
+    );
+    c.strokeStyle = `rgba(255,${140 + Math.sin(vT * 0.03 + v) * 60},20,${pulse * 0.6})`;
+    c.lineWidth = 1.5;
+    c.stroke();
+    c.restore();
+  }
+
+  // Floating ash islands
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2 + vT * 0.006 + i * 1.3;
+    const dist = 35 + Math.sin(vT * 0.015 + i * 2) * 12;
+    const ix = cx + Math.cos(angle) * dist;
+    const iy = cy + Math.sin(angle) * dist * 0.7;
+
+    if ((ix - cx) ** 2 + (iy - cy) ** 2 < (R - 10) ** 2) {
+      c.save();
+      c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+      // Island body
+      c.beginPath();
+      c.ellipse(ix, iy, 10 + i * 2, 4, 0.3, 0, Math.PI * 2);
+      c.fillStyle = `rgba(60,20,10,0.9)`;
+      c.fill();
+      // Fire coral on top
+      for (let f = 0; f < 3; f++) {
+        const fx = ix - 8 + f * 8;
+        const fh = 5 + Math.sin(vT * 0.05 + f + i) * 3;
+        c.beginPath();
+        c.moveTo(fx, iy - 4);
+        c.lineTo(fx - 2, iy - 4 - fh);
+        c.lineTo(fx + 2, iy - 4 - fh);
+        c.closePath();
+        c.fillStyle = `rgba(255,${80 + f * 40},10,0.9)`;
+        c.fill();
+      }
+      c.restore();
+    }
+  }
+
+  // Hot spot glow (core)
+  const core = c.createRadialGradient(cx, cy, 0, cx, cy, 40);
+  core.addColorStop(0, `rgba(255,180,50,${0.15 + 0.1 * Math.sin(vT * 0.05)})`);
+  core.addColorStop(1, 'rgba(255,100,20,0)');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+  c.fillStyle = core; c.fillRect(0, 0, W, W);
+  c.restore();
+
+  // Ash cloud band (equatorial)
+  const ash = c.createLinearGradient(0, cy - 12, 0, cy + 12);
+  ash.addColorStop(0, 'rgba(80,40,30,0)');
+  ash.addColorStop(0.5, 'rgba(80,40,30,0.2)');
+  ash.addColorStop(1, 'rgba(80,40,30,0)');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+  c.fillStyle = ash;
+  c.fillRect(cx - R, cy - 12 + Math.sin(vT * 0.003) * 8, R * 2, 24);
+  c.restore();
+
+  // Atmosphere rim
+  const rim = c.createRadialGradient(cx, cy, R - 10, cx, cy, R + 8);
+  rim.addColorStop(0, 'rgba(255,80,30,0)');
+  rim.addColorStop(0.7, 'rgba(255,80,30,0.15)');
+  rim.addColorStop(1, 'rgba(255,80,30,0)');
+  c.beginPath(); c.arc(cx, cy, R + 6, 0, Math.PI * 2);
+  c.fillStyle = rim; c.fill();
+
+  // Highlight
+  const spec = c.createRadialGradient(cx - 25, cy - 28, 0, cx - 25, cy - 28, 38);
+  spec.addColorStop(0, 'rgba(255,255,200,0.25)');
+  spec.addColorStop(1, 'rgba(255,255,200,0)');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R - 2, 0, Math.PI * 2); c.clip();
+  c.fillStyle = spec; c.fillRect(0, 0, W, W);
+  c.restore();
+
+  vT++;
+  requestAnimationFrame(drawVel);
+}
+drawVel();
+
+// ─── PANEL DATA ───────────────────────────────────────────
+const data = {
+  yxara: {
+    title: 'Yxara',
+    subtitle: 'The Crystal World',
+    class: '<p>Super-terran silicate world, 1.4× Earth mass. Dense N₂–Ne atmosphere with suspended crystalline aerosols. Tidally locked to its companion Vel. Surface pressure: 2.1 atm.</p>',
+    env: '<p>The permanent day-side is blanketed in towering silicate crystal forests — some reaching 200 meters — that refract both the binary-star light and Vel\'s amber glow into prismatic cathedral effects. The night-side is a frozen sea of luminescent ammonia, where organisms hibernate in crystalline stasis. Temperatures range from 12°C to 38°C on the terminator ring, where all complex life clusters.</p>',
+    life: `
+      <div class="life-form">
+        <svg class="life-icon float-anim" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="22,4 30,16 22,12 14,16" fill="#7fffd4" opacity="0.9"/>
+          <polygon points="22,12 30,28 22,22 14,28" fill="#3dd4a8" opacity="0.8"/>
+          <polygon points="22,22 30,38 22,32 14,38" fill="#0a8a6c" opacity="0.7"/>
+          <line x1="22" y1="4" x2="22" y2="38" stroke="#7fffd4" stroke-width="0.5" opacity="0.4"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#7fffd4">Spire Weavers</div>
+          <div class="life-desc">Colonies of mineral-incorporating organisms that grow as multi-kilometer crystal lattices. They communicate via resonant vibration through shared crystal roots. Individual "nodes" are palm-sized bulbs containing photosynthetic organelles tuned to UV rather than visible light.</div>
+        </div>
+      </div>
+      <div class="life-form">
+        <svg class="life-icon" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="22" cy="22" rx="12" ry="6" fill="none" stroke="#7fffd4" stroke-width="1.5" opacity="0.7"/>
+          <ellipse cx="22" cy="22" rx="8" ry="4" fill="none" stroke="#a8ffe8" stroke-width="1" opacity="0.5"/>
+          <circle cx="22" cy="22" r="3" fill="#7fffd4" opacity="0.8" class="pulse-anim"/>
+          <line x1="10" y1="22" x2="4" y2="18" stroke="#7fffd4" stroke-width="1" opacity="0.6"/>
+          <line x1="10" y1="22" x2="4" y2="26" stroke="#7fffd4" stroke-width="1" opacity="0.6"/>
+          <line x1="34" y1="22" x2="40" y2="18" stroke="#7fffd4" stroke-width="1" opacity="0.6"/>
+          <line x1="34" y1="22" x2="40" y2="26" stroke="#7fffd4" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#7fffd4">Drift Mantas</div>
+          <div class="life-desc">Translucent disk-shaped creatures 2–4m across that float in Yxara's dense atmosphere. They harvest charged aerosol crystals through electroreceptive wings, and are the only organisms to cross the terminator ring regularly, acting as an airborne nutrient bridge between day and night hemispheres.</div>
+        </div>
+      </div>
+      <div class="life-form">
+        <svg class="life-icon" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          ${Array.from({length:6},(_,i)=>{
+            const a=(i/6)*Math.PI*2, x=22+Math.cos(a)*14, y=22+Math.sin(a)*10;
+            return `<circle cx="${x}" cy="${y}" r="3" fill="#7fffd4" opacity="0.6"/>
+                    <line x1="22" y1="22" x2="${x}" y2="${y}" stroke="#3dd4a8" stroke-width="0.8" opacity="0.4"/>`;
+          }).join('')}
+          <circle cx="22" cy="22" r="5" fill="#a8ffe8" opacity="0.9"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#7fffd4">Chord Fungi</div>
+          <div class="life-desc">A vast underground fungal network that forms the true neural substrate of Yxara. Mycelial threads run beneath the entire terminator ring — 40,000 km of living computation. The Spire Weavers are its surface antennae. Scientists debate whether Yxara itself is sentient.</div>
+        </div>
+      </div>
+    `,
+    feat: '<p>Yxara\'s crystalline biosphere has evolved a planetary-scale distributed consciousness. The Chord Fungi network fires patterns detectable from orbit as slow, rhythmic flickers across the night-side — a 14-hour "heartbeat" cycle. It responds to Vel\'s volcanic activity with corresponding atmospheric changes, suggesting genuine cross-planetary awareness.</p>'
+  },
+
+  vel: {
+    title: 'Vel',
+    subtitle: 'The Ember World',
+    class: '<p>Dense volcanic super-Earth, 0.9× Earth mass but 1.6× density. CO₂–SO₂ atmosphere (2.8 atm) with a high-altitude ozone layer that makes the upper troposphere barely survivable. Surface temperatures average 280°C, cooling to 80°C at floating island altitudes.</p>',
+    env: '<p>Vel\'s crust is thin and violently active — a mosaic of obsidian shields, magma rivers, and pyroclastic plains. Yet 8–12 km above the surface, catastrophic convection creates stable "Sky Rafts": buoyant islands of low-density silicate rock, perpetually kept aloft by superheated upwellings. These are Vel\'s habitable zones — an archipelago in the sky. Life never touches the ground.</p>',
+    life: `
+      <div class="life-form">
+        <svg class="life-icon float-anim" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22,36 Q10,28 12,18 Q22,8 32,18 Q34,28 22,36Z" fill="#ff6b6b" opacity="0.7"/>
+          <path d="M22,32 Q14,26 16,20 Q22,14 28,20 Q30,26 22,32Z" fill="#ff9966" opacity="0.8"/>
+          <ellipse cx="22" cy="20" rx="4" ry="3" fill="#ffcc44" opacity="0.9"/>
+          <path d="M18,36 Q14,40 10,42" stroke="#ff6b6b" stroke-width="1.5" fill="none" opacity="0.5"/>
+          <path d="M26,36 Q30,40 34,42" stroke="#ff6b6b" stroke-width="1.5" fill="none" opacity="0.5"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#ff6b6b">Ashroot Anchors</div>
+          <div class="life-desc">The foundational organism of the Sky Rafts — enormous tap-rooted trees with sulfur-metabolizing root networks that penetrate deep into the silicate islands. Their frond-canopies are coated in heat-reflective metallic cuticles. A single Ashroot can be 800 years old and support an entire sky-island ecosystem.</div>
+        </div>
+      </div>
+      <div class="life-form">
+        <svg class="life-icon" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="22" cy="18" r="8" fill="#3a0808" stroke="#ff6b6b" stroke-width="1.5" opacity="0.9"/>
+          <circle cx="22" cy="18" r="4" fill="#ff9966" opacity="0.7" class="pulse-anim"/>
+          ${Array.from({length:5},(_,i)=>{
+            const a=-Math.PI/2+(i/5)*Math.PI*2;
+            return `<line x1="${22+Math.cos(a)*8}" y1="${18+Math.sin(a)*8}" x2="${22+Math.cos(a)*18}" y2="${18+Math.sin(a)*18}" stroke="#ff6b6b" stroke-width="1.5" opacity="0.7"/>
+                    <circle cx="${22+Math.cos(a)*18}" cy="${18+Math.sin(a)*18}" r="2.5" fill="#ffcc44" opacity="0.8"/>`;
+          }).join('')}
+          <rect x="18" y="26" width="8" height="12" rx="2" fill="#3a0808" stroke="#ff6b6b" stroke-width="1" opacity="0.8"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#ff6b6b">Magma Harvesters</div>
+          <div class="life-desc">Six-limbed arthropods the size of dogs with obsidian-armored exoskeletons. They extend heat-proof cable-limbs over the island edges to collect mineral-rich magma droplets hurled up by eruptions below. Their digestive chemistry is unique in biology: purely thermosynthetic, requiring no light whatsoever.</div>
+        </div>
+      </div>
+      <div class="life-form">
+        <svg class="life-icon float-anim" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22,10 Q32,18 30,28 Q22,34 14,28 Q12,18 22,10Z" fill="none" stroke="#ffcc44" stroke-width="1.5" opacity="0.7"/>
+          <path d="M22,14 Q29,20 27,27 Q22,31 17,27 Q15,20 22,14Z" fill="rgba(255,150,30,0.3)"/>
+          ${Array.from({length:4},(_,i)=>{
+            const a=(i/4)*Math.PI*2+0.3;
+            return `<circle cx="${22+Math.cos(a)*7}" cy="${22+Math.sin(a)*7}" r="2" fill="#ffcc44" opacity="${0.5+i*0.1}"/>`;
+          }).join('')}
+          <circle cx="22" cy="22" r="3" fill="#ff9966" opacity="0.9" class="pulse-anim"/>
+        </svg>
+        <div>
+          <div class="life-name" style="color:#ff6b6b">Ember Drifters</div>
+          <div class="life-desc">Balloon organisms 30–200cm across that fill their gas bladders with hot SO₂ to stay aloft between sky islands. They reproduce by budding during eruption events, releasing spores that can survive a 12km fall through magma plumes. Some carry Yxaran spores accidentally captured from the magnetic filament, forming bizarre hybrid organisms found on both worlds.</div>
+        </div>
+      </div>
+    `,
+    feat: '<p>The magnetic filament connecting Yxara and Vel acts as a biological highway. Yxaran crystal-spores and Vel\'s Ember Drifter buds travel the filament and arrive on the other world. Both planets now host a thin layer of alien microbial colonists from their twin — the only known natural example of inter-planetary biological exchange. Life on these worlds is, essentially, one distributed system.</p>'
+  }
+};
+
+let activePlanet = null;
+
+const planetFiles = {
+  yxara: 'Yxara.html',
+  vel:   'Vel.html'
+};
+
+function openPanel(planet) {
+  activePlanet = planet;
+  const d = data[planet];
+  const color = planet === 'yxara' ? '#7fffd4' : '#ff6b6b';
+  document.getElementById('panel-title').innerHTML = `<span style="color:${color}">${d.title}</span>`;
+  document.getElementById('panel-title').style.color = color;
+  document.getElementById('panel-subtitle').textContent = d.subtitle;
+  document.getElementById('panel-class').innerHTML = d.class;
+  document.getElementById('panel-env').innerHTML = d.env;
+  document.getElementById('panel-life').innerHTML = d.life;
+  document.getElementById('panel-feat').innerHTML = d.feat;
+  document.getElementById('panel').classList.add('open');
+  // Colour the visit button to match the planet
+  document.getElementById('panel-visit').style.color = color;
+  document.getElementById('panel-visit').style.borderColor = color + '55';
+}
+
+function visitPlanet() {
+  if (!activePlanet) return;
+  const wipe = document.getElementById('wipe');
+  wipe.classList.add('go');
+  setTimeout(() => { window.location.href = planetFiles[activePlanet]; }, 850);
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+}
+
+// Close on escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Xyrath — Living Ecosystem</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600&family=Orbitron:wght@400;700&display=swap');
+
+  :root {
+    --sky-top: #0a0518;
+    --sky-mid: #1a0a3e;
+    --sky-bot: #2d1b69;
+    --ground: #1a2e1a;
+    --water: #0d2d3e;
+    --accent: #7fffd4;
+    --warn: #ff6b35;
+    --glow: #b366ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+  }
+
+  #canvas-container {
+    position: relative;
+    width: 100%; height: 100%;
+  }
+
+  svg#world {
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  #hud {
+    position: absolute;
+    top: 12px; left: 12px;
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(127,255,212,0.2);
+    padding: 10px 14px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    z-index: 10;
+    min-width: 200px;
+  }
+
+  #hud h1 {
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #fff;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(127,255,212,0.3);
+    padding-bottom: 4px;
+  }
+
+  #legend {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    color: #ccc;
+    font-size: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 14px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    pointer-events: none;
+    max-width: 220px;
+  }
+
+  #legend h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: var(--glow);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .leg-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+
+  .leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #info-panel {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 200px;
+    color: #ddd;
+    font-size: 11px;
+    font-family: 'Rajdhani', sans-serif;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(179,102,255,0.3);
+    padding: 10px 14px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    pointer-events: none;
+    display: none;
+  }
+
+  #info-panel h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: var(--glow);
+    margin-bottom: 4px;
+  }
+
+  #thought-bubble {
+    position: absolute;
+    background: rgba(10,5,24,0.92);
+    border: 1px solid var(--glow);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #e8d4ff;
+    font-family: 'Rajdhani', sans-serif;
+    max-width: 180px;
+    pointer-events: none;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 0 15px rgba(179,102,255,0.4);
+  }
+</style>
+</head>
+<body>
+<!-- Planet Xyrath is alive! Here's what's living in it:
+🧠 Intelligent Species (Sapient)
+
+Velthari — Bipedal sapient beings with glowing antennae and psionic rings. They avoid water, swing their arms as they walk, and emit thought-communication pulses.
+
+🦎 Fauna (10 species)
+
+Ignar Beast — Fire-breathing predators that emit flame particles as they stalk the terrain
+Solwing — Bioluminescent fliers with animated wing-flapping, riding thermals
+Lumifin — Aquatic fish with glowing fins schooling in the water zone
+Skywhale — Massive aerial giants with bioluminescent spots drifting through the upper atmosphere
+Embermite — Fast 6-legged insects with animated leg cycles scurrying across the ground
+Psychmorph — Shape-shifting psionic creatures that randomly teleport with a flash
+Starjelly — Aquatic jellyfish with pulsing tentacles and star-shaped cores
+Glowworm — Segmented bioluminescent worms that blink in patterns
+
+🌿 Flora (5 species)
+
+Sporebloom mushrooms, Crystalvine spires, Bloodcoral (underwater), Mossfung patches, and procedurally generated terrain vegetation -->
+<div id="canvas-container">
+  <svg id="world" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="hud">
+    <h1>PLANET XYRATH</h1>
+    <div id="hud-time">Cycle: 0</div>
+    <div id="hud-pop">Population: —</div>
+    <div id="hud-weather">Weather: Calm</div>
+    <div id="hud-phase">Day Phase: Dawn</div>
+  </div>
+  <div id="legend">
+    <h2>SPECIES LOG</h2>
+    <div class="leg-row"><div class="leg-dot" style="background:#b366ff;box-shadow:0 0 6px #b366ff"></div>Velthari (Sapient)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff6b35"></div>Ignar Beast</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#7fffd4"></div>Lumifin (aquatic)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ffe44d"></div>Solwing (flier)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#44ff88"></div>Sporebloom (flora)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff44aa"></div>Crystalvine (flora)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#22ccff"></div>Skywhale</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff9944"></div>Embermite</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#88ff44"></div>Mossfung (flora)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#cc44ff"></div>Psychmorph</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ffffff"></div>Starjelly</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff4444"></div>Bloodcoral (flora)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#44ffee"></div>Glowworm</div>
+  </div>
+  <div id="info-panel">
+    <h3 id="info-name">—</h3>
+    <div id="info-desc">—</div>
+  </div>
+  <div id="thought-bubble" id="thought"></div>
+</div>
+
+<script>
+const svg = document.getElementById('world');
+const W = window.innerWidth, H = window.innerHeight;
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+let cycle = 0;
+let weatherTimer = 0;
+let weatherType = 'calm';
+let dayPhase = 0; // 0-1
+
+// ─── SVG helpers ───────────────────────────────────────────────────────────
+function el(tag, attrs={}) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+}
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+function randInt(a, b) { return Math.floor(rand(a, b+1)); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+// ─── LAYER GROUPS ──────────────────────────────────────────────────────────
+const layers = {};
+['bg','stars','sky','mountains','water','ground','flora','creatures','fx','ui'].forEach(name => {
+  const g = el('g', {id: name});
+  svg.appendChild(g);
+  layers[name] = g;
+});
+
+// ─── BACKGROUND GRADIENT ───────────────────────────────────────────────────
+const defs = el('defs');
+svg.insertBefore(defs, svg.firstChild);
+
+// Sky gradient
+const skyGrad = el('linearGradient', {id:'skyGrad', x1:0,y1:0,x2:0,y2:1, gradientUnits:'objectBoundingBox'});
+skyGrad.innerHTML = `
+  <stop id="sg0" offset="0%" stop-color="#060212"/>
+  <stop id="sg1" offset="50%" stop-color="#1a0a3e"/>
+  <stop id="sg2" offset="100%" stop-color="#2d1b69"/>
+`;
+defs.appendChild(skyGrad);
+
+// Water gradient
+const waterGrad = el('linearGradient', {id:'waterGrad', x1:0,y1:0,x2:0,y2:1, gradientUnits:'objectBoundingBox'});
+waterGrad.innerHTML = `
+  <stop offset="0%" stop-color="#0d2d3e"/>
+  <stop offset="100%" stop-color="#050f18"/>
+`;
+defs.appendChild(waterGrad);
+
+// Ground gradient
+const groundGrad = el('linearGradient', {id:'groundGrad', x1:0,y1:0,x2:0,y2:1, gradientUnits:'objectBoundingBox'});
+groundGrad.innerHTML = `
+  <stop offset="0%" stop-color="#1a3520"/>
+  <stop offset="100%" stop-color="#0a1a0a"/>
+`;
+defs.appendChild(groundGrad);
+
+// Glow filter
+const glowFilter = el('filter', {id:'glow', x:'-50%',y:'-50%',width:'200%',height:'200%'});
+glowFilter.innerHTML = `<feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+defs.appendChild(glowFilter);
+
+const softGlow = el('filter', {id:'softglow', x:'-100%',y:'-100%',width:'300%',height:'300%'});
+softGlow.innerHTML = `<feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+defs.appendChild(softGlow);
+
+const bigGlow = el('filter', {id:'bigglow', x:'-200%',y:'-200%',width:'500%',height:'500%'});
+bigGlow.innerHTML = `<feGaussianBlur stdDeviation="20" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+defs.appendChild(bigGlow);
+
+// ─── SKY BACKGROUND ────────────────────────────────────────────────────────
+const skyRect = el('rect', {x:0,y:0,width:W,height:H,fill:'url(#skyGrad)'});
+layers.bg.appendChild(skyRect);
+
+// Nebula blobs
+for (let i = 0; i < 5; i++) {
+  const nx = rand(0, W), ny = rand(0, H*0.5);
+  const nebula = el('ellipse', {
+    cx: nx, cy: ny,
+    rx: rand(80,200), ry: rand(40,100),
+    fill: `hsla(${rand(240,300)},80%,40%,0.08)`,
+    filter: 'url(#bigglow)'
+  });
+  layers.sky.appendChild(nebula);
+}
+
+// ─── STARS ─────────────────────────────────────────────────────────────────
+const starEls = [];
+for (let i = 0; i < 200; i++) {
+  const s = el('circle', {
+    cx: rand(0,W), cy: rand(0,H*0.55),
+    r: rand(0.3,1.5),
+    fill: `hsl(${rand(200,320)},${rand(30,100)}%,${rand(70,100)}%)`,
+    opacity: rand(0.4,1)
+  });
+  layers.stars.appendChild(s);
+  starEls.push({el:s, base:parseFloat(s.getAttribute('opacity')), phase:rand(0,Math.PI*2)});
+}
+
+// ─── TERRAIN ───────────────────────────────────────────────────────────────
+const groundY = H * 0.6;
+const waterY = H * 0.72;
+
+// Mountains (background)
+function makeMountain(layer, pts, color, opacity=1) {
+  const d = `M${pts.map(p=>p.join(',')).join('L')}Z`;
+  const m = el('path', {d, fill:color, opacity});
+  layer.appendChild(m);
+  return m;
+}
+
+// Back mountains
+const bmPts = [[0,groundY]];
+let bx = 0;
+while(bx < W+100) {
+  bmPts.push([bx, rand(H*0.25, groundY-20)]);
+  bx += rand(60,160);
+}
+bmPts.push([W,groundY],[W,H],[0,H]);
+makeMountain(layers.mountains, bmPts, '#1a0a3e', 0.8);
+
+// Mid mountains
+const mmPts = [[0,groundY]];
+let mx = 0;
+while(mx < W+100) {
+  mmPts.push([mx, rand(H*0.35, groundY)]);
+  mx += rand(40,120);
+}
+mmPts.push([W,groundY],[W,H],[0,H]);
+makeMountain(layers.mountains, mmPts, '#1e1040', 0.9);
+
+// Ground
+const gndPts = [[0,groundY]];
+let gx = 0;
+while(gx < W+50) {
+  gndPts.push([gx, groundY + rand(-8,8)]);
+  gx += rand(20,60);
+}
+gndPts.push([W,groundY+5],[W,H],[0,H]);
+const groundPath = `M${gndPts.map(p=>p.join(',')).join('L')}Z`;
+const groundEl = el('path', {d:groundPath, fill:'url(#groundGrad)'});
+layers.ground.appendChild(groundEl);
+
+// Water area
+const waterX1 = W * 0.3, waterX2 = W * 0.75;
+const waterPts = [[waterX1, groundY], [waterX2, groundY], [waterX2, H], [waterX1, H]];
+const waterRect = el('path', {
+  d: `M${waterX1},${groundY} Q${(waterX1+waterX2)/2},${groundY-10} ${waterX2},${groundY} L${waterX2},${H} L${waterX1},${H}Z`,
+  fill: 'url(#waterGrad)', opacity: 0.85
+});
+layers.water.appendChild(waterRect);
+
+// Water shimmer lines
+const shimmerLines = [];
+for (let i = 0; i < 8; i++) {
+  const sl = el('line', {
+    x1: waterX1, x2: waterX2,
+    y1: groundY + rand(5,80), y2: groundY + rand(5,80),
+    stroke: 'rgba(127,255,212,0.15)', 'stroke-width':1
+  });
+  layers.water.appendChild(sl);
+  shimmerLines.push({el:sl, phase:rand(0,Math.PI*2)});
+}
+
+// ─── FLORA SYSTEM ──────────────────────────────────────────────────────────
+const floraList = [];
+
+// Sporebloom mushrooms
+for (let i = 0; i < 18; i++) {
+  const x = rand(0,W), y = groundY + rand(5,25);
+  const h = rand(15,50), cr = rand(8,25);
+  const hue = rand(100,160);
+  const g = el('g');
+  const stem = el('rect', {x:x-3,y:y-h,width:6,height:h,fill:`hsl(${hue},40%,25%)`,rx:2});
+  const cap = el('ellipse', {cx:x,cy:y-h,rx:cr,ry:cr*0.5,fill:`hsl(${hue},70%,45%)`,filter:'url(#glow)'});
+  const spots = el('g');
+  for (let j=0;j<3;j++) {
+    const sp = el('circle',{cx:x+rand(-cr*0.5,cr*0.5),cy:y-h+rand(-2,4),r:rand(2,5),fill:`hsl(${hue},90%,80%)`});
+    spots.appendChild(sp);
+  }
+  g.appendChild(stem); g.appendChild(cap); g.appendChild(spots);
+  layers.flora.appendChild(g);
+  floraList.push({type:'sporebloom', x, y, el:g, glowEl:cap, phase:rand(0,Math.PI*2)});
+}
+
+// Crystalvine (tall crystal spires)
+for (let i = 0; i < 12; i++) {
+  const x = rand(0, W), y = groundY + rand(0,15);
+  const h = rand(30,90);
+  const g = el('g');
+  for (let j = -1; j <= 1; j++) {
+    const pts = `${x+j*8},${y} ${x+j*4},${y-h*rand(0.6,1)} ${x+j*12},${y-h*rand(0.3,0.7)}`;
+    const c = el('polygon', {
+      points: pts,
+      fill: `hsla(${rand(280,340)},90%,65%,0.7)`,
+      filter:'url(#glow)'
+    });
+    g.appendChild(c);
+  }
+  layers.flora.appendChild(g);
+  floraList.push({type:'crystalvine', x,y,el:g, phase:rand(0,Math.PI*2)});
+}
+
+// Bloodcoral in water
+for (let i = 0; i < 10; i++) {
+  const x = rand(waterX1+20, waterX2-20);
+  const y = groundY + rand(5,40);
+  const g = el('g');
+  function addBranch(px,py,angle,len,depth) {
+    if(depth<=0||len<4) return;
+    const ex=px+Math.cos(angle)*len, ey=py+Math.sin(angle)*len;
+    const branch=el('line',{x1:px,y1:py,x2:ex,y2:ey,stroke:`hsl(${rand(340,360)},90%,${50+depth*5}%)`,
+      'stroke-width':depth,'stroke-linecap':'round'});
+    g.appendChild(branch);
+    addBranch(ex,ey,angle-rand(0.3,0.7),len*0.7,depth-1);
+    addBranch(ex,ey,angle+rand(0.3,0.7),len*0.7,depth-1);
+  }
+  addBranch(x,y,-Math.PI/2,rand(10,25),4);
+  layers.flora.appendChild(g);
+  floraList.push({type:'bloodcoral',x,y,el:g, phase:rand(0,Math.PI*2)});
+}
+
+// Mossfung patches
+for (let i = 0; i < 15; i++) {
+  const x = rand(0,W), y = groundY + rand(0,10);
+  const g = el('g');
+  for (let j = 0; j < 8; j++) {
+    const blob = el('ellipse',{
+      cx:x+rand(-20,20), cy:y+rand(-5,5),
+      rx:rand(5,15),ry:rand(3,8),
+      fill:`hsla(${rand(80,130)},80%,${rand(30,50)}%,0.8)`
+    });
+    g.appendChild(blob);
+  }
+  layers.flora.appendChild(g);
+  floraList.push({type:'mossfung',x,y,el:g,phase:rand(0,Math.PI*2)});
+}
+
+// ─── CREATURE BASE CLASS ───────────────────────────────────────────────────
+class Creature {
+  constructor(opts) {
+    Object.assign(this, {
+      x:rand(50,W-50), y:groundY-20, vx:0, vy:0,
+      speed:1, size:12, color:'#ffffff', maxAge:2000,
+      age:0, energy:100, state:'wander',
+      type:'generic', label:'Unknown', el:null,
+      thoughts:['...'],
+      phase:rand(0,Math.PI*2)
+    }, opts);
+    this.createEl();
+  }
+
+  createEl() {
+    this.el = el('g', {cursor:'pointer'});
+    this.bodyEl = el('circle',{r:this.size,fill:this.color,filter:'url(#glow)'});
+    this.el.appendChild(this.bodyEl);
+    layers.creatures.appendChild(this.el);
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+    this.updatePos();
+  }
+
+  showInfo() {
+    document.getElementById('info-panel').style.display='block';
+    document.getElementById('info-name').textContent = this.label;
+    document.getElementById('info-desc').textContent = this.getDesc();
+    // show thought bubble
+    const tb = document.getElementById('thought-bubble');
+    tb.style.display='block';
+    tb.textContent = this.thoughts[randInt(0,this.thoughts.length-1)];
+    tb.style.left = (this.x+20)+'px';
+    tb.style.top = (this.y-50)+'px';
+  }
+
+  hideInfo() {
+    document.getElementById('info-panel').style.display='none';
+    document.getElementById('thought-bubble').style.display='none';
+  }
+
+  getDesc() { return 'A creature of Planet Xyrath.'; }
+
+  updatePos() {
+    this.el.setAttribute('transform',`translate(${this.x},${this.y})`);
+  }
+
+  wander(minX=0, maxX=W, minY=groundY-60, maxY=groundY+10) {
+    if(Math.random()<0.02) {
+      this.vx = rand(-this.speed, this.speed);
+      this.vy = rand(-this.speed*0.5, this.speed*0.5);
+    }
+    this.x += this.vx;
+    this.y += this.vy;
+    this.x = clamp(this.x, minX, maxX);
+    this.y = clamp(this.y, minY, maxY);
+    this.vx *= 0.95; this.vy *= 0.95;
+  }
+
+  tick() {
+    this.age++;
+    this.phase += 0.05;
+    this.energy -= 0.01;
+    this.update();
+    this.updatePos();
+  }
+
+  update() { this.wander(); }
+}
+
+// ─── VELTHARI (Sapient) ────────────────────────────────────────────────────
+class Velthari extends Creature {
+  constructor(x,y) {
+    super({x,y:groundY-25, type:'velthari', label:'Velthari (Sapient)',
+      color:'#b366ff', size:14, speed:1.2,
+      thoughts:[
+        '⚡ Building shelter structure',
+        '🌿 Gathering sporebloom nutrients',
+        '👁 Observing the Ignar pattern',
+        '💬 Communicating with kin',
+        '🔮 Sensing coming storm',
+        '🌊 Calculating water currents',
+        '🧬 Evolving neural pathways',
+        '📡 Broadcasting to skywhale',
+      ]
+    });
+    this.intelligenceLevel = rand(70,100);
+    this.socialTarget = null;
+    this.buildingTimer = 0;
+    this.speechTimer = 0;
+    this.dir = 1;
+    this.rebuildBody();
+  }
+
+  rebuildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    // Aura
+    const aura = el('circle',{r:22,fill:'none',stroke:'rgba(179,102,255,0.15)','stroke-width':8});
+    this.el.appendChild(aura);
+    // Body (upright humanoid-ish)
+    const body = el('ellipse',{cx:0,cy:-8,rx:8,ry:12,fill:'#7722cc'});
+    // Head
+    const head = el('circle',{cx:0,cy:-24,r:9,fill:'#b366ff',filter:'url(#glow)'});
+    // Eyes (two glowing orbs)
+    const eye1 = el('circle',{cx:-3,cy:-25,r:2.5,fill:'#fff'});
+    const eye2 = el('circle',{cx:3,cy:-25,r:2.5,fill:'#fff'});
+    const eye1g = el('circle',{cx:-3,cy:-25,r:1.5,fill:'#ff44ff'});
+    const eye2g = el('circle',{cx:3,cy:-25,r:1.5,fill:'#ff44ff'});
+    // Limbs
+    this.leftArmEl = el('line',{x1:-8,y1:-15,x2:-16,y2:-8,stroke:'#7722cc','stroke-width':3,'stroke-linecap':'round'});
+    this.rightArmEl = el('line',{x1:8,y1:-15,x2:16,y2:-8,stroke:'#7722cc','stroke-width':3,'stroke-linecap':'round'});
+    const leg1 = el('line',{x1:-4,y1:4,x2:-6,y2:14,stroke:'#7722cc','stroke-width':3,'stroke-linecap':'round'});
+    const leg2 = el('line',{x1:4,y1:4,x2:6,y2:14,stroke:'#7722cc','stroke-width':3,'stroke-linecap':'round'});
+    // Antenna
+    const ant = el('line',{x1:0,y1:-33,x2:rand(-4,4),y2:-45,stroke:'rgba(179,102,255,0.8)','stroke-width':1.5});
+    const antTip = el('circle',{cx:0,cy:-46,r:3,fill:'#ff44ff',filter:'url(#glow)'});
+
+    [aura,body,head,eye1,eye2,eye1g,eye2g,this.leftArmEl,this.rightArmEl,leg1,leg2,ant,antTip].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+
+  getDesc() { return `Intelligence: ${Math.floor(this.intelligenceLevel)}%\nEnergy: ${Math.floor(this.energy)}%\nState: ${this.state}`; }
+
+  update() {
+    // Intelligent wandering with purpose
+    this.speechTimer++;
+    if(this.speechTimer > 300) {
+      this.speechTimer = 0;
+      // Emit speech ring
+      const ring = el('circle',{cx:this.x,cy:this.y-30,r:5,fill:'none',stroke:'rgba(179,102,255,0.8)','stroke-width':1.5});
+      layers.fx.appendChild(ring);
+      setTimeout(()=>{
+        let t=0;
+        const anim=setInterval(()=>{
+          t++;
+          ring.setAttribute('r',5+t*2);
+          ring.setAttribute('opacity',1-t/20);
+          if(t>=20){clearInterval(anim);ring.remove();}
+        },30);
+      },0);
+    }
+
+    // Arm swing
+    const swing = Math.sin(this.phase*2)*15;
+    if(this.leftArmEl) {
+      this.leftArmEl.setAttribute('x2',-16+Math.cos(this.phase*2)*4);
+      this.leftArmEl.setAttribute('y2',-8+Math.sin(this.phase*2)*4);
+      this.rightArmEl.setAttribute('x2',16-Math.cos(this.phase*2)*4);
+      this.rightArmEl.setAttribute('y2',-8-Math.sin(this.phase*2)*4);
+    }
+
+    // Intelligent wander
+    if(Math.random()<0.008) {
+      this.vx = rand(-this.speed, this.speed);
+      this.vy = rand(-0.3, 0.3);
+    }
+    // Avoid water edge
+    if(this.x > waterX1+20 && this.x < waterX2-20) {
+      this.vx = (this.x < (waterX1+waterX2)/2) ? -0.5 : 0.5;
+    }
+    this.x += this.vx;
+    this.y += this.vy;
+    this.x = clamp(this.x, 10, W-10);
+    this.y = clamp(this.y, groundY-50, groundY-15);
+    this.vx *= 0.96; this.vy *= 0.96;
+  }
+}
+
+// ─── IGNAR BEAST ───────────────────────────────────────────────────────────
+class Ignar extends Creature {
+  constructor(x,y) {
+    super({x,y:groundY-18,type:'ignar',label:'Ignar Beast',color:'#ff6b35',size:18,speed:2,
+      thoughts:['HUNT.','Smell prey...','Must eat.','Territory!','Growl...']
+    });
+    this.target = null;
+    this.buildBody();
+  }
+
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    // Body
+    const body = el('ellipse',{cx:0,cy:0,rx:18,ry:12,fill:'#cc3300'});
+    // Head
+    const head = el('ellipse',{cx:this.dir>0?14:-14,cy:-4,rx:10,ry:8,fill:'#ff6b35',filter:'url(#softglow)'});
+    // Eyes
+    const ex = this.dir>0?18:-18;
+    const eye = el('circle',{cx:ex,cy:-6,r:3,fill:'#ffff00'});
+    const ep = el('circle',{cx:ex,cy:-6,r:1.5,fill:'#000'});
+    // Horns
+    const h1=el('line',{x1:ex-2,y1:-10,x2:ex+this.dir*4,y2:-20,stroke:'#883300','stroke-width':3,'stroke-linecap':'round'});
+    const h2=el('line',{x1:ex+2,y1:-10,x2:ex+this.dir*8,y2:-18,stroke:'#883300','stroke-width':2.5,'stroke-linecap':'round'});
+    // Legs
+    this.legs = [];
+    for(let i=-1;i<=1;i+=2) {
+      const l=el('line',{x1:i*8,y1:8,x2:i*10,y2:18,stroke:'#882200','stroke-width':4,'stroke-linecap':'round'});
+      this.legs.push(l);
+      this.el.appendChild(l);
+    }
+    [body,head,eye,ep,h1,h2].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+    this.dir=1;
+  }
+
+  getDesc() { return `State: ${this.state}\nEnergy: ${Math.floor(this.energy)}%`; }
+
+  update() {
+    this.wander(0, W, groundY-40, groundY-10);
+    // Emit fire particles occasionally
+    if(Math.random()<0.02) {
+      const fp = el('circle',{cx:this.x,cy:this.y,r:rand(2,5),fill:`hsl(${rand(10,40)},100%,60%)`,opacity:0.8});
+      layers.fx.appendChild(fp);
+      let fy=0;
+      const anim=setInterval(()=>{
+        fy++;
+        fp.setAttribute('cy',this.y-fy*2);
+        fp.setAttribute('opacity',1-fy/15);
+        if(fy>=15){clearInterval(anim);fp.remove();}
+      },30);
+    }
+  }
+}
+
+// ─── SOLWING (Flier) ───────────────────────────────────────────────────────
+class Solwing extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.1,groundY-100),type:'solwing',label:'Solwing',
+      color:'#ffe44d',size:10,speed:2.5,
+      thoughts:['Wind is warm','Diving for insects','High thermals today','Nest nearby']
+    });
+    this.buildBody();
+    this.altitude = this.y;
+    this.flapPhase = rand(0,Math.PI*2);
+  }
+
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    this.wingL = el('ellipse',{cx:-12,cy:0,rx:14,ry:5,fill:'#ffe44d',opacity:0.9});
+    this.wingR = el('ellipse',{cx:12,cy:0,rx:14,ry:5,fill:'#ffe44d',opacity:0.9});
+    const body = el('ellipse',{cx:0,cy:0,rx:8,ry:4,fill:'#ffaa00',filter:'url(#glow)'});
+    const head = el('circle',{cx:8,cy:-1,r:4,fill:'#ffcc44'});
+    const beak = el('line',{x1:11,y1:-1,x2:16,y2:-1,stroke:'#ff6600','stroke-width':2,'stroke-linecap':'round'});
+    [this.wingL,this.wingR,body,head,beak].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+
+  update() {
+    this.flapPhase += 0.15;
+    const flap = Math.sin(this.flapPhase)*6;
+    this.wingL.setAttribute('cy', flap); this.wingR.setAttribute('cy', -flap);
+    this.wingL.setAttribute('ry', 5+Math.abs(flap)*0.3); this.wingR.setAttribute('ry', 5+Math.abs(flap)*0.3);
+
+    this.wander(0,W, H*0.05, groundY-80);
+    if(Math.random()<0.02) this.vy += rand(-0.5,0.5);
+  }
+}
+
+// ─── LUMIFIN (Aquatic) ─────────────────────────────────────────────────────
+class Lumifin extends Creature {
+  constructor() {
+    super({x:rand(waterX1+30,waterX2-30),y:rand(groundY+10,H-40),
+      type:'lumifin',label:'Lumifin',color:'#7fffd4',size:10,speed:1.5,
+      thoughts:['Current feels good','Following the light','Schooling together','Depths are deep here']
+    });
+    this.buildBody();
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    const body=el('ellipse',{cx:0,cy:0,rx:12,ry:5,fill:'rgba(127,255,212,0.8)',filter:'url(#glow)'});
+    const tail=el('polygon',{points:'-14,0 -10,-6 -10,6',fill:'#44ddbb'});
+    const fin=el('polygon',{points:'0,-5 4,-10 8,-5',fill:'rgba(127,255,212,0.6)'});
+    const eye=el('circle',{cx:9,cy:-1,r:2,fill:'#fff'});
+    const ep=el('circle',{cx:9,cy:-1,r:1,fill:'#004433'});
+    [tail,body,fin,eye,ep].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  update() {
+    this.wander(waterX1+15, waterX2-15, groundY+5, H-20);
+  }
+}
+
+// ─── SKYWHALE ──────────────────────────────────────────────────────────────
+class Skywhale extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.05,H*0.3),type:'skywhale',label:'Skywhale',
+      color:'#22ccff',size:40,speed:0.4,
+      thoughts:['Drifting in solar winds','Filtering star-plankton','Ancient creature speaks','Memory of 1000 years']
+    });
+    this.buildBody();
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    // Bioluminescent trails
+    for(let i=0;i<5;i++) {
+      const t=el('ellipse',{cx:-60-i*20,cy:rand(-5,5),rx:rand(5,15),ry:rand(3,8),
+        fill:`hsla(200,100%,${60-i*10}%,${0.2-i*0.03})`,filter:'url(#bigglow)'});
+      this.el.appendChild(t);
+    }
+    const body=el('ellipse',{cx:0,cy:0,rx:55,ry:25,fill:'rgba(34,204,255,0.7)',filter:'url(#softglow)'});
+    const head=el('ellipse',{cx:50,cy:-5,rx:20,ry:18,fill:'rgba(34,204,255,0.9)'});
+    const eye=el('circle',{cx:62,cy:-8,r:5,fill:'#aaeeff',filter:'url(#glow)'});
+    const ep=el('circle',{cx:63,cy:-8,r:2,fill:'#fff'});
+    // Fins
+    const fin1=el('polygon',{points:'10,-25 -10,-50 -30,-25',fill:'rgba(34,204,255,0.5)'});
+    const fin2=el('polygon',{points:'10,25 -10,50 -30,25',fill:'rgba(34,204,255,0.5)'});
+    const tail=el('polygon',{points:'-55,0 -70,-20 -75,0 -70,20',fill:'rgba(22,180,220,0.8)'});
+    // Bioluminescent spots
+    for(let i=0;i<12;i++) {
+      const spot=el('circle',{cx:rand(-40,45),cy:rand(-15,15),r:rand(2,5),
+        fill:`hsla(${rand(180,220)},100%,80%,0.6)`,filter:'url(#glow)'});
+      this.el.appendChild(spot);
+    }
+    [body,head,fin1,fin2,tail,eye,ep].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  update() {
+    this.wander(0,W, H*0.02, H*0.4);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${this.vx<0?-1:1},1)`);
+    return; // skip base updatePos
+  }
+  updatePos() {} // override
+}
+
+// ─── EMBERMITE ─────────────────────────────────────────────────────────────
+class Embermite extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:groundY+rand(-5,5),type:'embermite',label:'Embermite',
+      color:'#ff9944',size:5,speed:3,
+      thoughts:['Hot!','Eat!','Run!','Dig!']
+    });
+    this.buildBody();
+    this.legPhase=rand(0,Math.PI*2);
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    const body=el('ellipse',{cx:0,cy:0,rx:7,ry:4,fill:'#ff6600',filter:'url(#glow)'});
+    const head=el('circle',{cx:6,cy:-1,r:3,fill:'#ff9944'});
+    // 6 legs
+    this.legEls=[];
+    for(let i=-1;i<=1;i+=1) {
+      const l=el('line',{x1:i*3,y1:2,x2:i*5+rand(-2,2),y2:8,stroke:'#cc4400','stroke-width':1.5});
+      this.el.appendChild(l);
+      this.legEls.push(l);
+    }
+    [body,head].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  update() {
+    this.legPhase+=0.2;
+    this.legEls.forEach((l,i)=>{
+      l.setAttribute('y2', 8+Math.sin(this.legPhase+i*1.5)*3);
+    });
+    this.wander(0,W,groundY-10,groundY+10);
+  }
+}
+
+// ─── PSYCHMORPH ────────────────────────────────────────────────────────────
+class Psychmorph extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(groundY-80,groundY-30),type:'psychmorph',label:'Psychmorph',
+      color:'#cc44ff',size:15,speed:0.8,
+      thoughts:['Shifting form...','Reading minds...','I am everywhere','Dimension slip']
+    });
+    this.hue=rand(260,320);
+    this.buildBody();
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    this.blobEl=el('circle',{r:15,fill:`hsla(${this.hue},90%,60%,0.7)`,filter:'url(#softglow)'});
+    this.innerEl=el('circle',{r:8,fill:`hsla(${this.hue},100%,80%,0.9)`,filter:'url(#glow)'});
+    this.eyeEl=el('circle',{cx:0,cy:-3,r:5,fill:'#fff'});
+    this.pupilEl=el('ellipse',{cx:0,cy:-3,rx:2,ry:3,fill:'#000'});
+    const aura=el('circle',{r:25,fill:'none',stroke:`hsla(${this.hue},100%,70%,0.15)`,'stroke-width':5,filter:'url(#bigglow)'});
+    [aura,this.blobEl,this.innerEl,this.eyeEl,this.pupilEl].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  update() {
+    this.hue=(this.hue+0.5)%360;
+    const morph=Math.sin(this.phase)*5;
+    this.blobEl.setAttribute('r',15+morph);
+    this.blobEl.setAttribute('fill',`hsla(${this.hue},90%,60%,0.7)`);
+    // Float
+    this.y += Math.sin(this.phase*0.5)*0.3;
+    this.wander(0,W,groundY-100,groundY-20);
+    // Teleport occasionally
+    if(Math.random()<0.002) {
+      this.x=rand(50,W-50);
+      this.y=rand(groundY-100,groundY-30);
+      // Flash
+      const flash=el('circle',{cx:this.x,cy:this.y,r:30,fill:`hsla(${this.hue},100%,70%,0.5)`,filter:'url(#bigglow)'});
+      layers.fx.appendChild(flash);
+      setTimeout(()=>flash.remove(),400);
+    }
+  }
+}
+
+// ─── STARJELLY ─────────────────────────────────────────────────────────────
+class Starjelly extends Creature {
+  constructor() {
+    super({x:rand(waterX1+20,waterX2-20),y:rand(groundY+10,H-50),
+      type:'starjelly',label:'Starjelly',color:'rgba(255,255,255,0.6)',size:15,speed:0.5,
+      thoughts:['Pulsing...','Light attracts food','Gel-mind thinking','Stars call to me']
+    });
+    this.buildBody();
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    const cap=el('ellipse',{cx:0,cy:0,rx:18,ry:10,fill:'rgba(200,220,255,0.35)',filter:'url(#softglow)'});
+    this.starEl=el('polygon',{points:this.starPoints(0,0,12,6,5),fill:'rgba(255,255,255,0.7)',filter:'url(#glow)'});
+    // Tentacles
+    this.tentacles=[];
+    for(let i=0;i<8;i++) {
+      const angle=(i/8)*Math.PI;
+      const t=el('line',{x1:Math.cos(Math.PI+angle)*8,y1:8,
+        x2:Math.cos(Math.PI+angle)*16,y2:rand(20,40),
+        stroke:'rgba(200,230,255,0.4)','stroke-width':1.5,'stroke-linecap':'round'});
+      this.el.appendChild(t);
+      this.tentacles.push({el:t,angle,phase:rand(0,Math.PI*2)});
+    }
+    [cap,this.starEl].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  starPoints(cx,cy,r1,r2,n) {
+    let pts='';
+    for(let i=0;i<n*2;i++) {
+      const r=i%2===0?r1:r2;
+      const a=(i/n)*Math.PI-Math.PI/2;
+      pts+=`${cx+Math.cos(a)*r},${cy+Math.sin(a)*r} `;
+    }
+    return pts.trim();
+  }
+  update() {
+    this.tentacles.forEach(t=>{
+      t.phase+=0.05;
+      const sway=Math.sin(t.phase)*8;
+      t.el.setAttribute('x2',Math.cos(Math.PI+t.angle)*16+sway);
+    });
+    this.wander(waterX1+15,waterX2-15,groundY+5,H-20);
+  }
+}
+
+// ─── GLOWWORM ──────────────────────────────────────────────────────────────
+class Glowworm extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:groundY+rand(0,8),type:'glowworm',label:'Glowworm',
+      color:'#44ffee',size:4,speed:0.5,
+      thoughts:['...glow...','The pattern calls','Blink.','Blink blink.']
+    });
+    this.buildBody();
+    this.blinkTimer=rand(0,60);
+  }
+  buildBody() {
+    while(this.el.firstChild) this.el.removeChild(this.el.firstChild);
+    // Segmented body
+    this.segments=[];
+    for(let i=0;i<8;i++) {
+      const s=el('circle',{cx:-i*4,cy:0,r:3,fill:`hsl(${170+i*5},100%,${50+i*3}%)`,
+        filter:'url(#glow)',opacity:0.8});
+      this.el.appendChild(s);
+      this.segments.push(s);
+    }
+    this.el.setAttribute('cursor','pointer');
+    this.el.addEventListener('mouseenter', ()=>this.showInfo());
+    this.el.addEventListener('mouseleave', ()=>this.hideInfo());
+  }
+  update() {
+    this.blinkTimer++;
+    if(this.blinkTimer%40<20) {
+      this.segments.forEach((s,i)=>s.setAttribute('opacity',0.8+Math.sin(this.phase+i*0.5)*0.2));
+    } else {
+      this.segments.forEach(s=>s.setAttribute('opacity',0.1));
+    }
+    this.wander(0,W,groundY-5,groundY+10);
+  }
+}
+
+// ─── POPULATE WORLD ────────────────────────────────────────────────────────
+const creatures = [];
+
+// Sapient Velthari
+for(let i=0;i<6;i++) creatures.push(new Velthari(rand(100,W*0.3),groundY-25));
+// Ignar beasts
+for(let i=0;i<4;i++) creatures.push(new Ignar(rand(0,W),groundY-18));
+// Solwings
+for(let i=0;i<8;i++) creatures.push(new Solwing());
+// Lumifins
+for(let i=0;i<12;i++) creatures.push(new Lumifin());
+// Skywhales
+for(let i=0;i<2;i++) creatures.push(new Skywhale());
+// Embermites
+for(let i=0;i<15;i++) creatures.push(new Embermite());
+// Psychmorphs
+for(let i=0;i<5;i++) creatures.push(new Psychmorph());
+// Starjellies
+for(let i=0;i<8;i++) creatures.push(new Starjelly());
+// Glowworms
+for(let i=0;i<20;i++) creatures.push(new Glowworm());
+
+// ─── PARTICLE EFFECTS ──────────────────────────────────────────────────────
+const particles = [];
+function spawnParticle(x,y,color,vel={vx:rand(-1,1),vy:rand(-2,-0.5)}) {
+  const p = el('circle',{cx:x,cy:y,r:rand(1,3),fill:color,opacity:0.8});
+  layers.fx.appendChild(p);
+  const obj = {el:p, x, y, ...vel, life:40};
+  particles.push(obj);
+  return obj;
+}
+
+// Rain particles
+const rainDrops = [];
+function createRain() {
+  for(let i=0;i<80;i++) {
+    const r=el('line',{
+      x1:rand(0,W),y1:rand(0,H),
+      x2:0,y2:0,
+      stroke:'rgba(100,150,255,0.4)','stroke-width':1
+    });
+    layers.fx.appendChild(r);
+    rainDrops.push({el:r,x:rand(0,W),y:rand(-50,H),vy:rand(8,14),vx:2});
+  }
+}
+function removeRain() {
+  rainDrops.forEach(r=>r.el.remove());
+  rainDrops.length=0;
+}
+
+// ─── DAY/NIGHT CYCLE ───────────────────────────────────────────────────────
+const sunEl = el('circle',{r:30,fill:'#ffe87c',filter:'url(#bigglow)',opacity:0.9});
+layers.sky.appendChild(sunEl);
+
+const moonEl = el('circle',{r:20,fill:'#c8d8ff',filter:'url(#softglow)',opacity:0});
+layers.sky.appendChild(moonEl);
+
+function updateDayCycle(t) {
+  dayPhase = (t % 800) / 800; // full day cycle
+  const sunAngle = dayPhase * Math.PI * 2 - Math.PI/2;
+  const sunX = W/2 + Math.cos(sunAngle) * W*0.45;
+  const sunY = H*0.5 + Math.sin(sunAngle) * H*0.55;
+  sunEl.setAttribute('cx', sunX);
+  sunEl.setAttribute('cy', sunY);
+  const daylight = Math.max(0, -Math.sin(sunAngle));
+  sunEl.setAttribute('opacity', daylight*0.9+0.1);
+
+  const moonAngle = sunAngle + Math.PI;
+  const moonX = W/2 + Math.cos(moonAngle)*W*0.45;
+  const moonY = H*0.5 + Math.sin(moonAngle)*H*0.55;
+  moonEl.setAttribute('cx',moonX); moonEl.setAttribute('cy',moonY);
+  moonEl.setAttribute('opacity', (1-daylight)*0.8);
+
+  // Sky color shift
+  const nightness = 1 - daylight;
+  const sg0 = document.querySelector('#skyGrad stop:first-child');
+  const sg2 = document.querySelector('#skyGrad stop:last-child');
+  const r0=lerp(20,5,nightness), g0=lerp(30,2,nightness), b0=lerp(60,18,nightness);
+  const r2=lerp(100,45,nightness), g2=lerp(60,11,nightness), b2=lerp(200,105,nightness);
+  if(sg0) sg0.setAttribute('stop-color',`rgb(${r0},${g0},${b0})`);
+  if(sg2) sg2.setAttribute('stop-color',`rgb(${r2},${g2},${b2})`);
+
+  const phases=['Dawn','Morning','Noon','Afternoon','Dusk','Night'];
+  const pi=Math.floor(dayPhase*phases.length)%phases.length;
+  return phases[pi];
+}
+
+// ─── MAIN LOOP ─────────────────────────────────────────────────────────────
+let frame = 0;
+function animate() {
+  frame++;
+  cycle = Math.floor(frame/60);
+
+  // Day/night
+  const phaseLabel = updateDayCycle(frame);
+
+  // Stars twinkle
+  starEls.forEach(s=>{
+    s.phase+=0.03;
+    s.el.setAttribute('opacity', s.base*0.5+Math.abs(Math.sin(s.phase))*s.base*0.5);
+  });
+
+  // Flora pulse
+  floraList.forEach(f=>{
+    f.phase+=0.02;
+    const pulse=1+Math.sin(f.phase)*0.05;
+    f.el.setAttribute('transform',`scale(${pulse}) translate(${f.x*(1-pulse)/pulse},${f.y*(1-pulse)/pulse})`);
+  });
+
+  // Water shimmer
+  shimmerLines.forEach(sl=>{
+    sl.phase+=0.05;
+    sl.el.setAttribute('opacity',0.1+Math.abs(Math.sin(sl.phase))*0.2);
+  });
+
+  // Weather
+  weatherTimer++;
+  if(weatherTimer > 600) {
+    weatherTimer=0;
+    const types=['calm','storm','mist','aurora'];
+    const prev=weatherType;
+    weatherType=types[randInt(0,3)];
+    if(weatherType==='storm'&&prev!=='storm') createRain();
+    if(prev==='storm'&&weatherType!=='storm') removeRain();
+  }
+
+  // Rain update
+  if(weatherType==='storm') {
+    rainDrops.forEach(r=>{
+      r.x+=r.vx; r.y+=r.vy;
+      if(r.y>H+10) { r.y=-20; r.x=rand(0,W); }
+      r.el.setAttribute('x1',r.x); r.el.setAttribute('y1',r.y);
+      r.el.setAttribute('x2',r.x-4); r.el.setAttribute('y2',r.y-12);
+    });
+  }
+
+  // Aurora effect
+  if(weatherType==='aurora'&&frame%120===0) {
+    const colors=['rgba(0,255,180,0.06)','rgba(100,0,255,0.06)','rgba(0,150,255,0.06)'];
+    const aur=el('ellipse',{cx:rand(0,W),cy:rand(H*0.05,H*0.3),
+      rx:rand(100,300),ry:rand(30,80),
+      fill:colors[randInt(0,2)],filter:'url(#bigglow)'});
+    layers.fx.appendChild(aur);
+    let life=60;
+    const ai=setInterval(()=>{
+      life--;
+      aur.setAttribute('opacity',life/60);
+      if(life<=0){clearInterval(ai);aur.remove();}
+    },30);
+  }
+
+  // Creatures
+  creatures.forEach(c=>{
+    c.tick();
+  });
+
+  // Particles
+  for(let i=particles.length-1;i>=0;i--) {
+    const p=particles[i];
+    p.life--;
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.05;
+    p.el.setAttribute('cx',p.x); p.el.setAttribute('cy',p.y);
+    p.el.setAttribute('opacity',p.life/40);
+    if(p.life<=0){p.el.remove();particles.splice(i,1);}
+  }
+
+  // Ambient spores
+  if(frame%30===0&&Math.random()<0.3) {
+    const sx=rand(0,W), sy=groundY+rand(-20,0);
+    spawnParticle(sx,sy,`hsla(${rand(80,160)},90%,70%,0.6)`,{vx:rand(-0.5,0.5),vy:rand(-1,-0.3)});
+  }
+
+  // HUD
+  const velCount=creatures.filter(c=>c.type==='velthari').length;
+  const aliveCount=creatures.length;
+  document.getElementById('hud-time').textContent=`Cycle: ${cycle}`;
+  document.getElementById('hud-pop').textContent=`Population: ${aliveCount} (${velCount} sapient)`;
+  document.getElementById('hud-weather').textContent=`Weather: ${weatherType.charAt(0).toUpperCase()+weatherType.slice(1)}`;
+  document.getElementById('hud-phase').textContent=`Day Phase: ${phaseLabel}`;
+
+  requestAnimationFrame(animate);
+}
+
+// ─── CLICK TO SPAWN EFFECTS ────────────────────────────────────────────────
+svg.addEventListener('click', e=>{
+  const rect=svg.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  // Ripple
+  const rip=el('circle',{cx:x,cy:y,r:5,fill:'none',stroke:'rgba(127,255,212,0.6)','stroke-width':2});
+  layers.fx.appendChild(rip);
+  let rr=5;
+  const ri=setInterval(()=>{
+    rr+=4; rip.setAttribute('r',rr);
+    rip.setAttribute('opacity',1-rr/80);
+    if(rr>=80){clearInterval(ri);rip.remove();}
+  },20);
+  // Spawn particles
+  for(let i=0;i<8;i++) spawnParticle(x,y,`hsl(${rand(180,280)},100%,70%)`);
+});
+
+// ─── START ─────────────────────────────────────────────────────────────────
+animate();
+</script>
+</body>
+</html>

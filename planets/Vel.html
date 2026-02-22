@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vel — Sky Raft Archipelago</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#050101; overflow:hidden; font-family:'Cormorant Garamond',serif; }
+  canvas { display:block; }
+  #label {
+    position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+    text-align:center; pointer-events:none;
+  }
+  #label h1 {
+    font-family:'Cinzel Decorative',serif;
+    font-size:1rem; letter-spacing:0.5em;
+    color:#ff6b6b; opacity:0.5;
+  }
+  #label p {
+    font-style:italic; font-size:0.8rem;
+    color:#ff9966; opacity:0.3; margin-top:4px;
+    letter-spacing:0.15em;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="label">
+  <h1>VEL</h1>
+  <p>sky raft archipelago — 9 km above the surface</p>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function rng(seed) {
+  let s = Math.abs(seed) + 1;
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+// ── Sky ────────────────────────────────────────────────────
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#080100');
+  g.addColorStop(0.15, '#160402');
+  g.addColorStop(0.4, '#2a0804');
+  g.addColorStop(0.65, '#3d1005');
+  g.addColorStop(0.8, '#551808');
+  g.addColorStop(1, '#771f0a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ── Stars (few, through dense atmosphere) ─────────────────
+const starR = rng(77);
+const stars = Array.from({length:60}, () => ({
+  x: starR() * 1, y: starR() * 0.35,
+  r: starR() * 0.9 + 0.2,
+  flicker: starR() * Math.PI * 2
+}));
+
+function drawStars() {
+  stars.forEach(s => {
+    const a = 0.1 + 0.2 * Math.abs(Math.sin(s.flicker + t * 0.01));
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,200,150,${a})`;
+    ctx.fill();
+  });
+}
+
+// ── Yxara in the sky (companion) ──────────────────────────
+function drawYxara() {
+  const vx = W * 0.15, vy = H * 0.1, vr = 30;
+  const g = ctx.createRadialGradient(vx, vy, 0, vx, vy, vr * 4);
+  g.addColorStop(0, 'rgba(100,255,180,0.12)');
+  g.addColorStop(1, 'rgba(80,200,140,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(vx, vy, vr * 4, 0, Math.PI * 2); ctx.fill();
+
+  const disk = ctx.createRadialGradient(vx - 8, vy - 10, 2, vx, vy, vr);
+  disk.addColorStop(0, '#aaffdd');
+  disk.addColorStop(0.3, '#22cc88');
+  disk.addColorStop(0.7, '#0a5535');
+  disk.addColorStop(1, '#021a10');
+  ctx.beginPath(); ctx.arc(vx, vy, vr, 0, Math.PI * 2);
+  ctx.fillStyle = disk; ctx.fill();
+}
+
+// ── Magnetic filament particles (going up/right toward Yxara) ─
+const filP = Array.from({length:22}, (_, i) => ({
+  progress: i / 22,
+  speed: 0.0007 + Math.random() * 0.0005,
+  offset: (Math.random() - 0.5) * 20,
+  size: 0.8 + Math.random() * 1.5
+}));
+
+function drawFilament() {
+  const x1 = W * 1.05, y1 = H * 0.6;
+  const x2 = W * 0.15, y2 = H * 0.1;
+  const cpx = W * 0.55, cpy = H * 0.35;
+
+  function bez(p) {
+    const m = 1 - p;
+    return { x: m*m*x1 + 2*m*p*cpx + p*p*x2, y: m*m*y1 + 2*m*p*cpy + p*p*y2 };
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+  ctx.strokeStyle = 'rgba(127,255,212,0.06)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([3, 9]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  filP.forEach(p => {
+    p.progress = (p.progress + p.speed) % 1;
+    const pos = bez(p.progress);
+    const a = 0.35 + 0.65 * Math.sin(p.progress * Math.PI);
+    ctx.beginPath();
+    ctx.arc(pos.x + p.offset * 0.4, pos.y + p.offset, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(127,255,212,${a * 0.7})`;
+    ctx.fill();
+  });
+}
+
+// ── Lava glow from below ───────────────────────────────────
+function drawLavaGlow() {
+  // Massive upwelling glow at bottom
+  const baseY = H * 0.92;
+  const g = ctx.createRadialGradient(W * 0.5, H * 1.1, 0, W * 0.5, H * 1.1, H * 0.7);
+  const pulse = 0.7 + 0.3 * Math.sin(t * 0.025);
+  g.addColorStop(0, `rgba(255,120,20,${0.5 * pulse})`);
+  g.addColorStop(0.3, `rgba(200,50,10,${0.3 * pulse})`);
+  g.addColorStop(0.7, `rgba(120,20,5,${0.15 * pulse})`);
+  g.addColorStop(1, 'rgba(60,5,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, baseY - 50, W, H - baseY + 50);
+
+  // Horizontal lava horizon glow
+  const hg = ctx.createLinearGradient(0, H * 0.82, 0, H);
+  hg.addColorStop(0, 'rgba(255,80,10,0)');
+  hg.addColorStop(0.5, `rgba(255,100,15,${0.12 * pulse})`);
+  hg.addColorStop(1, `rgba(255,130,20,${0.25 * pulse})`);
+  ctx.fillStyle = hg;
+  ctx.fillRect(0, H * 0.82, W, H * 0.18);
+}
+
+// ── Distant eruption plumes ────────────────────────────────
+const plumes = [
+  { x: 0.1, height: 0.55, width: 0.04, phase: 0 },
+  { x: 0.45, height: 0.45, width: 0.06, phase: 2 },
+  { x: 0.78, height: 0.6, width: 0.03, phase: 4 },
+  { x: 0.92, height: 0.4, width: 0.045, phase: 1 },
+];
+
+function drawPlumes() {
+  plumes.forEach(p => {
+    const px = p.x * W;
+    const topY = H * (1 - p.height) - Math.sin(t * 0.008 + p.phase) * 20;
+    const botY = H * 0.9;
+    const w = p.width * W;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 0.02 + p.phase);
+
+    // Main plume column
+    const pg = ctx.createLinearGradient(px, topY, px, botY);
+    pg.addColorStop(0, `rgba(80,40,20,0)`);
+    pg.addColorStop(0.3, `rgba(120,60,20,${0.25 * pulse})`);
+    pg.addColorStop(0.7, `rgba(200,90,20,${0.35 * pulse})`);
+    pg.addColorStop(1, `rgba(255,120,30,${0.5 * pulse})`);
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.moveTo(px - w * 0.2, topY);
+    ctx.bezierCurveTo(px - w * 0.6, topY + (botY - topY) * 0.3, px - w, topY + (botY - topY) * 0.6, px - w * 0.4, botY);
+    ctx.lineTo(px + w * 0.4, botY);
+    ctx.bezierCurveTo(px + w, topY + (botY - topY) * 0.6, px + w * 0.6, topY + (botY - topY) * 0.3, px + w * 0.2, topY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ember streak
+    const es = ctx.createRadialGradient(px, topY, 0, px, topY, w * 1.5);
+    es.addColorStop(0, `rgba(255,200,50,${0.3 * pulse})`);
+    es.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = es;
+    ctx.beginPath();
+    ctx.arc(px, topY, w * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ── Ember particles raining up ─────────────────────────────
+const embers = Array.from({length:80}, () => ({
+  x: Math.random(), y: 0.85 + Math.random() * 0.15,
+  vx: (Math.random() - 0.5) * 0.0008,
+  vy: -(0.001 + Math.random() * 0.002),
+  life: Math.random(),
+  r: 1 + Math.random() * 3,
+  hue: 15 + Math.random() * 30
+}));
+
+function drawEmbers() {
+  embers.forEach(e => {
+    e.life += 0.006;
+    if (e.life > 1) {
+      e.life = 0;
+      e.x = Math.random();
+      e.y = 0.88 + Math.random() * 0.12;
+    }
+    e.x += e.vx;
+    e.y += e.vy;
+    const a = Math.sin(e.life * Math.PI) * 0.8;
+    ctx.beginPath();
+    ctx.arc(e.x * W, e.y * H, e.r, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${e.hue}, 100%, 65%, ${a})`;
+    ctx.fill();
+  });
+}
+
+// ── Ash cloud layers ───────────────────────────────────────
+function drawAshClouds() {
+  const cloudPositions = [
+    { y: 0.52, w: 0.6, x: 0.2, speed: 0.0008 },
+    { y: 0.58, w: 0.45, x: 0.6, speed: -0.0005 },
+    { y: 0.48, w: 0.35, x: 0.05, speed: 0.0006 },
+    { y: 0.62, w: 0.5, x: 0.45, speed: -0.0009 },
+  ];
+
+  cloudPositions.forEach((cl, i) => {
+    const cx = ((cl.x + t * cl.speed) % 1.2 - 0.1) * W;
+    const cy = cl.y * H + Math.sin(t * 0.007 + i) * 10;
+    const cw = cl.w * W;
+    const ch = 35 + Math.sin(i) * 15;
+
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, cw * 0.5);
+    g.addColorStop(0, 'rgba(60,25,15,0.25)');
+    g.addColorStop(0.5, 'rgba(40,15,8,0.15)');
+    g.addColorStop(1, 'rgba(20,5,2,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, cw * 0.5, ch, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ── Main sky island (center, large) ───────────────────────
+function drawMainIsland() {
+  const ix = W * 0.5, iy = H * 0.72;
+  const iw = W * 0.55, ih = 55;
+
+  // Upwelling glow beneath island
+  const ug = ctx.createRadialGradient(ix, iy + ih * 0.5, 0, ix, iy + ih * 0.5, iw * 0.6);
+  ug.addColorStop(0, `rgba(255,100,20,${0.18 + 0.08 * Math.sin(t * 0.03)})`);
+  ug.addColorStop(0.5, 'rgba(200,50,10,0.08)');
+  ug.addColorStop(1, 'rgba(100,20,5,0)');
+  ctx.fillStyle = ug;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + ih * 1.2, iw * 0.6, ih * 1.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Island underside — obsidian with lava veins
+  const under = ctx.createLinearGradient(ix, iy, ix, iy + ih);
+  under.addColorStop(0, '#1a0803');
+  under.addColorStop(0.4, '#0e0401');
+  under.addColorStop(1, '#050101');
+  ctx.fillStyle = under;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + ih * 0.5, iw * 0.48, ih * 0.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Lava veins on underside
+  const r = rng(101);
+  for (let v = 0; v < 8; v++) {
+    const vx = ix + (r() - 0.5) * iw * 0.8;
+    const vy1 = iy + ih * 0.1;
+    const vy2 = iy + ih * 0.9;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.04 + v * 0.7);
+    ctx.beginPath();
+    ctx.moveTo(vx, vy1);
+    ctx.quadraticCurveTo(vx + (r() - 0.5) * 30, (vy1 + vy2) / 2, vx + (r() - 0.5) * 20, vy2);
+    ctx.strokeStyle = `rgba(255,${80 + v * 15},10,${pulse * 0.5})`;
+    ctx.lineWidth = 1 + r() * 1.5;
+    ctx.stroke();
+  }
+
+  // Island top surface
+  ctx.save();
+  ctx.beginPath();
+  // Irregular rocky top
+  ctx.moveTo(ix - iw * 0.48, iy);
+  for (let x = -iw * 0.48; x <= iw * 0.48; x += 18) {
+    const topY = iy - 8 + Math.sin(x * 0.04) * 14 + Math.sin(x * 0.01) * 6;
+    ctx.lineTo(ix + x, topY);
+  }
+  ctx.lineTo(ix + iw * 0.48, iy);
+  ctx.ellipse(ix, iy + ih * 0.5, iw * 0.48, ih * 0.6, 0, Math.PI, 0, true);
+  ctx.closePath();
+
+  const topG = ctx.createLinearGradient(ix, iy - 20, ix, iy);
+  topG.addColorStop(0, '#2a1008');
+  topG.addColorStop(0.5, '#1a0804');
+  topG.addColorStop(1, '#0e0402');
+  ctx.fillStyle = topG;
+  ctx.fill();
+  ctx.restore();
+
+  return { x: ix, y: iy, w: iw, h: ih };
+}
+
+// ── Smaller distant islands ────────────────────────────────
+const sideIslands = [
+  { x: 0.12, y: 0.62, w: 0.14, h: 28, drift: 0.002, phase: 0 },
+  { x: 0.82, y: 0.65, w: 0.12, h: 22, drift: -0.0015, phase: 3 },
+  { x: 0.25, y: 0.55, w: 0.08, h: 16, drift: 0.001, phase: 1.5 },
+  { x: 0.72, y: 0.58, w: 0.09, h: 18, drift: -0.0018, phase: 2 },
+];
+
+function drawSideIsland(isl) {
+  const ix = isl.x * W, ih = isl.h;
+  const iy = isl.y * H + Math.sin(t * 0.012 + isl.phase) * 8;
+  const iw = isl.w * W;
+
+  const g = ctx.createLinearGradient(ix, iy - 10, ix, iy + ih);
+  g.addColorStop(0, '#1f0905');
+  g.addColorStop(1, '#080201');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy, iw * 0.48, ih * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Top surface
+  ctx.beginPath();
+  for (let x = -iw * 0.45; x <= iw * 0.45; x += 12) {
+    const ty = iy - ih * 0.35 + Math.sin(x * 0.06) * 5;
+    if (x === -iw * 0.45) ctx.moveTo(ix + x, ty);
+    else ctx.lineTo(ix + x, ty);
+  }
+  ctx.lineTo(ix + iw * 0.45, iy);
+  ctx.lineTo(ix - iw * 0.45, iy);
+  ctx.closePath();
+  ctx.fillStyle = '#1a0704';
+  ctx.fill();
+
+  // Ashroot trees on small islands
+  const ri = rng(isl.phase * 100 + 7);
+  const count = 1 + Math.floor(ri() * 3);
+  for (let i = 0; i < count; i++) {
+    const tx = ix + (ri() - 0.5) * iw * 0.6;
+    const ty = iy - ih * 0.35;
+    drawAshroot(tx, ty, 0.4 + ri() * 0.3, ri);
+  }
+}
+
+// ── Ashroot tree ───────────────────────────────────────────
+function drawAshroot(x, groundY, sc, rand) {
+  const r = rand || rng(x + groundY);
+  const trunkH = (50 + r() * 60) * sc;
+  const trunkW = (5 + r() * 4) * sc;
+  const sway = Math.sin(t * 0.02 + x * 0.01) * 0.04;
+
+  ctx.save();
+  ctx.translate(x, groundY);
+  ctx.rotate(sway);
+
+  // Trunk
+  const trunkG = ctx.createLinearGradient(0, 0, 0, -trunkH);
+  trunkG.addColorStop(0, '#1a0803');
+  trunkG.addColorStop(0.5, '#2a1008');
+  trunkG.addColorStop(1, '#1a0804');
+  ctx.fillStyle = trunkG;
+  ctx.beginPath();
+  ctx.moveTo(-trunkW * 0.6, 0);
+  ctx.bezierCurveTo(-trunkW * 0.8, -trunkH * 0.3, -trunkW * 0.5, -trunkH * 0.7, -trunkW * 0.3, -trunkH);
+  ctx.lineTo(trunkW * 0.3, -trunkH);
+  ctx.bezierCurveTo(trunkW * 0.5, -trunkH * 0.7, trunkW * 0.8, -trunkH * 0.3, trunkW * 0.6, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Metallic frond canopy
+  const frondCount = 5 + Math.floor(r() * 4);
+  for (let f = 0; f < frondCount; f++) {
+    const fa = ((f / frondCount) * Math.PI * 2) + Math.sin(t * 0.015 + f) * 0.1;
+    const fl = (35 + r() * 30) * sc;
+    const fw = (8 + r() * 6) * sc;
+    const fx = Math.cos(fa) * fl;
+    const fy = -trunkH + Math.sin(fa) * fl * 0.4;
+
+    ctx.save();
+    ctx.translate(0, -trunkH);
+    ctx.rotate(fa);
+
+    const frondG = ctx.createLinearGradient(0, 0, fl, 0);
+    frondG.addColorStop(0, `rgba(180,100,50,0.9)`);
+    frondG.addColorStop(0.4, `rgba(140,80,30,0.7)`);
+    frondG.addColorStop(1, `rgba(100,60,20,0.4)`);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(fl * 0.3, -fw * 0.5, fl * 0.7, -fw * 0.3, fl, 0);
+    ctx.bezierCurveTo(fl * 0.7, fw * 0.5, fl * 0.3, fw * 0.4, 0, 0);
+    ctx.fillStyle = frondG;
+    ctx.fill();
+
+    // Metallic sheen
+    ctx.beginPath();
+    ctx.moveTo(fl * 0.2, -fw * 0.1);
+    ctx.lineTo(fl * 0.8, -fw * 0.08);
+    ctx.strokeStyle = `rgba(220,160,80,${0.3 + 0.2 * Math.sin(t * 0.04 + f)})`;
+    ctx.lineWidth = 0.8 * sc;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// ── Magma Harvester ────────────────────────────────────────
+function drawHarvester(x, y, facing, sc) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (facing < 0) ctx.scale(-1, 1);
+
+  const bw = 22 * sc, bh = 14 * sc;
+
+  // Body — obsidian exoskeleton
+  ctx.beginPath();
+  ctx.ellipse(0, 0, bw, bh, 0, 0, Math.PI * 2);
+  const bodyG = ctx.createRadialGradient(-bw * 0.3, -bh * 0.3, 0, 0, 0, bw);
+  bodyG.addColorStop(0, '#444444');
+  bodyG.addColorStop(0.4, '#1a1a1a');
+  bodyG.addColorStop(0.8, '#0a0505');
+  bodyG.addColorStop(1, '#050202');
+  ctx.fillStyle = bodyG;
+  ctx.fill();
+
+  // Obsidian plate texture lines
+  for (let p = 0; p < 4; p++) {
+    ctx.beginPath();
+    ctx.arc(0, 0, bw * (0.4 + p * 0.15), Math.PI * 0.7, Math.PI * 1.5);
+    ctx.strokeStyle = `rgba(80,50,40,0.3)`;
+    ctx.lineWidth = 0.8 * sc;
+    ctx.stroke();
+  }
+
+  // Six legs
+  const legAngles = [Math.PI * 0.5, Math.PI * 0.7, Math.PI * 0.9, -Math.PI * 0.5, -Math.PI * 0.7, -Math.PI * 0.9];
+  legAngles.forEach((la, i) => {
+    const legPhase = Math.sin(t * 0.08 + i * 1.0) * 0.2;
+    const lx1 = Math.cos(la) * bw;
+    const ly1 = Math.sin(la) * bh;
+    const lx2 = Math.cos(la + legPhase) * bw * 2.2;
+    const ly2 = ly1 + 12 * sc;
+    ctx.beginPath();
+    ctx.moveTo(lx1, ly1);
+    ctx.quadraticCurveTo(lx1 + (lx2 - lx1) * 0.5, ly1 + 4 * sc, lx2, ly2);
+    ctx.strokeStyle = '#2a1410';
+    ctx.lineWidth = 2 * sc;
+    ctx.stroke();
+    // Claw
+    ctx.beginPath();
+    ctx.arc(lx2, ly2, 2.5 * sc, 0, Math.PI * 2);
+    ctx.fillStyle = '#555';
+    ctx.fill();
+  });
+
+  // Cable-harvester arm (extended downward over island edge)
+  const armPhase = Math.sin(t * 0.03) * 0.15;
+  ctx.save();
+  ctx.rotate(armPhase);
+  ctx.beginPath();
+  ctx.moveTo(bw * 0.8, 0);
+  ctx.bezierCurveTo(bw * 1.5, bh * 0.5, bw * 1.8, bh * 2, bw * 1.5, bh * 3.5);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2.5 * sc;
+  ctx.stroke();
+  // Magma droplet at tip
+  const dropPulse = 0.6 + 0.4 * Math.abs(Math.sin(t * 0.06));
+  ctx.beginPath();
+  ctx.arc(bw * 1.5 + Math.cos(armPhase) * 5, bh * 3.5, 4 * sc, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255,120,20,${dropPulse})`;
+  ctx.fill();
+  const dg = ctx.createRadialGradient(bw * 1.5, bh * 3.5, 0, bw * 1.5, bh * 3.5, 10 * sc);
+  dg.addColorStop(0, `rgba(255,200,50,${dropPulse * 0.5})`);
+  dg.addColorStop(1, 'rgba(255,80,0,0)');
+  ctx.fillStyle = dg;
+  ctx.arc(bw * 1.5, bh * 3.5, 10 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Eyes (thermal sensors)
+  ctx.beginPath();
+  ctx.arc(-bw * 0.3, -bh * 0.25, 3 * sc, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255,180,20,${0.6 + 0.4 * Math.sin(t * 0.1)})`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(-bw * 0.1, -bh * 0.3, 3 * sc, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255,180,20,${0.6 + 0.4 * Math.sin(t * 0.1 + 1)})`;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Fire Coral (on top of island) ─────────────────────────
+function drawFireCoral(x, baseY, sc) {
+  const r = rng(Math.floor(x * 3 + 1));
+  const count = 3 + Math.floor(r() * 5);
+  for (let i = 0; i < count; i++) {
+    const cx = x + (r() - 0.5) * 40 * sc;
+    const h = (18 + r() * 28) * sc;
+    const w = (4 + r() * 5) * sc;
+    const branches = 2 + Math.floor(r() * 3);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.05 + i * 1.2 + x * 0.01);
+    const hue = 10 + r() * 25;
+
+    ctx.save();
+    ctx.translate(cx, baseY);
+
+    // Main stalk
+    const sg = ctx.createLinearGradient(0, 0, 0, -h);
+    sg.addColorStop(0, `hsla(${hue + 30}, 70%, 20%, 0.9)`);
+    sg.addColorStop(0.5, `hsla(${hue + 15}, 80%, 35%, 0.9)`);
+    sg.addColorStop(1, `hsla(${hue}, 100%, 55%, 0.9)`);
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.5, 0);
+    ctx.quadraticCurveTo(-w * 0.3, -h * 0.5, 0, -h);
+    ctx.quadraticCurveTo(w * 0.3, -h * 0.5, w * 0.5, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Branches
+    for (let b = 0; b < branches; b++) {
+      const bh_pos = 0.3 + (b / branches) * 0.5;
+      const ba = (r() > 0.5 ? 1 : -1) * (0.4 + r() * 0.5);
+      const bl = (10 + r() * 15) * sc;
+      const bx = 0, by = -h * bh_pos;
+
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(ba);
+      const bg = ctx.createLinearGradient(0, 0, bl, 0);
+      bg.addColorStop(0, `hsla(${hue + 10}, 90%, 40%, 0.8)`);
+      bg.addColorStop(1, `hsla(${hue - 5}, 100%, 60%, 0.9)`);
+      ctx.strokeStyle = bg;
+      ctx.lineWidth = w * 0.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(bl * 0.6, -5 * sc, bl, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Glowing tip
+    const tg = ctx.createRadialGradient(0, -h, 0, 0, -h, 10 * sc);
+    tg.addColorStop(0, `hsla(${hue - 10}, 100%, 80%, ${pulse * 0.8})`);
+    tg.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.arc(0, -h, 10 * sc, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// ── Ember Drifter balloon ──────────────────────────────────
+const drifters = [
+  { x: 0.3, y: 0.38, speed: 0.00012, sc: 1.0, phase: 0 },
+  { x: 0.65, y: 0.32, speed: 0.00009, sc: 0.65, phase: 2 },
+  { x: 0.5, y: 0.44, speed: 0.00015, sc: 0.8, phase: 1 },
+];
+
+function drawDrifter(dx, dy, sc, t, phase) {
+  const x = dx * W, y = dy * H;
+  const r = 25 * sc;
+  const bob = Math.sin(t * 0.018 + phase) * 8;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  // Gas bladder
+  const bg = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  bg.addColorStop(0, 'rgba(255,180,60,0.7)');
+  bg.addColorStop(0.4, 'rgba(220,90,20,0.6)');
+  bg.addColorStop(0.8, 'rgba(160,40,10,0.5)');
+  bg.addColorStop(1, 'rgba(80,15,5,0.3)');
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 1.15, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // Surface bioluminescent patches (Yxaran spores!)
+  for (let p = 0; p < 4; p++) {
+    const pa = (p / 4) * Math.PI * 2 + t * 0.008;
+    const px = Math.cos(pa) * r * 0.6;
+    const py = Math.sin(pa) * r * 0.7;
+    const glow = 0.3 + 0.5 * Math.sin(t * 0.04 + p * 1.5);
+    ctx.beginPath();
+    ctx.arc(px, py, 4 * sc, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(100,255,180,${glow * 0.6})`;
+    ctx.fill();
+  }
+
+  // Tentacles/trailing filaments
+  for (let f = 0; f < 6; f++) {
+    const fa = (f / 6) * Math.PI * 0.8 + Math.PI * 0.1;
+    const flap = Math.sin(t * 0.025 + f * 0.7) * 0.15;
+    const fl = (20 + f * 4) * sc;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(Math.PI + fa) * r * 0.6, Math.sin(Math.PI + fa) * r * 0.9);
+    ctx.quadraticCurveTo(
+      Math.cos(Math.PI + fa + flap) * r * 0.8 - 5,
+      r + fl * 0.5,
+      Math.cos(Math.PI + fa + flap * 2) * r * 0.3,
+      r + fl
+    );
+    ctx.strokeStyle = `rgba(200,100,40,${0.3 + f * 0.04})`;
+    ctx.lineWidth = 1.2 * sc;
+    ctx.stroke();
+  }
+
+  // Atmosphere glow
+  const gg = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 1.8);
+  gg.addColorStop(0, 'rgba(255,120,30,0.1)');
+  gg.addColorStop(1, 'rgba(255,60,10,0)');
+  ctx.fillStyle = gg;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Spore burst from island edge ───────────────────────────
+const islandSpores = Array.from({length:35}, () => ({
+  angle: Math.PI * 0.6 + Math.random() * Math.PI * 0.8,
+  dist: 0.3 + Math.random() * 0.7,
+  speed: 0.002 + Math.random() * 0.003,
+  r: 1 + Math.random() * 2.5,
+  life: Math.random()
+}));
+
+function drawIslandSpores(ix, iy) {
+  islandSpores.forEach(s => {
+    s.life += s.speed;
+    if (s.life > 1) { s.life = 0; s.angle = Math.PI * 0.6 + Math.random() * Math.PI * 0.8; }
+    const maxDist = 120;
+    const dx = Math.cos(s.angle + Math.sin(s.life * 3) * 0.3) * s.life * maxDist;
+    const dy = Math.sin(s.angle) * s.life * maxDist;
+    const a = Math.sin(s.life * Math.PI) * 0.5;
+    ctx.beginPath();
+    ctx.arc(ix + dx, iy + dy, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,${100 + s.r * 30},20,${a})`;
+    ctx.fill();
+  });
+}
+
+// ── Lava horizon at bottom ─────────────────────────────────
+function drawLavaHorizon() {
+  const baseY = H * 0.88;
+  const pulse = 0.7 + 0.3 * Math.sin(t * 0.02);
+
+  // Lava surface
+  ctx.beginPath();
+  ctx.moveTo(0, baseY);
+  for (let x = 0; x <= W; x += 20) {
+    const y = baseY + Math.sin(x * 0.02 + t * 0.04) * 6 + Math.sin(x * 0.008 + t * 0.02) * 10;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath();
+
+  const lg = ctx.createLinearGradient(0, baseY, 0, H);
+  lg.addColorStop(0, `rgba(255,${80 + 40 * pulse},10,0.9)`);
+  lg.addColorStop(0.2, `rgba(200,40,5,0.95)`);
+  lg.addColorStop(0.6, `rgba(120,15,2,1)`);
+  lg.addColorStop(1, '#050100');
+  ctx.fillStyle = lg;
+  ctx.fill();
+
+  // Bright lava cracks
+  for (let lc = 0; lc < 6; lc++) {
+    const lcx = (lc / 6 + Math.sin(t * 0.005 + lc) * 0.05) * W;
+    const lcy = baseY + 10 + Math.sin(lcx * 0.01 + t * 0.03) * 8;
+    const lcw = 30 + Math.sin(t * 0.04 + lc) * 15;
+    const lcg = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, lcw);
+    lcg.addColorStop(0, `rgba(255,230,100,${pulse * 0.7})`);
+    lcg.addColorStop(0.3, `rgba(255,150,30,${pulse * 0.4})`);
+    lcg.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = lcg;
+    ctx.beginPath(); ctx.ellipse(lcx, lcy, lcw, 5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── RENDER LOOP ────────────────────────────────────────────
+function render() {
+  t++;
+  ctx.clearRect(0, 0, W, H);
+
+  drawSky();
+  drawStars();
+  drawYxara();
+  drawFilament();
+  drawPlumes();
+  drawAshClouds();
+  drawLavaGlow();
+
+  // Side islands (behind main)
+  sideIslands.forEach(drawSideIsland);
+
+  // Main island
+  const island = drawMainIsland();
+  const islandTop = island.y - 10;
+  const islandLeft = island.x - island.w * 0.42;
+  const islandRight = island.x + island.w * 0.42;
+
+  // Fire coral clusters on main island
+  const coralPos = [0.25, 0.35, 0.45, 0.55, 0.62, 0.72, 0.8];
+  coralPos.forEach(cp => {
+    const cx = islandLeft + cp * (islandRight - islandLeft);
+    const cy = islandTop + Math.sin((cx - island.x) * 0.015) * 8;
+    drawFireCoral(cx, cy, 0.8 + Math.sin(cp * 10) * 0.15);
+  });
+
+  // Ashroot trees on main island
+  drawAshroot(island.x - island.w * 0.28, islandTop, 1.0, rng(11));
+  drawAshroot(island.x + island.w * 0.18, islandTop - 5, 1.2, rng(22));
+  drawAshroot(island.x - island.w * 0.05, islandTop - 8, 0.9, rng(33));
+  drawAshroot(island.x + island.w * 0.36, islandTop - 2, 0.75, rng(44));
+
+  // Magma Harvesters
+  drawHarvester(island.x - island.w * 0.35, islandTop - 5, 1, 0.85);
+  drawHarvester(island.x + island.w * 0.22, islandTop - 8, -1, 0.75);
+  drawHarvester(island.x + island.w * 0.12, islandTop - 4, 1, 0.7);
+
+  // Island edge spores
+  drawIslandSpores(island.x - island.w * 0.45, islandTop);
+  drawIslandSpores(island.x + island.w * 0.45, islandTop);
+
+  // Ember Drifters
+  drifters.forEach(d => {
+    d.x = (d.x + d.speed) % 1.1;
+    if (d.x > 1.05) d.x = -0.05;
+    drawDrifter(d.x, d.y, d.sc, t, d.phase);
+  });
+
+  drawEmbers();
+  drawLavaHorizon();
+
+  // Atmospheric haze overlay
+  const haze = ctx.createLinearGradient(0, 0, 0, H);
+  haze.addColorStop(0, 'rgba(20,5,2,0)');
+  haze.addColorStop(0.4, 'rgba(40,10,3,0.04)');
+  haze.addColorStop(0.85, 'rgba(80,20,5,0)');
+  haze.addColorStop(1, 'rgba(100,30,8,0.3)');
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, 0, W, H);
+
+  requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>

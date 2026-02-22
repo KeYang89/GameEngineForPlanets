@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Aethon — Living Civilizations</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+:root {
+  --gold: #d4a843;
+  --gold2: #f0c060;
+  --ink: #1a1008;
+  --parchment: #f5ecd0;
+  --red-civ: #c0392b;
+  --blue-civ: #2471a3;
+  --green-civ: #1e8449;
+  --purple-civ: #7d3c98;
+  --amber-civ: #d35400;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#0a0806; font-family:'Crimson Pro',serif; cursor:none; }
+
+#stage { position:relative; width:100vw; height:100vh; overflow:hidden; }
+
+/* Custom cursor */
+#cursor {
+  position:fixed; width:18px; height:18px;
+  border:1.5px solid rgba(212,168,67,0.8); border-radius:50%;
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(212,168,67,0.4);
+}
+#cursor::after {
+  content:''; position:absolute; inset:4px;
+  background:rgba(212,168,67,0.5); border-radius:50%;
+}
+
+/* Main SVG */
+#world { width:100%; height:100%; display:block; }
+
+/* ── PANEL UI ── */
+#chronicle {
+  position:absolute; top:14px; left:14px;
+  width:240px;
+  background:rgba(10,8,6,0.88);
+  border:1px solid rgba(212,168,67,0.35);
+  border-radius:4px;
+  padding:14px 16px;
+  z-index:100;
+  pointer-events:none;
+  backdrop-filter:blur(6px);
+}
+#chronicle h1 {
+  font-family:'Cinzel',serif; font-size:15px; font-weight:900;
+  letter-spacing:4px; color:var(--gold);
+  border-bottom:1px solid rgba(212,168,67,0.25);
+  padding-bottom:7px; margin-bottom:9px;
+  text-shadow:0 0 12px rgba(212,168,67,0.3);
+}
+#chronicle .stat-row {
+  display:flex; justify-content:space-between;
+  font-size:11px; color:rgba(240,220,180,0.75);
+  margin:3px 0; letter-spacing:0.5px;
+}
+#chronicle .stat-val { color:var(--gold2); font-weight:600; }
+
+/* ── CIV LEGEND ── */
+#legend {
+  position:absolute; bottom:14px; left:14px;
+  background:rgba(10,8,6,0.88);
+  border:1px solid rgba(212,168,67,0.3);
+  border-radius:4px;
+  padding:12px 16px;
+  z-index:100; pointer-events:none;
+  backdrop-filter:blur(6px);
+}
+#legend h2 {
+  font-family:'Cinzel',serif; font-size:10px;
+  letter-spacing:3px; color:rgba(212,168,67,0.7);
+  margin-bottom:8px;
+}
+.civ-row {
+  display:flex; align-items:center; gap:9px;
+  margin:5px 0; font-size:11px; color:rgba(240,220,180,0.8);
+}
+.civ-dot {
+  width:10px; height:10px; border-radius:50%;
+  flex-shrink:0;
+}
+.civ-pop { margin-left:auto; color:rgba(212,168,67,0.8); font-size:10px; }
+
+/* ── EVENT LOG ── */
+#event-log {
+  position:absolute; top:14px; right:14px;
+  width:260px;
+  background:rgba(10,8,6,0.88);
+  border:1px solid rgba(212,168,67,0.3);
+  border-radius:4px;
+  padding:12px 16px;
+  z-index:100; pointer-events:none;
+  backdrop-filter:blur(6px);
+  max-height:320px; overflow:hidden;
+}
+#event-log h2 {
+  font-family:'Cinzel',serif; font-size:10px;
+  letter-spacing:3px; color:rgba(212,168,67,0.7);
+  margin-bottom:8px;
+  border-bottom:1px solid rgba(212,168,67,0.2);
+  padding-bottom:5px;
+}
+.event-entry {
+  font-size:10.5px; color:rgba(220,200,160,0.8);
+  line-height:1.6; margin:4px 0;
+  border-left:2px solid rgba(212,168,67,0.3);
+  padding-left:7px;
+  font-style:italic;
+}
+.event-entry.war { border-left-color:#c0392b; color:rgba(255,160,140,0.85); }
+.event-entry.trade { border-left-color:#2471a3; color:rgba(140,200,255,0.85); }
+.event-entry.peace { border-left-color:#1e8449; color:rgba(140,255,180,0.85); }
+.event-entry.wonder { border-left-color:#d4a843; color:rgba(255,220,140,0.9); }
+
+/* ── TOOLTIP ── */
+#tooltip {
+  position:fixed;
+  font-family:'Crimson Pro',serif;
+  font-size:12px; color:rgba(240,220,180,0.95);
+  background:rgba(10,8,6,0.9);
+  border:1px solid rgba(212,168,67,0.4);
+  border-radius:3px;
+  padding:9px 13px;
+  pointer-events:none; z-index:200;
+  display:none;
+  max-width:200px;
+  line-height:1.7;
+  backdrop-filter:blur(4px);
+}
+#tooltip h3 {
+  font-family:'Cinzel',serif; font-size:11px;
+  color:var(--gold); letter-spacing:2px;
+  margin-bottom:4px;
+}
+
+/* ── YEAR COUNTER ── */
+#year-display {
+  position:absolute; bottom:14px; right:14px;
+  font-family:'Cinzel',serif; font-size:13px;
+  color:rgba(212,168,67,0.7);
+  letter-spacing:3px;
+  pointer-events:none; z-index:100;
+}
+
+/* Scanlines aesthetic */
+#scanlines {
+  position:fixed; inset:0; z-index:500;
+  pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom, transparent 0px, transparent 2px,
+    rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 3px
+  );
+}
+
+/* Vignette */
+#vignette {
+  position:fixed; inset:0; z-index:490; pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.75) 100%);
+}
+
+@keyframes shimmer {
+  0%,100%{opacity:0.6} 50%{opacity:1}
+}
+@keyframes warFlash {
+  0%{opacity:0} 30%{opacity:0.9} 100%{opacity:0}
+}
+@keyframes tradeFlow {
+  from{stroke-dashoffset:0} to{stroke-dashoffset:-30}
+}
+</style>
+</head>
+<!-- Planet Aethon - a living planet with multiple civilizations, cities, trade routes, wars and diplomacyplanet_civilizations.htmlPresented fileDoneWelcome to Planet Aethon — a living, breathing world that simulates itself in real time! Here's everything happening:
+
+🗺️ The World
+A full planet map with 6 distinct landmasses — warm deserts, coastal lowlands, dense forests, volcanic wastes, dry steppes, and island chains — complete with rivers, ocean shimmer, and atmospheric cloud layers drifting across the surface.
+🏛️ 5 Civilizations, each with personality:
+
+🔴 Solari Empire — aggressive sun-worshippers in the eastern deserts, iron cavalry and pyramids
+🔵 Thalassian League — maritime merchants controlling trade, inventors of science
+🟢 Verdant Clans — druidic forest-dwellers who ride beasts and commune with spirits
+🟣 Obsidian Dominion — sorcerer-kings harnessing volcanic energy for arcane power
+🟠 Ashborn Tribe — nomadic steppe raiders who strike fast and hard
+
+🏙️ 19 Starting Cities ranging from grand capitals (star-fortress icons with walls and towers) to major cities (diamond markers) to frontier towns — each with real population numbers.
+⚔️ Living Diplomacy System:
+Relations shift between war, hostile, neutral, friendly, and alliance. Wars trigger battle effects and city captures. Peace deals open trade routes.
+💛 Animated Trade Ships sail curved routes between allied capitals, dashing across the map. New routes open as relations improve.
+⚔️ Military Units (armies, fleets, cavalry, mages) patrol their territories and automatically clash with enemies during wars — spawning spark and ring battle effects.
+🏛️ 5 World Wonders unlock across the ages — the Pyramid of the Eternal Sun, the Grand Lighthouse, the World-Tree Shrine, the Void Observatory, and the Ancestor Forge — each announced with a golden sparkle burst.
+📜 World Chronicle logs every event — wars declared, alliances formed, cities founded, golden ages, plagues, scientific breakthroughs, cultural explosions.
+⏳ Age Progression from Dawn Age → Stone → Bronze → Iron → Classical → Medieval → Renaissance → Industrial → Enlightened, with populations growing and cities expanding every year. -->
+<body>
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="stage">
+<svg id="world" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- UI -->
+<div id="chronicle">
+  <h1>✦ AETHON ✦</h1>
+  <div class="stat-row"><span>Age</span><span class="stat-val" id="s-age">Dawn Age</span></div>
+  <div class="stat-row"><span>World Pop.</span><span class="stat-val" id="s-pop">0</span></div>
+  <div class="stat-row"><span>Active Wars</span><span class="stat-val" id="s-wars">0</span></div>
+  <div class="stat-row"><span>Trade Routes</span><span class="stat-val" id="s-trade">0</span></div>
+  <div class="stat-row"><span>Alliances</span><span class="stat-val" id="s-alliances">0</span></div>
+  <div class="stat-row"><span>Wonders Built</span><span class="stat-val" id="s-wonders">0</span></div>
+  <div class="stat-row"><span>Cities Founded</span><span class="stat-val" id="s-cities">0</span></div>
+</div>
+
+<div id="legend">
+  <h2>CIVILIZATIONS</h2>
+  <div class="civ-row"><div class="civ-dot" style="background:#e74c3c;box-shadow:0 0 5px #e74c3c"></div><span>Solari Empire</span><span class="civ-pop" id="pop-0">—</span></div>
+  <div class="civ-row"><div class="civ-dot" style="background:#2e86c1;box-shadow:0 0 5px #2e86c1"></div><span>Thalassian League</span><span class="civ-pop" id="pop-1">—</span></div>
+  <div class="civ-row"><div class="civ-dot" style="background:#27ae60;box-shadow:0 0 5px #27ae60"></div><span>Verdant Clans</span><span class="civ-pop" id="pop-2">—</span></div>
+  <div class="civ-row"><div class="civ-dot" style="background:#8e44ad;box-shadow:0 0 5px #8e44ad"></div><span>Obsidian Dominion</span><span class="civ-pop" id="pop-3">—</span></div>
+  <div class="civ-row"><div class="civ-dot" style="background:#d35400;box-shadow:0 0 5px #d35400"></div><span>Ashborn Tribe</span><span class="civ-pop" id="pop-4">—</span></div>
+</div>
+
+<div id="event-log">
+  <h2>⚔ WORLD CHRONICLE</h2>
+  <div id="events-container"></div>
+</div>
+
+<div id="year-display">YEAR <span id="s-year">1</span></div>
+<div id="tooltip"><h3 id="tt-name"></h3><div id="tt-body"></div></div>
+</div>
+
+<script>
+const W=1000, H=620;
+const svg=document.getElementById('world');
+svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+
+// ── UTILS ──────────────────────────────────────────────────
+const rand=(a,b)=>a+Math.random()*(b-a);
+const randInt=(a,b)=>Math.floor(rand(a,b+1));
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const dist=(x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
+function el(tag,attrs={},parent=null){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);
+  if(parent)parent.appendChild(e);
+  return e;
+}
+
+// Custom cursor
+const curEl=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{curEl.style.left=e.clientX+'px';curEl.style.top=e.clientY+'px';});
+
+// ── WORLD STATE ────────────────────────────────────────────
+let year=1, totalWonders=0, totalCitiesFoundedCount=0;
+const ages=['Dawn Age','Stone Age','Bronze Age','Iron Age','Classical Age','Medieval Age','Renaissance','Industrial Age','Enlightened Age'];
+
+// ── SVG LAYERS ─────────────────────────────────────────────
+const layers={};
+['terrain','ocean-detail','rivers','borders','roads','trade','territory',
+ 'structures','units','effects','particles','ui-svg'].forEach(n=>{
+  const g=el('g',{id:n.replace('-','_')});
+  svg.appendChild(g); layers[n]=g;
+});
+
+// ── DEFS ───────────────────────────────────────────────────
+const defs=el('defs'); svg.insertBefore(defs,svg.firstChild);
+
+function mkGlow(id,blur,color){
+  const f=el('filter',{id,x:'-60%',y:'-60%',width:'220%',height:'220%'},defs);
+  el('feGaussianBlur',{stdDeviation:blur,result:'b'},f);
+  const m=el('feMerge',{},f);
+  el('feMergeNode',{in:'b'},m); el('feMergeNode',{in:'SourceGraphic'},m);
+}
+mkGlow('g2',2); mkGlow('g4',4); mkGlow('g8',8); mkGlow('g14',14);
+
+const softF=el('filter',{id:'soft',x:'-50%',y:'-50%',width:'200%',height:'200%'},defs);
+el('feGaussianBlur',{stdDeviation:'12'},softF);
+
+// ── TERRAIN GENERATION ─────────────────────────────────────
+// Sky/space background
+const bgG=el('radialGradient',{id:'space-bg',cx:'50%',cy:'50%',r:'70%'},defs);
+el('stop',{offset:'0%','stop-color':'#0d0a04'},bgG);
+el('stop',{offset:'100%','stop-color':'#020100'},bgG);
+el('rect',{x:0,y:0,width:W,height:H,fill:'url(#space-bg)'},layers['terrain']);
+
+// Stars
+for(let i=0;i<80;i++){
+  el('circle',{cx:rand(0,W),cy:rand(0,H),r:rand(0.3,1.2),
+    fill:`hsl(${rand(30,60)},${rand(20,60)}%,${rand(70,95)}%)`,opacity:rand(0.2,0.5)},layers['terrain']);
+}
+
+// ── PLANET BASE (taking most of screen) ───────────────────
+// Ocean base
+const oceanG=el('radialGradient',{id:'ocean-base',cx:'45%',cy:'40%',r:'60%'},defs);
+el('stop',{offset:'0%','stop-color':'#0e3d5c'},oceanG);
+el('stop',{offset:'50%','stop-color':'#082a42'},oceanG);
+el('stop',{offset:'100%','stop-color':'#041520'},oceanG);
+el('rect',{x:0,y:0,width:W,height:H,fill:'url(#ocean-base)'},layers['terrain']);
+
+// Ocean shimmer
+for(let i=0;i<30;i++){
+  el('ellipse',{cx:rand(0,W),cy:rand(0,H),rx:rand(30,150),ry:rand(10,40),
+    fill:`rgba(20,${randInt(100,160)},${randInt(180,240)},${rand(0.03,0.08)})`,
+    transform:`rotate(${rand(0,180)},${rand(0,W)},${rand(0,H)})`},layers['ocean-detail']);
+}
+
+// ── CONTINENTAL LANDMASSES ─────────────────────────────────
+// Each continent is a complex polygon
+const continents=[
+  // Solari continent - center-right, warm desert/grassland
+  {
+    name:'Solari Lands',
+    pts:[[520,60],[680,40],[820,70],[900,130],[920,220],[880,320],[820,390],
+         [740,420],[660,400],[580,360],[530,290],[490,210],[490,130],[520,60]],
+    fill:'#c8a55a', fill2:'#b8923e', biome:'desert-plains'
+  },
+  // Thalassian coast - bottom center, coastal
+  {
+    name:'Thalassian Coast',
+    pts:[[280,380],[380,350],[480,370],[530,420],[520,500],[460,560],
+         [360,580],[260,560],[200,510],[200,450],[240,410],[280,380]],
+    fill:'#7aaa6a', fill2:'#558a45', biome:'coastal-fertile'
+  },
+  // Verdant highlands - upper left, forests
+  {
+    name:'Verdant Highlands',
+    pts:[[60,80],[200,50],[300,80],[340,150],[320,240],[260,300],
+         [180,310],[100,270],[50,200],[40,130],[60,80]],
+    fill:'#4a8a3a', fill2:'#2d6020', biome:'forest'
+  },
+  // Obsidian Wastes - far right, volcanic
+  {
+    name:'Obsidian Wastes',
+    pts:[[880,350],[940,300],[980,360],[970,450],[930,510],[870,520],
+         [830,470],[830,410],[860,370],[880,350]],
+    fill:'#3d2a3d', fill2:'#221522', biome:'volcanic'
+  },
+  // Ashborn Steppes - bottom left, arid
+  {
+    name:'Ashborn Steppes',
+    pts:[[40,360],[140,330],[200,350],[220,420],[200,500],[140,540],
+         [70,530],[30,470],[30,400],[40,360]],
+    fill:'#a08040', fill2:'#806030', biome:'steppe'
+  },
+  // Small island chain
+  {
+    name:'Sunken Isles',
+    pts:[[580,490],[620,475],[650,490],[640,520],[600,530],[570,515],[580,490]],
+    fill:'#5a9a6a', fill2:'#3a7a4a', biome:'island'
+  }
+];
+
+continents.forEach((c,ci)=>{
+  const ptStr=c.pts.map(p=>p.join(',')).join(' ');
+  const gid=`cont-g-${ci}`;
+
+  // Base gradient
+  const cg=el('linearGradient',{id:gid,x1:'0',y1:'0',x2:'0.3',y2:'1',gradientUnits:'objectBoundingBox'},defs);
+  el('stop',{offset:'0%','stop-color':c.fill},cg);
+  el('stop',{offset:'100%','stop-color':c.fill2},cg);
+
+  // Main land
+  el('polygon',{points:ptStr,fill:`url(#${gid})`,stroke:'rgba(0,0,0,0.3)','stroke-width':'1'},layers['terrain']);
+
+  // Coastline highlight
+  el('polygon',{points:ptStr,fill:'none',stroke:'rgba(255,220,140,0.12)','stroke-width':'2'},layers['terrain']);
+
+  // Terrain texture - random blobs for hills/mountains
+  if(c.biome==='desert-plains'||c.biome==='steppe'){
+    for(let i=0;i<8;i++){
+      const cx=lerp(Math.min(...c.pts.map(p=>p[0])),Math.max(...c.pts.map(p=>p[0])),Math.random());
+      const cy=lerp(Math.min(...c.pts.map(p=>p[1])),Math.max(...c.pts.map(p=>p[1])),Math.random());
+      el('ellipse',{cx,cy,rx:rand(8,25),ry:rand(4,12),
+        fill:`rgba(${c.biome==='steppe'?'100,60,20':'180,140,60'},0.18)`,
+        transform:`rotate(${rand(0,180)},${cx},${cy})`},layers['terrain']);
+    }
+  }
+  if(c.biome==='forest'){
+    for(let i=0;i<20;i++){
+      const cx=lerp(60,320,Math.random()), cy=lerp(60,300,Math.random());
+      el('circle',{cx,cy,r:rand(3,10),fill:'rgba(30,70,20,0.4)'},layers['terrain']);
+    }
+  }
+  if(c.biome==='volcanic'){
+    for(let i=0;i<6;i++){
+      const cx=lerp(840,970,Math.random()), cy=lerp(330,520,Math.random());
+      el('ellipse',{cx,cy,rx:rand(5,18),ry:rand(5,18),fill:'rgba(100,20,20,0.3)'},layers['terrain']);
+    }
+  }
+});
+
+// ── RIVERS ─────────────────────────────────────────────────
+const riverPaths=[
+  'M300,80 C320,120 310,160 280,200 C250,240 240,290 260,340 C265,350 270,360 280,380',
+  'M680,40 C700,90 720,140 710,200 C700,260 680,300 660,350 C650,370 640,390 630,410',
+  'M200,50 C210,100 200,150 190,200 C180,250 170,290 160,330',
+  'M900,130 C880,160 870,200 880,240 C890,280 880,320 870,360',
+];
+riverPaths.forEach(d=>{
+  el('path',{d,fill:'none',stroke:'rgba(50,130,200,0.55)','stroke-width':'2.5','stroke-linecap':'round'},layers['rivers']);
+  el('path',{d,fill:'none',stroke:'rgba(100,180,255,0.2)','stroke-width':'5','stroke-linecap':'round',filter:'url(#soft)'},layers['rivers']);
+});
+
+// ── CIVILIZATION DATA ──────────────────────────────────────
+const CIV_COLORS=['#e74c3c','#2e86c1','#27ae60','#8e44ad','#d35400'];
+const CIV_DARK =['#922b21','#1a5276','#1a6630','#5b2c6f','#873600'];
+const civData=[
+  {
+    name:'Solari Empire', color:'#e74c3c', dark:'#922b21',
+    capital:{x:700,y:180,name:'Solara Prime'},
+    trait:'Aggressive', age:0,
+    population:120, growth:1.4, military:85, culture:60, science:70,
+    territory:3, expansion:0.8,
+    desc:'Warrior sun-worshippers who built vast desert pyramids and legions of iron cavalry.',
+    religion:'The Eternal Sun', wonder:null, relations:{}
+  },
+  {
+    name:'Thalassian League', color:'#2e86c1', dark:'#1a5276',
+    capital:{x:380,y:450,name:'Port Thalassa'},
+    trait:'Maritime', age:0,
+    population:95, growth:1.2, military:60, culture:80, science:85,
+    territory:2, expansion:0.5,
+    desc:'Seafaring merchants who control vast trade networks and invented the astrolabe.',
+    religion:'The Tide Eternal', wonder:null, relations:{}
+  },
+  {
+    name:'Verdant Clans', color:'#27ae60', dark:'#1a6630',
+    capital:{x:185,y:170,name:'Thornhaven'},
+    trait:'Naturalist', age:0,
+    population:75, growth:1.1, military:65, culture:75, science:55,
+    territory:2, expansion:0.4,
+    desc:'Druidic forest-dwellers who commune with ancient tree spirits and ride great beasts.',
+    religion:'The World Tree', wonder:null, relations:{}
+  },
+  {
+    name:'Obsidian Dominion', color:'#8e44ad', dark:'#5b2c6f',
+    capital:{x:900,y:420,name:'Vexar Citadel'},
+    trait:'Arcane', age:0,
+    population:60, growth:0.9, military:70, culture:90, science:95,
+    territory:1, expansion:0.3,
+    desc:'Sorcerer-kings who harness volcanic energy to power arcane constructs and towers.',
+    religion:'The Void Scripture', wonder:null, relations:{}
+  },
+  {
+    name:'Ashborn Tribe', color:'#d35400', dark:'#873600',
+    capital:{x:120,y:420,name:'Ashkeep'},
+    trait:'Nomadic', age:0,
+    population:50, growth:1.0, military:75, culture:50, science:40,
+    territory:1, expansion:0.6,
+    desc:'Hardy steppe nomads who ride thunder-beasts and raid neighbouring civilizations.',
+    religion:'The Ash Ancestors', wonder:null, relations:{}
+  }
+];
+
+// ── CITIES ─────────────────────────────────────────────────
+const cities=[];
+// Each civ starts with capital + some cities
+const initCityData=[
+  // Solari
+  {civIdx:0,x:700,y:180,name:'Solara Prime',size:'capital',pop:45000},
+  {civIdx:0,x:760,y:120,name:'Sun Bastion',size:'major',pop:18000},
+  {civIdx:0,x:640,y:240,name:'Dusthaven',size:'major',pop:15000},
+  {civIdx:0,x:820,y:200,name:'Pyregate',size:'town',pop:8000},
+  {civIdx:0,x:580,y:170,name:'Goldspire',size:'town',pop:6000},
+  // Thalassian
+  {civIdx:1,x:380,y:450,name:'Port Thalassa',size:'capital',pop:38000},
+  {civIdx:1,x:300,y:470,name:'Saltwatch',size:'major',pop:14000},
+  {civIdx:1,x:440,y:490,name:'Deepharbour',size:'major',pop:12000},
+  {civIdx:1,x:470,y:400,name:'Crestmarsh',size:'town',pop:7000},
+  // Verdant
+  {civIdx:2,x:185,y:170,name:'Thornhaven',size:'capital',pop:30000},
+  {civIdx:2,x:130,y:120,name:'Oakroot',size:'major',pop:11000},
+  {civIdx:2,x:255,y:130,name:'Mossgate',size:'major',pop:9000},
+  {civIdx:2,x:200,y:240,name:'Fernwatch',size:'town',pop:5000},
+  // Obsidian
+  {civIdx:3,x:900,y:420,name:'Vexar Citadel',size:'capital',pop:25000},
+  {civIdx:3,x:940,y:370,name:'Ashforge',size:'major',pop:9000},
+  {civIdx:3,x:855,y:460,name:'Hexvault',size:'town',pop:5000},
+  // Ashborn
+  {civIdx:4,x:120,y:420,name:'Ashkeep',size:'capital',pop:20000},
+  {civIdx:4,x:80,y:480,name:'Scorch Hollow',size:'major',pop:7000},
+  {civIdx:4,x:170,y:380,name:'Dustride',size:'town',pop:4000},
+];
+
+initCityData.forEach(c=>cities.push({...c, founded:1, active:true}));
+totalCitiesFoundedCount=cities.length;
+
+// ── WONDERS ────────────────────────────────────────────────
+const wonders=[];
+const wonderDefs=[
+  {civIdx:0,x:700,y:140,name:'Pyramid of the Eternal Sun',symbol:'▲',desc:'A towering golden pyramid that channels solar energy'},
+  {civIdx:1,x:340,y:500,name:'The Grand Lighthouse',symbol:'⚓',desc:'Beacon visible across all seas, guides fleets home'},
+  {civIdx:2,x:160,y:150,name:'The World-Tree Shrine',symbol:'🌳',desc:'Ancient sacred grove where spirits walk freely'},
+  {civIdx:3,x:920,y:400,name:'Void Observatory',symbol:'✦',desc:'Arcane tower that peers into other dimensions'},
+  {civIdx:4,x:100,y:450,name:'The Ancestor Forge',symbol:'🔥',desc:'Volcanic forge that crafts legendary weapons'},
+];
+
+// ── DIPLOMATIC RELATIONS ───────────────────────────────────
+// -2=war, -1=hostile, 0=neutral, 1=friendly, 2=allied
+const relations=Array.from({length:5},()=>Array(5).fill(0));
+relations[0][1]=0; relations[1][0]=0;  // Solari-Thalassian: neutral
+relations[0][2]=-1; relations[2][0]=-1; // Solari-Verdant: hostile
+relations[0][3]=0; relations[3][0]=0;  // Solari-Obsidian: neutral
+relations[0][4]=1; relations[4][0]=1;  // Solari-Ashborn: friendly
+relations[1][2]=1; relations[2][1]=1;  // Thalassian-Verdant: friendly
+relations[1][3]=1; relations[3][1]=1;  // Thalassian-Obsidian: friendly
+relations[1][4]=-1; relations[4][1]=-1; // Thalassian-Ashborn: hostile
+relations[2][3]=0; relations[3][2]=0;  // Verdant-Obsidian: neutral
+relations[2][4]=-1; relations[4][2]=-1; // Verdant-Ashborn: hostile
+relations[3][4]=0; relations[4][3]=0;  // Obsidian-Ashborn: neutral
+
+// ── TRADE ROUTES ───────────────────────────────────────────
+const tradeRoutes=[];
+// Initial routes
+[
+  {from:{x:380,y:450},to:{x:700,y:180},civA:1,civB:0},
+  {from:{x:380,y:450},to:{x:185,y:170},civA:1,civB:2},
+  {from:{x:380,y:450},to:{x:900,y:420},civA:1,civB:3},
+].forEach(r=>tradeRoutes.push({...r,active:true,age:0}));
+
+// ── MILITARY UNITS ─────────────────────────────────────────
+const units=[];
+const unitDefs=[
+  {civIdx:0,x:660,y:230,type:'army',size:4},
+  {civIdx:0,x:750,y:150,type:'army',size:3},
+  {civIdx:1,x:340,y:420,type:'fleet',size:3},
+  {civIdx:1,x:450,y:480,type:'fleet',size:2},
+  {civIdx:2,x:220,y:200,type:'army',size:3},
+  {civIdx:2,x:150,y:250,type:'army',size:2},
+  {civIdx:3,x:870,y:390,type:'army',size:2},
+  {civIdx:3,x:930,y:450,type:'mage',size:2},
+  {civIdx:4,x:100,y:390,type:'cavalry',size:3},
+  {civIdx:4,x:160,y:350,type:'cavalry',size:2},
+];
+unitDefs.forEach(u=>units.push({...u,vx:0,vy:0,targetX:u.x,targetY:u.y,
+  phase:rand(0,Math.PI*2),fighting:false,fightTimer:0}));
+
+// ── EVENTS ─────────────────────────────────────────────────
+const events=[];
+function logEvent(text,type='neutral'){
+  events.unshift({text,type,year});
+  if(events.length>12) events.pop();
+  const container=document.getElementById('events-container');
+  container.innerHTML='';
+  events.slice(0,8).forEach(e=>{
+    const div=document.createElement('div');
+    div.className=`event-entry ${e.type}`;
+    div.textContent=`Yr.${e.year} — ${e.text}`;
+    container.appendChild(div);
+  });
+}
+
+// ── TERRITORY RENDERING ────────────────────────────────────
+// Territory blobs around cities
+function renderTerritories(){
+  layers['territory'].innerHTML='';
+  cities.filter(c=>c.active).forEach(c=>{
+    const civ=civData[c.civIdx];
+    const r=c.size==='capital'?90:c.size==='major'?60:35;
+    const tg=el('radialGradient',{id:`tg-${c.x}-${c.y}`,cx:'50%',cy:'50%',r:'50%'},defs);
+    el('stop',{offset:'0%','stop-color':civ.color,stopOpacity:'0.18'},tg);
+    el('stop',{offset:'100%','stop-color':civ.color,stopOpacity:'0'},tg);
+    el('ellipse',{cx:c.x,cy:c.y,rx:r,ry:r*0.75,
+      fill:`url(#tg-${c.x}-${c.y})`},layers['territory']);
+  });
+}
+
+// ── BORDER RENDERING ──────────────────────────────────────
+function renderBorders(){
+  layers['borders'].innerHTML='';
+  // Draw convex influence boundaries per civ
+  civData.forEach((civ,ci)=>{
+    const civCities=cities.filter(c=>c.civIdx===ci&&c.active);
+    if(civCities.length<2) return;
+    // Simple bounding-based border dots/dashes
+    civCities.forEach(c=>{
+      const r=c.size==='capital'?80:c.size==='major'?52:30;
+      el('ellipse',{cx:c.x,cy:c.y,rx:r,ry:r*0.7,
+        fill:'none',stroke:civ.color,'stroke-width':'1.2',
+        'stroke-dasharray':'3 6',opacity:'0.35'},layers['borders']);
+    });
+  });
+}
+
+// ── TRADE ROUTE RENDERING ─────────────────────────────────
+const tradeElems=[];
+function renderTradeRoutes(){
+  layers['trade'].innerHTML='';
+  tradeElems.length=0;
+  tradeRoutes.filter(r=>r.active).forEach(r=>{
+    const midX=(r.from.x+r.to.x)/2+rand(-20,20);
+    const midY=(r.from.y+r.to.y)/2+rand(-15,15);
+    // Glow
+    el('path',{
+      d:`M${r.from.x},${r.from.y} Q${midX},${midY} ${r.to.x},${r.to.y}`,
+      fill:'none',stroke:'rgba(212,168,67,0.12)','stroke-width':'6',filter:'url(#soft)'
+    },layers['trade']);
+    // Dashed line
+    const tEl=el('path',{
+      d:`M${r.from.x},${r.from.y} Q${midX},${midY} ${r.to.x},${r.to.y}`,
+      fill:'none',stroke:'rgba(212,168,67,0.55)','stroke-width':'1.5',
+      'stroke-dasharray':'6 4','stroke-dashoffset':'0'
+    },layers['trade']);
+    tradeElems.push(tEl);
+    // Trade ship dot
+    const shipDot=el('circle',{cx:r.from.x,cy:r.from.y,r:3,
+      fill:'rgba(240,200,80,0.8)',filter:'url(#g4)'},layers['trade']);
+    r._ship=shipDot; r._t=rand(0,1);
+    function cubicBezierPoint(t,p0,p1,p2){
+      return (1-t)*(1-t)*p0+2*(1-t)*t*p1+t*t*p2;
+    }
+    r._midX=midX; r._midY=midY;
+  });
+}
+
+// ── CITY RENDERING ─────────────────────────────────────────
+const cityElems=[];
+function renderCities(){
+  layers['structures'].innerHTML='';
+  cityElems.length=0;
+  cities.filter(c=>c.active).forEach((c,i)=>{
+    const civ=civData[c.civIdx];
+    const g=el('g',{cursor:'pointer'},layers['structures']);
+
+    // City glow
+    el('circle',{cx:c.x,cy:c.y,r:c.size==='capital'?22:c.size==='major'?14:9,
+      fill:civ.color,opacity:'0.15',filter:'url(#g14)'},g);
+
+    // City shape based on biome/civ
+    if(c.size==='capital'){
+      // Star fortress shape
+      el('circle',{cx:c.x,cy:c.y,r:8,fill:civ.color,filter:'url(#g4)'},g);
+      el('circle',{cx:c.x,cy:c.y,r:6,fill:civ.dark},g);
+      // Walls ring
+      el('circle',{cx:c.x,cy:c.y,r:12,fill:'none',stroke:civ.color,'stroke-width':'2',opacity:'0.7'},g);
+      // Crown dots (towers)
+      for(let j=0;j<6;j++){
+        const a=(j/6)*Math.PI*2;
+        el('circle',{cx:c.x+Math.cos(a)*12,cy:c.y+Math.sin(a)*12,r:2,
+          fill:civ.color,opacity:'0.9'},g);
+      }
+      // Name label
+      const txt=el('text',{x:c.x,y:c.y-18,fill:civ.color,
+        'font-family':'Cinzel,serif','font-size':'8','font-weight':'600',
+        'text-anchor':'middle','letter-spacing':'1'},g);
+      txt.textContent=c.name;
+    } else if(c.size==='major'){
+      el('rect',{x:c.x-5,y:c.y-5,width:10,height:10,
+        fill:civ.dark,stroke:civ.color,'stroke-width':'1.5',
+        transform:`rotate(45,${c.x},${c.y})`},g);
+      el('circle',{cx:c.x,cy:c.y,r:3,fill:civ.color,filter:'url(#g2)'},g);
+      const txt=el('text',{x:c.x+10,y:c.y+4,fill:'rgba(240,220,180,0.7)',
+        'font-family':'Crimson Pro,serif','font-size':'7.5','font-style':'italic'},g);
+      txt.textContent=c.name;
+    } else {
+      el('circle',{cx:c.x,cy:c.y,r:4,fill:civ.dark,stroke:civ.color,'stroke-width':'1'},g);
+      el('circle',{cx:c.x,cy:c.y,r:2,fill:civ.color,opacity:'0.7'},g);
+    }
+
+    // Hover tooltip
+    g.addEventListener('mouseenter',ev=>{
+      const tt=document.getElementById('tooltip');
+      document.getElementById('tt-name').textContent=c.name;
+      document.getElementById('tt-body').innerHTML=
+        `<div>${civ.name}</div><div>Pop: ${c.pop.toLocaleString()}</div><div>${c.size.charAt(0).toUpperCase()+c.size.slice(1)}</div>`;
+      tt.style.display='block';
+      tt.style.left=(ev.clientX+15)+'px'; tt.style.top=(ev.clientY-10)+'px';
+    });
+    g.addEventListener('mouseleave',()=>document.getElementById('tooltip').style.display='none');
+    g.addEventListener('mousemove',ev=>{
+      const tt=document.getElementById('tooltip');
+      tt.style.left=(ev.clientX+15)+'px'; tt.style.top=(ev.clientY-10)+'px';
+    });
+
+    cityElems.push({c,g});
+  });
+
+  // Render wonders
+  wonders.forEach(w=>{
+    const civ=civData[w.civIdx];
+    const wg=el('g',{cursor:'pointer'},layers['structures']);
+    // Wonder glow
+    el('circle',{cx:w.x,cy:w.y,r:16,fill:civ.color,opacity:'0.12',filter:'url(#g14)'},wg);
+    // Wonder icon
+    const wt=el('text',{x:w.x,y:w.y+4,fill:civ.color,
+      'font-size':'13','text-anchor':'middle',filter:'url(#g4)'},wg);
+    wt.textContent=w.symbol;
+    const wLabel=el('text',{x:w.x,y:w.y+16,fill:'rgba(212,168,67,0.75)',
+      'font-family':'Cinzel,serif','font-size':'7','text-anchor':'middle','letter-spacing':'0.5'},wg);
+    wLabel.textContent=w.name.length>20?w.name.substring(0,18)+'…':w.name;
+
+    wg.addEventListener('mouseenter',ev=>{
+      const tt=document.getElementById('tooltip');
+      document.getElementById('tt-name').textContent=w.name;
+      document.getElementById('tt-body').innerHTML=`<div>${civ.name}</div><div style="font-size:10px;color:rgba(200,180,140,0.8)">${w.desc}</div>`;
+      tt.style.display='block';
+      tt.style.left=(ev.clientX+15)+'px'; tt.style.top=(ev.clientY-10)+'px';
+    });
+    wg.addEventListener('mouseleave',()=>document.getElementById('tooltip').style.display='none');
+  });
+}
+
+// ── UNIT RENDERING ─────────────────────────────────────────
+const unitElems=[];
+function renderUnits(){
+  layers['units'].innerHTML='';
+  unitElems.length=0;
+  units.forEach((u,i)=>{
+    const civ=civData[u.civIdx];
+    const g=el('g',{cursor:'pointer'},layers['units']);
+    // Unit shadow
+    el('ellipse',{cx:u.x,cy:u.y+4,rx:6,ry:3,fill:'rgba(0,0,0,0.3)'},g);
+    // Unit body
+    const symb=u.type==='fleet'?'⛵':u.type==='cavalry'?'🐴':u.type==='mage'?'⚡':'⚔';
+    el('circle',{cx:u.x,cy:u.y,r:7,fill:civ.dark,stroke:civ.color,'stroke-width':'1.5'},g);
+    const ut=el('text',{x:u.x,y:u.y+3.5,fill:'white','font-size':'7','text-anchor':'middle'},g);
+    ut.textContent=symb;
+    // Size indicator
+    el('text',{x:u.x+8,y:u.y-4,fill:civ.color,'font-size':'6.5','font-family':'Cinzel,serif'},g).textContent=u.size;
+
+    g.addEventListener('mouseenter',ev=>{
+      const tt=document.getElementById('tooltip');
+      document.getElementById('tt-name').textContent=u.type.charAt(0).toUpperCase()+u.type.slice(1);
+      document.getElementById('tt-body').innerHTML=`<div>${civ.name}</div><div>Strength: ${u.size*20}</div><div>${u.fighting?'⚔ In Battle':'On March'}</div>`;
+      tt.style.display='block';
+      tt.style.left=(ev.clientX+15)+'px'; tt.style.top=(ev.clientY-10)+'px';
+    });
+    g.addEventListener('mouseleave',()=>document.getElementById('tooltip').style.display='none');
+
+    unitElems.push({u,g});
+  });
+}
+
+// ── WONDER RENDERING ──────────────────────────────────────
+// Called once after wonder is completed
+function buildWonder(w){
+  wonders.push(w);
+  totalWonders++;
+  civData[w.civIdx].wonder=w;
+  renderCities();
+}
+
+// ── WAR EFFECTS ────────────────────────────────────────────
+const warEffects=[];
+function spawnWarEffect(x,y,color){
+  const g=el('g',{},layers['effects']);
+  // Battle flash ring
+  const ring=el('circle',{cx:x,cy:y,r:5,fill:'none',
+    stroke:color,'stroke-width':'3',opacity:'0.9'},g);
+  let r=5,op=0.9;
+  const ai=setInterval(()=>{
+    r+=2.5; op-=0.04;
+    ring.setAttribute('r',r); ring.setAttribute('opacity',op);
+    if(op<=0){clearInterval(ai);g.remove();}
+  },30);
+  // Sparks
+  for(let i=0;i<5;i++){
+    const angle=rand(0,Math.PI*2), spd=rand(1.5,4);
+    const spark=el('circle',{cx:x,cy:y,r:rand(1.5,3),fill:color,opacity:'0.8'},g);
+    let sx=x,sy=y,svx=Math.cos(angle)*spd,svy=Math.sin(angle)*spd,sop=0.8;
+    const si=setInterval(()=>{
+      sx+=svx; sy+=svy; svy+=0.2; sop-=0.07;
+      spark.setAttribute('cx',sx); spark.setAttribute('cy',sy); spark.setAttribute('opacity',sop);
+      if(sop<=0){clearInterval(si);spark.remove();}
+    },20);
+  }
+}
+
+// ── EXPLOSION / CITY CAPTURE ───────────────────────────────
+function cityCapture(cityIdx,newCivIdx){
+  const c=cities[cityIdx];
+  const oldCiv=civData[c.civIdx];
+  const newCiv=civData[newCivIdx];
+  logEvent(`${newCiv.name} captured ${c.name} from ${oldCiv.name}!`,'war');
+  // Flash
+  for(let i=0;i<3;i++) setTimeout(()=>spawnWarEffect(c.x,c.y,newCiv.color),i*150);
+  c.civIdx=newCivIdx;
+  renderCities(); renderTerritories(); renderBorders();
+}
+
+// ── FOUNDING NEW CITY ──────────────────────────────────────
+function foundCity(civIdx){
+  const civ=civData[civIdx];
+  // Find a place near existing territory
+  const existCities=cities.filter(c=>c.civIdx===civIdx&&c.active);
+  if(existCities.length===0) return;
+  const base=existCities[Math.floor(Math.random()*existCities.length)];
+  const angle=rand(0,Math.PI*2), dist2=rand(50,100);
+  const nx=clamp(base.x+Math.cos(angle)*dist2,30,W-30);
+  const ny=clamp(base.y+Math.sin(angle)*dist2,30,H-30);
+  const names=[['Goldveil','Ironspire','Sandwall','Dunecrest','Sunreach'],
+    ['Wavecrest','Coralgate','Seawatch','Deepport','Tidemark'],
+    ['Mossholm','Fernreach','Oakguard','Leafend','Rootmere'],
+    ['Ashrock','Voidmere','Hexmark','Darkgate','Stonegrim'],
+    ['Burnfield','Cinderwall','Ashstride','Dustrider','Scorchmark']];
+  const namePool=names[civIdx];
+  const cityName=namePool[Math.floor(Math.random()*namePool.length)];
+  cities.push({civIdx,x:nx,y:ny,name:cityName,size:'town',pop:randInt(2000,6000),founded:year,active:true});
+  totalCitiesFoundedCount++;
+  logEvent(`${civ.name} founded ${cityName}`,'peace');
+  renderCities(); renderTerritories(); renderBorders();
+}
+
+// ── DIPLOMATIC EVENTS ─────────────────────────────────────
+function changeDiplomacy(a,b,delta){
+  relations[a][b]=clamp(relations[a][b]+delta,-2,2);
+  relations[b][a]=clamp(relations[b][a]+delta,-2,2);
+  const civA=civData[a],civB=civData[b];
+  if(relations[a][b]===-2 && delta<0){
+    logEvent(`⚔ WAR DECLARED: ${civA.name} vs ${civB.name}!`,'war');
+  } else if(relations[a][b]===2 && delta>0){
+    logEvent(`🤝 ALLIANCE: ${civA.name} and ${civB.name} united!`,'peace');
+  } else if(relations[a][b]===1 && delta>0){
+    logEvent(`✌ Peace: ${civA.name} and ${civB.name} sign treaty`,'peace');
+  } else if(relations[a][b]===-1 && delta<0){
+    logEvent(`😤 Tensions rise: ${civA.name} threatens ${civB.name}`,'war');
+  }
+}
+
+// ── TRADE ROUTE EVENTS ────────────────────────────────────
+function addTradeRoute(civA,civB){
+  const cityA=cities.find(c=>c.civIdx===civA&&c.size==='capital');
+  const cityB=cities.find(c=>c.civIdx===civB&&c.size==='capital');
+  if(!cityA||!cityB) return;
+  if(tradeRoutes.find(r=>(r.civA===civA&&r.civB===civB)||(r.civA===civB&&r.civB===civA))) return;
+  tradeRoutes.push({from:{x:cityA.x,y:cityA.y},to:{x:cityB.x,y:cityB.y},civA,civB,active:true,age:0});
+  logEvent(`${civData[civA].name} opened trade route with ${civData[civB].name}`,'trade');
+  renderTradeRoutes();
+}
+
+// ── WONDER BUILDING ────────────────────────────────────────
+const wonderQueue=wonderDefs.map((w,i)=>({...w,buildYear:50+i*80}));
+let wonderIdx=0;
+
+// ── PARTICLES ─────────────────────────────────────────────
+// Floating spores / atmosphere
+for(let i=0;i<40;i++){
+  const px=rand(0,W),py=rand(0,H);
+  el('circle',{cx:px,cy:py,r:rand(0.5,1.8),
+    fill:`rgba(${randInt(200,255)},${randInt(180,230)},${randInt(100,160)},${rand(0.05,0.15)})`,
+    opacity:'0'}, layers['particles']);
+}
+
+// ── UNIT AI: MOVEMENT ─────────────────────────────────────
+function updateUnits(){
+  units.forEach((u,i)=>{
+    u.phase+=0.03;
+    // Bob animation
+    const bobY=Math.sin(u.phase)*1.5;
+
+    // Move toward target
+    const dx=u.targetX-u.x, dy=u.targetY-u.y;
+    const d=Math.hypot(dx,dy);
+    if(d>5){
+      u.vx+=dx/d*0.08; u.vy+=dy/d*0.08;
+    } else {
+      // Arrived — find new target near civ territory
+      const civCities=cities.filter(c=>c.civIdx===u.civIdx&&c.active);
+      if(civCities.length>0){
+        const tgt=civCities[Math.floor(Math.random()*civCities.length)];
+        u.targetX=tgt.x+rand(-40,40); u.targetY=tgt.y+rand(-30,30);
+      }
+    }
+    u.vx=clamp(u.vx,-1.2,1.2); u.vy=clamp(u.vy,-1.2,1.2);
+    u.x+=u.vx; u.y+=u.vy+bobY*0.05;
+    u.x=clamp(u.x,10,W-10); u.y=clamp(u.y,10,H-10);
+    u.vx*=0.95; u.vy*=0.95;
+
+    // Check for enemy units nearby
+    if(u.fightTimer>0){ u.fightTimer--; u.fighting=u.fightTimer>0; }
+    else {
+      units.forEach((u2,j)=>{
+        if(i===j) return;
+        if(u.civIdx===u2.civIdx) return;
+        if(relations[u.civIdx][u2.civIdx]>=-1) return; // only fight if war/hostile
+        const d2=Math.hypot(u.x-u2.x,u.y-u2.y);
+        if(d2<20 && !u.fighting){
+          u.fighting=true; u.fightTimer=60; u2.fighting=true; u2.fightTimer=60;
+          spawnWarEffect((u.x+u2.x)/2,(u.y+u2.y)/2,civData[u.civIdx].color);
+        }
+      });
+    }
+
+    // Update visuals
+    if(unitElems[i]){
+      unitElems[i].g.setAttribute('transform',
+        `translate(${u.x},${u.y+bobY}) ${u.vx<-0.1?'scale(-1,1)':''}`);
+      if(unitElems[i].g.getAttribute('transform').includes('scale(-1,1)'))
+        unitElems[i].g.setAttribute('transform',`translate(${u.x},${u.y+bobY}) scale(-1,1)`);
+      else
+        unitElems[i].g.setAttribute('transform',`translate(${u.x},${u.y+bobY})`);
+    }
+  });
+}
+
+// ── TRADE SHIP ANIMATION ───────────────────────────────────
+function updateTradeShips(){
+  tradeRoutes.filter(r=>r.active&&r._ship).forEach(r=>{
+    r._t=(r._t+0.003)%1;
+    const t=r._t;
+    const x=(1-t)*(1-t)*r.from.x+2*(1-t)*t*r._midX+t*t*r.to.x;
+    const y=(1-t)*(1-t)*r.from.y+2*(1-t)*t*r._midY+t*t*r.to.y;
+    r._ship.setAttribute('cx',x); r._ship.setAttribute('cy',y);
+  });
+  // Animate dashes
+  tradeElems.forEach(e=>{
+    const curr=parseFloat(e.getAttribute('stroke-dashoffset')||0);
+    e.setAttribute('stroke-dashoffset',curr-0.3);
+  });
+}
+
+// ── POPULATION GROWTH ──────────────────────────────────────
+function updatePopulations(){
+  civData.forEach((civ,ci)=>{
+    civ.population*=(1+civ.growth*0.001);
+    // Distribute to cities
+    cities.filter(c=>c.civIdx===ci&&c.active).forEach(c=>{
+      c.pop=Math.floor(c.pop*(1+0.0003));
+    });
+  });
+}
+
+// ── RANDOM WORLD EVENTS ────────────────────────────────────
+let nextEventYear=15;
+function worldEvent(){
+  if(year<nextEventYear) return;
+  nextEventYear=year+randInt(8,25);
+  const roll=Math.random();
+
+  if(roll<0.18){
+    // War declaration
+    const a=randInt(0,4), b=(a+randInt(1,4))%5;
+    changeDiplomacy(a,b,-1);
+  } else if(roll<0.32){
+    // Peace/alliance
+    const a=randInt(0,4), b=(a+randInt(1,4))%5;
+    if(relations[a][b]<2) changeDiplomacy(a,b,1);
+    if(relations[a][b]>=1) addTradeRoute(a,b);
+  } else if(roll<0.46){
+    // City founded
+    foundCity(randInt(0,4));
+  } else if(roll<0.56){
+    // City capture during war
+    const warPairs=[];
+    for(let a=0;a<5;a++) for(let b=a+1;b<5;b++)
+      if(relations[a][b]===-2) warPairs.push([a,b]);
+    if(warPairs.length>0){
+      const [a,b]=warPairs[Math.floor(Math.random()*warPairs.length)];
+      const targetCities=cities.filter(c=>c.civIdx===b&&c.active&&c.size!=='capital');
+      if(targetCities.length>0){
+        const targetCity=targetCities[Math.floor(Math.random()*targetCities.length)];
+        cityCapture(cities.indexOf(targetCity),a);
+      }
+    }
+  } else if(roll<0.66){
+    // Trade route
+    const a=randInt(0,4), b=(a+randInt(1,4))%5;
+    if(relations[a][b]>=0) addTradeRoute(a,b);
+  } else if(roll<0.75){
+    // Golden age / population boom
+    const ci=randInt(0,4);
+    civData[ci].growth*=1.2;
+    logEvent(`✨ Golden Age dawns in ${civData[ci].name}!`,'wonder');
+    // Sparkle effect on capital
+    const cap=cities.find(c=>c.civIdx===ci&&c.size==='capital');
+    if(cap) spawnWonderSparkle(cap.x,cap.y,civData[ci].color);
+  } else if(roll<0.85){
+    // Plague
+    const ci=randInt(0,4);
+    civData[ci].population*=0.85;
+    logEvent(`☠ Plague devastates ${civData[ci].name}…`,'war');
+  } else if(roll<0.92){
+    // Tech leap
+    const ci=randInt(0,4);
+    civData[ci].science+=randInt(5,20);
+    logEvent(`🔬 ${civData[ci].name} makes a scientific breakthrough!`,'peace');
+  } else {
+    // Cultural explosion
+    const ci=randInt(0,4);
+    civData[ci].culture+=randInt(5,20);
+    logEvent(`🎭 The arts flourish in ${civData[ci].name}!`,'wonder');
+  }
+}
+
+// ── WONDER SPARKLE ────────────────────────────────────────
+function spawnWonderSparkle(x,y,color){
+  for(let i=0;i<12;i++){
+    const angle=rand(0,Math.PI*2), r=rand(10,35);
+    const sx=x+Math.cos(angle)*r, sy=y+Math.sin(angle)*r;
+    const spark=el('circle',{cx:sx,cy:sy,r:rand(1.5,4),fill:color,opacity:'0.9',filter:'url(#g4)'},layers['effects']);
+    let op=0.9;
+    const ai=setInterval(()=>{op-=0.04;spark.setAttribute('opacity',op);if(op<=0){clearInterval(ai);spark.remove();}},50);
+  }
+}
+
+// ── WONDER CONSTRUCTION ────────────────────────────────────
+function checkWonders(){
+  if(wonderIdx>=wonderQueue.length) return;
+  const w=wonderQueue[wonderIdx];
+  if(year>=w.buildYear){
+    buildWonder(w);
+    logEvent(`🏛 WONDER: ${civData[w.civIdx].name} completed "${w.name}"!`,'wonder');
+    spawnWonderSparkle(w.x,w.y,civData[w.civIdx].color);
+    wonderIdx++;
+  }
+}
+
+// ── AGE PROGRESSION ────────────────────────────────────────
+function updateAge(){
+  const ageIdx=Math.min(Math.floor(year/60),ages.length-1);
+  document.getElementById('s-age').textContent=ages[ageIdx];
+}
+
+// ── ATMOSPHERIC CLOUDS ────────────────────────────────────
+const atmClouds=[];
+for(let i=0;i<8;i++){
+  const cloud=el('ellipse',{cx:rand(0,W),cy:rand(0,H),rx:rand(40,120),ry:rand(15,40),
+    fill:'rgba(255,255,255,0.04)',filter:'url(#soft)'},layers['particles']);
+  atmClouds.push({el:cloud,vx:rand(0.05,0.2),cx:parseFloat(cloud.getAttribute('cx')),cy:parseFloat(cloud.getAttribute('cy'))});
+}
+
+// ── INIT RENDER ────────────────────────────────────────────
+renderTerritories();
+renderBorders();
+renderTradeRoutes();
+renderCities();
+renderUnits();
+logEvent(`Year 1 — Civilization dawns on Aethon…`,'wonder');
+logEvent(`The Solari Empire rises in the eastern deserts`,'wonder');
+logEvent(`The Thalassian League claims the southern coast`,'peace');
+logEvent(`Verdant Clans gather in the highland forests`,'peace');
+
+// ── GAME LOOP ──────────────────────────────────────────────
+let frame=0, yearTimer=0;
+const YEAR_INTERVAL=180; // frames per year
+
+function gameLoop(){
+  frame++;
+  yearTimer++;
+
+  // Advance year
+  if(yearTimer>=YEAR_INTERVAL){
+    yearTimer=0; year++;
+    document.getElementById('s-year').textContent=year;
+    updatePopulations();
+    worldEvent();
+    checkWonders();
+    updateAge();
+    if(year%10===0){renderBorders();renderTerritories();}
+    if(year%5===0) renderCities();
+  }
+
+  // Animate units
+  updateUnits();
+  updateTradeShips();
+
+  // Clouds
+  atmClouds.forEach(c=>{
+    c.cx+=c.vx; if(c.cx>W+150) c.cx=-150;
+    c.el.setAttribute('cx',c.cx);
+    c.el.setAttribute('opacity',0.02+Math.sin(frame*0.005+c.cx)*0.015);
+  });
+
+  // Civ ring pulses on capitals
+  if(frame%45===0){
+    civData.forEach((civ,ci)=>{
+      const cap=cities.find(c=>c.civIdx===ci&&c.size==='capital'&&c.active);
+      if(!cap) return;
+      const ring=el('circle',{cx:cap.x,cy:cap.y,r:14,fill:'none',
+        stroke:civ.color,'stroke-width':'1.5',opacity:'0.7',filter:'url(#g2)'},layers['effects']);
+      let r2=14,op=0.7;
+      const ai=setInterval(()=>{r2+=1.5;op-=0.04;
+        ring.setAttribute('r',r2);ring.setAttribute('opacity',op);
+        if(op<=0){clearInterval(ai);ring.remove();}},30);
+    });
+  }
+
+  // Update HUD
+  const totalPop=Math.floor(civData.reduce((s,c)=>s+c.population,0)*1000);
+  document.getElementById('s-pop').textContent=totalPop.toLocaleString();
+  const activeWars=Object.keys(relations).reduce((cnt,a)=>{
+    for(let b=parseInt(a)+1;b<5;b++) if(relations[a][b]===-2) cnt++;
+    return cnt;
+  },0);
+  let wars=0;for(let a=0;a<5;a++)for(let b=a+1;b<5;b++)if(relations[a][b]===-2)wars++;
+  let alliances=0;for(let a=0;a<5;a++)for(let b=a+1;b<5;b++)if(relations[a][b]===2)alliances++;
+  document.getElementById('s-wars').textContent=wars;
+  document.getElementById('s-alliances').textContent=alliances;
+  document.getElementById('s-trade').textContent=tradeRoutes.filter(r=>r.active).length;
+  document.getElementById('s-wonders').textContent=totalWonders;
+  document.getElementById('s-cities').textContent=cities.filter(c=>c.active).length;
+
+  // Population per civ
+  civData.forEach((civ,ci)=>{
+    const p=document.getElementById(`pop-${ci}`);
+    if(p) p.textContent=`${Math.floor(civ.population)}k`;
+  });
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>

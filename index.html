@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦆 Sea of Ducks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ── Sky / Stars ───────────────────────────────────────────────── -->
+<div id="stars"></div>
+
+<!-- ── Game World ────────────────────────────────────────────────── -->
+<div id="game-container"></div>
+
+<!-- ── Shallow Water Layers (sits above coral reef) ──────────────── -->
+
+<div class="shallow-water">
+
+    <div class="shallow-gradient"></div>
+
+    <svg class="wave-layer wave-layer--back"
+
+         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60" preserveAspectRatio="none">
+
+        <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z"/>
+
+    </svg>
+
+    <svg class="wave-layer wave-layer--mid"
+
+         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 50" preserveAspectRatio="none">
+
+        <path d="M0,25 C200,50 400,0 600,25 C800,50 1000,0 1200,25 C1300,38 1380,15 1440,25 L1440,50 L0,50 Z"/>
+
+    </svg>
+
+    <svg class="wave-layer wave-layer--front"
+
+         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 40" preserveAspectRatio="none">
+
+        <path d="M0,20 C180,40 360,0 540,20 C720,40 900,0 1080,20 C1260,40 1380,10 1440,20 L1440,40 L0,40 Z"/>
+
+    </svg>
+
+    <svg class="wave-layer wave-layer--foam"
+
+         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 20" preserveAspectRatio="none">
+
+        <path d="M0,10 C120,20 240,0 360,10 C480,20 600,0 720,10 C840,20 960,0 1080,10 C1200,20 1320,5 1440,10 L1440,20 L0,20 Z"/>
+
+    </svg>
+
+</div>
+
+
+
+<!-- ── SVG Coral Reef Floor ──────────────────────────────────────── -->
+
+<svg class="svg-coral-reef" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 400" preserveAspectRatio="none">
+
+    <defs>
+
+        <symbol id="tall-coral" viewBox="0 0 350 350">
+
+            <path class="reef-base" d="M0 260 Q80 230 170 250 T350 240 L350 350 L0 350 Z"/>
+
+            <path class="reef-core" d="M175 260 C165 220,170 190,175 150 C180 110,170 80,175 50 C180 80,190 110,185 150 C180 190,185 220,175 260 Z"/>
+
+            <path class="reef-l1" d="M175 120 C145 110,120  95,125  75 C130  60,160  90,175 100 Z"/>
+
+            <path class="reef-l1" d="M175 110 C205 100,230  80,225  60 C220  45,190  80,175  95 Z"/>
+
+            <path class="reef-l2" d="M135  85 C120  75,105  65,110  50 C115  40,130  60,135  70 Z"/>
+
+            <path class="reef-l2" d="M215  75 C230  65,245  50,240  40 C235  30,220  55,215  65 Z"/>
+
+            <path class="reef-l3" d="M115  55 C105  48, 95  42,100  32 C105  25,115  38,115  45 Z"/>
+
+            <path class="reef-l3" d="M235  45 C245  38,255  28,250  20 C245  15,235  30,235  38 Z"/>
+
+            <path class="reef-l4" d="M175  50 C165  40,168  30,175  22 C182  30,185  40,175  50 Z"/>
+
+        </symbol>
+
+        <symbol id="wide-coral" viewBox="0 0 300 300">
+
+            <path class="reef-base" d="M0 240 Q60 210 140 230 T300 220 L300 300 L0 300 Z"/>
+
+            <path class="reef-core" d="M150 240 C140 210,145 180,150 150 C155 120,145 95,150 70 C155 95,165 120,160 150 C155 180,160 210,150 240 Z"/>
+
+            <path class="reef-wide" d="M150 120 C125 110,105  95,110  80 C115  65,140  85,150  95 Z"/>
+
+            <path class="reef-wide" d="M150 110 C175 100,195  80,190  65 C185  50,160  75,150  90 Z"/>
+
+            <path class="reef-wide" d="M150 170 C120 160,105 145,110 130 C115 115,140 145,150 155 Z"/>
+
+            <path class="reef-wide" d="M150 165 C180 155,195 135,190 120 C185 105,160 135,150 145 Z"/>
+
+        </symbol>
+
+    </defs>
+
+    <use href="#wide-coral" x="0"    width="300" height="300"/>
+
+    <use href="#tall-coral" x="260"  width="350" height="350"/>
+
+    <use href="#wide-coral" x="600"  y="15" width="280" height="280"/>
+
+    <use href="#tall-coral" x="880"  width="380" height="380"/>
+
+    <use href="#wide-coral" x="1250" width="300" height="300"/>
+
+    <use href="#tall-coral" x="1520" y="10" width="330" height="330"/>
+
+    <use href="#wide-coral" x="1850" width="280" height="280"/>
+
+    <use href="#tall-coral" x="2100" width="350" height="350"/>
+
+</svg>
+
+
+
+<!-- ── HUD ───────────────────────────────────────────────────────── -->
+<div id="hud">
+    <div class="hud-header">
+        <span>🦆 Sea of Ducks</span>
+        <div class="hud-time">
+            <span id="time-of-day-icon">☀️</span>
+            <span id="time-of-day">Day</span>
+            &nbsp;|&nbsp;
+            ⏱ <span id="time-elapsed">0s</span>
+        </div>
+        <button class="hud-toggle-btn" onclick="window.gameActions.toggleHUD()">▾ HUD</button>
+    </div>
+
+    <div class="hud-body">
+
+        <!-- Counters -->
+        <div class="hud-counters">
+            <div class="hud-counter" data-tip="Ducks — birds that hunt, socialise, breed and lay eggs">🦆 <span id="duck-count">0</span></div>
+            <div class="hud-counter" data-tip="Eggs — click one to hatch it early">🥚 <span id="egg-count">0</span></div>
+            <div class="hud-counter" data-tip="Islands — nesting grounds for flamingos, cats and dogs">🏝️ <span id="island-count">0</span></div>
+            <div class="hud-counter" data-tip="Predators — island cats and dogs that hunt ducks">🐾 <span id="predator-count">0</span></div>
+            <div class="hud-counter" data-tip="Fish — salmon, sharks, puffers, squid and more">🐟 <span id="fish-count">0</span></div>
+            <div class="hud-counter" data-tip="Shrimp — food for ducks and fish; breed on their own">🦐 <span id="food-count">0</span></div>
+            <div class="hud-counter" data-tip="Sea mammals — dolphins, whales, seals and otters">🐬 <span id="creature-count">0</span></div>
+        </div>
+
+        <!-- Biodiversity -->
+        <div class="hud-bar-row">
+            <span class="hud-bar-label" data-tip="How many species are present. UFO visits when this exceeds 70%.">🌿 Biodiversity</span>
+            <div class="hud-bar-track">
+                <div id="biodiversity-fill" class="biodiversity-fill biodiversity-high" style="width:100%"></div>
+            </div>
+            <span id="biodiversity-value" class="hud-bar-value">100</span>%
+        </div>
+
+        <!-- Pollution -->
+        <div class="hud-bar-row">
+            <span class="hud-bar-label" data-tip="Water pollution from toxic algae. High pollution harms all ocean life.">☣️ Pollution</span>
+            <div class="hud-bar-track">
+                <div id="pollution-fill" class="pollution-fill pollution-low" style="width:0%"></div>
+            </div>
+            <span id="pollution-value" class="hud-bar-value">0</span>%
+        </div>
+
+        <!-- Controls -->
+        <div class="hud-controls">
+            <!-- Birds -->
+            <div class="control-group">
+                <div class="control-group-label">Birds</div>
+                <button onclick="window.gameActions.addDuck()" data-tip="Mallard duck — hunts shrimp and fish, breeds with mates, lays eggs on islands.">🦆 Duck</button>
+                <button onclick="window.gameActions.addDuck('PELICAN')" data-tip="Pelican — large seabird, expert fisher, long-lived.">🦤 Pelican</button>
+                <button onclick="window.gameActions.addDuck('SWAN')" data-tip="Swan — graceful, highly social, breeds readily near flocks.">🦢 Swan</button>
+                <button onclick="window.gameActions.addDuck('FLAMINGO')" data-tip="Flamingo — island-only. Orbits islands endlessly and never enters the water.">🦩 Flamingo</button>
+                <button onclick="window.gameActions.addDuck('GOOSE')" data-tip="Goose — fast and aggressive, outcompetes ducks for food.">🪿 Goose</button>
+            </div>
+
+            <!-- Fish -->
+            <div class="control-group">
+                <div class="control-group-label">Fish</div>
+                <button onclick="window.gameActions.addFish('fish_salmon')" data-tip="Salmon — common, eats algae, breeds readily. Backbone of the food chain.">🐟 Salmon</button>
+                <button onclick="window.gameActions.addFish('fish_tropical')" data-tip="Tropical fish — colourful and fast. Doesn't eat algae.">🐠 Tropical</button>
+                <button onclick="window.gameActions.addFish('fish_puffer')" data-tip="Pufferfish — slow but inflates when threatened. Very long-lived.">🐡 Puffer</button>
+                <button onclick="window.gameActions.addFish('fish_shark')" data-tip="Shark — apex predator. Rare, long-lived, and keeps populations in check.">🦈 Shark</button>
+                <button onclick="window.gameActions.addFish('fish_squid')" data-tip="Squid — fast swimmer, medium lifespan, travels in loose groups.">🦑 Squid</button>
+                <button onclick="window.gameActions.addFish('fish_lobster')" data-tip="Lobster — slow bottom-dweller. Eats algae, very long-lived.">🦞 Lobster</button>
+                <button onclick="window.gameActions.addFish('fish_crab')" data-tip="Crab — scuttles along the seabed eating algae. Hardy scavenger.">🦀 Crab</button>
+                <button onclick="window.gameActions.addFish('fish_shell')" data-tip="Shell — completely stationary. Extremely long-lived pollution absorber.">🐚 Shell</button>
+                <button onclick="window.gameActions.addOctopus()" data-tip="Octopus — seeks out elixirs and opens them. Also tickles ducks for fun.">🐙 Octopus</button>
+            </div>
+
+            <!-- Marine Mammals -->
+            <div class="control-group">
+                <div class="control-group-label">Sea Mammals</div>
+                <button onclick="window.gameActions.addSeaCreature()" data-tip="Random sea mammal — dolphin, whale, seal or otter. Each has unique behaviour.">🐬 Creature</button>
+            </div>
+
+            <!-- Predators -->
+            <div class="control-group">
+                <div class="control-group-label">Predators</div>
+                <button onclick="window.gameActions.addPredator()" data-tip="Island predator — cat or dog. Hunts ducks that stray near the island. Needs an island to spawn.">🐾 Predator</button>
+            </div>
+
+            <!-- Environment -->
+            <div class="control-group">
+                <div class="control-group-label">Environment</div>
+                <button onclick="window.gameActions.addIsland()"  data-tip="Spawns a sandy island. Predators and flamingos nest here. Seagrass grows nearby.">🏝️ Island</button>
+                <button onclick="window.gameActions.addFood()"    data-tip="Drops a shrimp into the ocean. Primary food source for ducks and fish.">🦐 Shrimp</button>
+                <button onclick="window.gameActions.addAlgae()"   data-tip="Adds green algae. Slowly reduces water pollution and feeds fish.">🟢 Algae</button>
+                <button onclick="window.gameActions.addAlgae('toxic')"    data-tip="Adds toxic algae. Raises pollution over time — use sparingly.">🔴 Toxic</button>
+                <button onclick="window.gameActions.addAlgae('kelp')"     data-tip="Adds kelp. Strong pollution reducer, grows tall near the surface.">🌿 Kelp</button>
+                <button onclick="window.gameActions.addAlgae('seagrass')" data-tip="Adds seagrass. Gentle purifier, often found near islands.">🌱 Seagrass</button>
+                <button onclick="window.gameActions.addElixir()"  data-tip="Drops a purification elixir. Octopi will open it — clears toxic algae and slashes pollution.">⚗️ Elixir</button>
+            </div>
+
+            <!-- Simulation -->
+            <div class="control-group">
+                <div class="control-group-label">Simulation</div>
+                <button onclick="window.gameActions.togglePause(this)">⏸️ Pause</button>
+                <button onclick="window.gameActions.triggerUFO()" data-tip="We don't talk about this.">🛸 UFO</button>
+            </div>
+        </div>
+
+        <!-- Performance -->
+        <div class="hud-perf">
+            FPS: <span id="fps-display">60</span> &nbsp;|&nbsp;
+            Frame: <span id="frame-time">0.00</span>ms &nbsp;|&nbsp;
+            Entities: <span id="entity-count">0</span>
+        </div>
+    </div>
+</div>
+
+<!-- ── Event Log ──────────────────────────────────────────────────── -->
+<div id="ecosystem-log">
+    <div class="log-header">
+        📋 Event Log
+        <button class="hud-toggle-btn" onclick="window.gameActions.toggleLog()">▾</button>
+    </div>
+    <div id="log-content"></div>
+</div>
+
+<!-- ── Click hint ────────────────────────────────────────────────── -->
+<div id="click-hint">🦐 Click the ocean to drop shrimp!</div>
+
+<script type="module" src="main.js"></script>
+
+<div id="tooltip" style="
+    position:fixed; z-index:99999; pointer-events:none;
+    background:rgba(0,10,25,0.95); color:#e0f4ff;
+    font-size:11px; line-height:1.5;
+    padding:7px 11px; border-radius:6px;
+    border:1px solid rgba(100,200,255,0.25);
+    max-width:220px; white-space:normal;
+    opacity:0; transition:opacity 0.15s;
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);
+"></div>
+
+<script>
+(function(){
+    const tip = document.getElementById('tooltip');
+    let hideTimer;
+
+    document.querySelectorAll('[data-tip]').forEach(el => {
+        el.addEventListener('mouseenter', e => {
+            clearTimeout(hideTimer);
+            tip.textContent = el.dataset.tip;
+            tip.style.opacity = '1';
+            position(e);
+        });
+        el.addEventListener('mousemove', position);
+        el.addEventListener('mouseleave', () => {
+            hideTimer = setTimeout(() => tip.style.opacity = '0', 80);
+        });
+    });
+
+    function position(e) {
+        const pad = 12;
+        const tw = tip.offsetWidth, th = tip.offsetHeight;
+        let x = e.clientX - tw / 2;
+        let y = e.clientY - th - pad;
+        // Keep inside viewport
+        x = Math.max(pad, Math.min(x, window.innerWidth  - tw - pad));
+        y = Math.max(pad, Math.min(y, window.innerHeight - th - pad));
+        // If would go off top, show below cursor instead
+        if (y < pad) y = e.clientY + pad;
+        tip.style.left = x + 'px';
+        tip.style.top  = y + 'px';
+    }
+})();
+</script>
+</body>
+</html>

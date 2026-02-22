@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yxara — The Crystal Terminator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#030a0f; overflow:hidden; font-family:'Cormorant Garamond',serif; }
+  canvas { display:block; }
+  #label {
+    position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+    text-align:center; pointer-events:none;
+  }
+  #label h1 {
+    font-family:'Cinzel Decorative',serif;
+    font-size:1rem; letter-spacing:0.5em;
+    color:#7fffd4; opacity:0.5;
+  }
+  #label p {
+    font-style:italic; font-size:0.8rem;
+    color:#a8ffe8; opacity:0.3; margin-top:4px;
+    letter-spacing:0.15em;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="label">
+  <h1>YXARA</h1>
+  <p>terminator ring — crystal district</p>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Seeded random ──────────────────────────────────────────
+function rng(seed) {
+  let s = seed;
+  return () => { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+// ── Sky gradient & aurora ──────────────────────────────────
+function drawSky() {
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0,   '#000d14');
+  grd.addColorStop(0.3, '#011a1a');
+  grd.addColorStop(0.6, '#012a20');
+  grd.addColorStop(1,   '#021a10');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ── Stars ──────────────────────────────────────────────────
+const starSeed = rng(42);
+const stars = Array.from({length:200}, () => ({
+  x: starSeed() * 1, y: starSeed() * 0.55,
+  r: starSeed() * 1.2 + 0.2,
+  flicker: starSeed() * Math.PI * 2
+}));
+
+function drawStars() {
+  stars.forEach(s => {
+    const alpha = 0.3 + 0.5 * Math.abs(Math.sin(s.flicker + t * 0.015));
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,255,230,${alpha})`;
+    ctx.fill();
+  });
+}
+
+// ── Vel (companion planet, glowing amber in the sky) ───────
+function drawVel() {
+  const vx = W * 0.82, vy = H * 0.12, vr = 38;
+  // glow
+  const g = ctx.createRadialGradient(vx, vy, 0, vx, vy, vr * 3.5);
+  g.addColorStop(0, 'rgba(255,120,40,0.18)');
+  g.addColorStop(1, 'rgba(255,60,10,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(vx, vy, vr * 3.5, 0, Math.PI * 2); ctx.fill();
+  // disk
+  const disk = ctx.createRadialGradient(vx - 10, vy - 12, 3, vx, vy, vr);
+  disk.addColorStop(0, '#ff9966');
+  disk.addColorStop(0.4, '#cc3311');
+  disk.addColorStop(0.8, '#550808');
+  disk.addColorStop(1, '#1a0202');
+  ctx.beginPath(); ctx.arc(vx, vy, vr, 0, Math.PI * 2);
+  ctx.fillStyle = disk; ctx.fill();
+  // atmosphere rim
+  const rim = ctx.createRadialGradient(vx, vy, vr - 5, vx, vy, vr + 6);
+  rim.addColorStop(0, 'rgba(255,90,20,0)');
+  rim.addColorStop(0.6, 'rgba(255,90,20,0.2)');
+  rim.addColorStop(1, 'rgba(255,90,20,0)');
+  ctx.beginPath(); ctx.arc(vx, vy, vr + 6, 0, Math.PI * 2);
+  ctx.fillStyle = rim; ctx.fill();
+}
+
+// ── Magnetic filament particles ────────────────────────────
+const filamentParticles = Array.from({length:28}, (_, i) => ({
+  progress: i / 28,
+  offset: (Math.random() - 0.5) * 18,
+  speed: 0.0008 + Math.random() * 0.0006,
+  size: 1 + Math.random() * 2
+}));
+
+function drawFilament() {
+  // Filament arc from upper right (where Vel is) to off-screen upper left
+  const x1 = W * 0.82, y1 = H * 0.12;
+  const x2 = -40, y2 = H * 0.08;
+  const cpx = W * 0.5, cpy = -H * 0.1;
+
+  function bezier(t) {
+    const mt = 1 - t;
+    return {
+      x: mt * mt * x1 + 2 * mt * t * cpx + t * t * x2,
+      y: mt * mt * y1 + 2 * mt * t * cpy + t * t * y2
+    };
+  }
+
+  // Draw faint arc
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+  ctx.strokeStyle = 'rgba(127,255,212,0.08)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Particles
+  filamentParticles.forEach(p => {
+    p.progress = (p.progress + p.speed) % 1;
+    const pos = bezier(p.progress);
+    const alpha = 0.4 + 0.6 * Math.sin(p.progress * Math.PI);
+    ctx.beginPath();
+    ctx.arc(pos.x + p.offset * 0.3, pos.y + p.offset, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(127,255,212,${alpha})`;
+    ctx.fill();
+  });
+}
+
+// ── Aurora bands ───────────────────────────────────────────
+function drawAurora() {
+  for (let b = 0; b < 4; b++) {
+    const y = H * (0.12 + b * 0.07);
+    const wave = Math.sin(t * 0.008 + b * 1.3) * 15;
+    ctx.save();
+    ctx.globalAlpha = 0.04 + b * 0.01;
+    const g = ctx.createLinearGradient(0, y + wave - 20, 0, y + wave + 20);
+    g.addColorStop(0, 'rgba(100,255,180,0)');
+    g.addColorStop(0.5, 'rgba(100,255,180,1)');
+    g.addColorStop(1, 'rgba(100,255,180,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, y + wave);
+    for (let x = 0; x <= W; x += 40) {
+      ctx.lineTo(x, y + Math.sin(t * 0.01 + x * 0.01 + b) * 12 + wave);
+    }
+    ctx.lineTo(W, y + wave - 40);
+    ctx.lineTo(0, y + wave - 40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── Atmospheric mist layers ────────────────────────────────
+function drawMist(layer) {
+  const y = H * (0.52 + layer * 0.06);
+  const offset = Math.sin(t * 0.004 + layer * 2) * 30;
+  const g = ctx.createLinearGradient(0, y - 30, 0, y + 30);
+  g.addColorStop(0, 'rgba(100,240,180,0)');
+  g.addColorStop(0.5, `rgba(100,240,180,${0.035 - layer * 0.005})`);
+  g.addColorStop(1, 'rgba(100,240,180,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(offset, y - 30, W, 60);
+}
+
+// ── Ground / terrain ───────────────────────────────────────
+function drawGround() {
+  // Back hills — smooth rolling landscape
+  const gh = ctx.createLinearGradient(0, H * 0.62, 0, H);
+  gh.addColorStop(0, '#0a2218');
+  gh.addColorStop(0.4, '#061410');
+  gh.addColorStop(1, '#020805');
+  ctx.fillStyle = gh;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  // Background rolling terrain
+  for (let x = 0; x <= W; x += 30) {
+    const y = H * 0.68 + Math.sin(x * 0.006) * 20 + Math.sin(x * 0.003 + 1) * 30;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Foreground ground — darker
+  const gf = ctx.createLinearGradient(0, H * 0.75, 0, H);
+  gf.addColorStop(0, '#041008');
+  gf.addColorStop(1, '#010403');
+  ctx.fillStyle = gf;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let x = 0; x <= W; x += 20) {
+    const y = H * 0.78 + Math.sin(x * 0.01 + 2) * 12 + Math.sin(x * 0.004) * 18;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ── Crystal spires ─────────────────────────────────────────
+// Each spire is a cluster of hexagonal prisms
+function drawCrystalCluster(x, baseY, scale, hue, depth) {
+  const r = rng(Math.floor(x) + depth * 100);
+  const count = Math.floor(3 + r() * 5);
+
+  for (let i = 0; i < count; i++) {
+    const cx = x + (r() - 0.5) * 60 * scale;
+    const height = (80 + r() * 180) * scale;
+    const width = (6 + r() * 12) * scale;
+    const tilt = (r() - 0.5) * 0.18;
+    const alpha = depth === 2 ? 0.9 : depth === 1 ? 0.6 : 0.35;
+    const biolum = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.025 + i + x * 0.01));
+
+    ctx.save();
+    ctx.translate(cx, baseY);
+    ctx.rotate(tilt);
+
+    // Main body gradient
+    const cg = ctx.createLinearGradient(-width / 2, -height, width / 2, 0);
+    cg.addColorStop(0, `hsla(${hue}, 100%, 85%, ${alpha * 0.9})`);
+    cg.addColorStop(0.3, `hsla(${hue}, 90%, 55%, ${alpha * 0.7})`);
+    cg.addColorStop(0.7, `hsla(${hue + 20}, 70%, 30%, ${alpha * 0.5})`);
+    cg.addColorStop(1, `hsla(${hue + 30}, 60%, 15%, ${alpha * 0.3})`);
+
+    // Hexagonal prism (simplified as tapered rect + facets)
+    ctx.beginPath();
+    ctx.moveTo(-width / 2, 0);
+    ctx.lineTo(-width * 0.6, -height);
+    ctx.lineTo(width * 0.6, -height);
+    ctx.lineTo(width / 2, 0);
+    ctx.closePath();
+    ctx.fillStyle = cg;
+    ctx.fill();
+
+    // Left facet (dark)
+    ctx.beginPath();
+    ctx.moveTo(-width / 2, 0);
+    ctx.lineTo(-width * 0.6, -height);
+    ctx.lineTo(-width * 0.15, -height * 0.9);
+    ctx.lineTo(-width * 0.1, 0);
+    ctx.closePath();
+    ctx.fillStyle = `hsla(${hue + 180}, 30%, 5%, ${alpha * 0.4})`;
+    ctx.fill();
+
+    // Right facet (highlight)
+    ctx.beginPath();
+    ctx.moveTo(width * 0.1, 0);
+    ctx.lineTo(width * 0.15, -height * 0.9);
+    ctx.lineTo(width * 0.6, -height);
+    ctx.lineTo(width / 2, 0);
+    ctx.closePath();
+    ctx.fillStyle = `hsla(${hue - 20}, 80%, 80%, ${alpha * 0.25})`;
+    ctx.fill();
+
+    // Crystal tip
+    ctx.beginPath();
+    ctx.moveTo(-width * 0.6, -height);
+    ctx.lineTo(0, -height - (20 + r() * 40) * scale);
+    ctx.lineTo(width * 0.6, -height);
+    ctx.closePath();
+    const tg = ctx.createLinearGradient(0, -height - 40 * scale, 0, -height);
+    tg.addColorStop(0, `hsla(${hue - 20}, 100%, 95%, ${alpha})`);
+    tg.addColorStop(1, `hsla(${hue}, 100%, 70%, ${alpha * 0.6})`);
+    ctx.fillStyle = tg;
+    ctx.fill();
+
+    // Bioluminescent inner glow
+    if (depth === 2) {
+      const inner = ctx.createLinearGradient(0, -height, 0, 0);
+      inner.addColorStop(0, `hsla(${hue}, 100%, 70%, ${biolum * 0.35})`);
+      inner.addColorStop(1, `hsla(${hue}, 100%, 40%, 0)`);
+      ctx.beginPath();
+      ctx.moveTo(-width * 0.3, 0);
+      ctx.lineTo(-width * 0.35, -height);
+      ctx.lineTo(width * 0.35, -height);
+      ctx.lineTo(width * 0.3, 0);
+      ctx.closePath();
+      ctx.fillStyle = inner;
+      ctx.fill();
+
+      // Glow at tip
+      const tipGlow = ctx.createRadialGradient(0, -height - 15 * scale, 0, 0, -height - 15 * scale, 30 * scale);
+      tipGlow.addColorStop(0, `hsla(${hue - 20}, 100%, 90%, ${biolum * 0.5})`);
+      tipGlow.addColorStop(1, `hsla(${hue}, 100%, 60%, 0)`);
+      ctx.fillStyle = tipGlow;
+      ctx.beginPath();
+      ctx.arc(0, -height - 15 * scale, 30 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Refraction stripe
+    ctx.beginPath();
+    ctx.moveTo(-width * 0.05, -height * 0.2);
+    ctx.lineTo(-width * 0.02, -height * 0.85);
+    ctx.lineTo(width * 0.06, -height * 0.8);
+    ctx.lineTo(width * 0.03, -height * 0.15);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.08})`;
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// ── Drift Manta ────────────────────────────────────────────
+const mantas = [
+  { x: 0.2, y: 0.3, speed: 0.00015, amplitude: 25, phase: 0, scale: 1.1 },
+  { x: 0.6, y: 0.22, speed: 0.00009, amplitude: 18, phase: 2, scale: 0.7 },
+  { x: 0.85, y: 0.35, speed: 0.00013, amplitude: 22, phase: 4.5, scale: 0.9 }
+];
+
+function drawManta(mx, my, sc, t) {
+  const x = mx * W, y = my * H;
+  const w = 90 * sc, h = 35 * sc;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Wing flap
+  const flap = Math.sin(t * 0.06) * 0.12;
+
+  // Body
+  const bg = ctx.createRadialGradient(0, 0, 2, 0, 0, w * 0.4);
+  bg.addColorStop(0, 'rgba(180,255,235,0.55)');
+  bg.addColorStop(0.5, 'rgba(80,200,170,0.35)');
+  bg.addColorStop(1, 'rgba(30,120,100,0.1)');
+
+  // Left wing
+  ctx.save();
+  ctx.rotate(-flap);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(-w * 0.3, -h * 0.4, -w * 0.9, -h * 0.5, -w, h * 0.1);
+  ctx.bezierCurveTo(-w * 0.7, h * 0.5, -w * 0.2, h * 0.3, 0, 0);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.restore();
+
+  // Right wing
+  ctx.save();
+  ctx.rotate(flap);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(w * 0.3, -h * 0.4, w * 0.9, -h * 0.5, w, h * 0.1);
+  ctx.bezierCurveTo(w * 0.7, h * 0.5, w * 0.2, h * 0.3, 0, 0);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.restore();
+
+  // Central body
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.12, h * 0.3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(120,255,210,0.4)';
+  ctx.fill();
+
+  // Electroreceptive spots
+  for (let s = 0; s < 5; s++) {
+    const sx = (s - 2) * w * 0.15;
+    const sy = -h * 0.1;
+    const glow = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.05 + s * 0.7));
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2.5 * sc, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,255,240,${glow})`;
+    ctx.fill();
+  }
+
+  // Tail
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.2);
+  ctx.quadraticCurveTo(w * 0.05, h * 0.8, -w * 0.04, h * 1.2);
+  ctx.strokeStyle = 'rgba(100,220,180,0.35)';
+  ctx.lineWidth = 2 * sc;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ── Chord fungi: mushroom-like clusters low on the ground ──
+function drawFungus(x, baseY, sc) {
+  const r = rng(Math.floor(x * 7));
+  const count = 3 + Math.floor(r() * 4);
+  for (let i = 0; i < count; i++) {
+    const fx = x + (r() - 0.5) * 50 * sc;
+    const stemH = (20 + r() * 30) * sc;
+    const capR = (12 + r() * 16) * sc;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.03 + i * 1.3 + x * 0.02);
+    const hue = 155 + r() * 30;
+
+    ctx.save();
+    ctx.translate(fx, baseY);
+
+    // Mycelial threads
+    for (let m = 0; m < 4; m++) {
+      const ang = (m / 4) * Math.PI + Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(
+        Math.cos(ang) * 25 * sc, Math.sin(ang) * 10 * sc,
+        Math.cos(ang) * 45 * sc, Math.sin(ang) * 5 * sc
+      );
+      ctx.strokeStyle = `hsla(${hue}, 80%, 50%, ${0.15 * pulse})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // Stem
+    ctx.beginPath();
+    ctx.moveTo(-2 * sc, 0);
+    ctx.quadraticCurveTo((r() - 0.5) * 8 * sc, -stemH * 0.5, -1.5 * sc, -stemH);
+    ctx.lineTo(1.5 * sc, -stemH);
+    ctx.quadraticCurveTo((r() - 0.5) * 8 * sc + 4 * sc, -stemH * 0.5, 2 * sc, 0);
+    ctx.fillStyle = `hsla(${hue}, 50%, 20%, 0.8)`;
+    ctx.fill();
+
+    // Cap
+    ctx.beginPath();
+    ctx.ellipse(0, -stemH, capR, capR * 0.45, 0, Math.PI, 0);
+    const capG = ctx.createRadialGradient(0, -stemH - capR * 0.2, 0, 0, -stemH, capR);
+    capG.addColorStop(0, `hsla(${hue}, 100%, 75%, 0.9)`);
+    capG.addColorStop(0.6, `hsla(${hue + 15}, 80%, 40%, 0.8)`);
+    capG.addColorStop(1, `hsla(${hue + 30}, 60%, 20%, 0.6)`);
+    ctx.fillStyle = capG;
+    ctx.fill();
+
+    // Bioluminescent underside glow
+    const glowG = ctx.createRadialGradient(0, -stemH, 0, 0, -stemH, capR * 0.8);
+    glowG.addColorStop(0, `hsla(${hue - 10}, 100%, 70%, ${pulse * 0.4})`);
+    glowG.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+    ctx.fillStyle = glowG;
+    ctx.beginPath();
+    ctx.arc(0, -stemH, capR * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// ── Spore particles ────────────────────────────────────────
+const spores = Array.from({length:60}, () => ({
+  x: Math.random(), y: 0.45 + Math.random() * 0.45,
+  vx: (Math.random() - 0.5) * 0.0003,
+  vy: -0.00015 - Math.random() * 0.0002,
+  life: Math.random(), r: 0.8 + Math.random() * 2,
+  hue: 140 + Math.random() * 40
+}));
+
+function drawSpores() {
+  spores.forEach(s => {
+    s.life += 0.004;
+    if (s.life > 1) { s.life = 0; s.x = Math.random(); s.y = 0.7 + Math.random() * 0.2; }
+    s.x += s.vx;
+    s.y += s.vy * (1 - s.life * 0.5);
+    const alpha = Math.sin(s.life * Math.PI) * 0.6;
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${s.hue}, 100%, 75%, ${alpha})`;
+    ctx.fill();
+  });
+}
+
+// ── Prismatic light rays from crystals ─────────────────────
+function drawLightRays() {
+  const rayPositions = [0.1, 0.3, 0.5, 0.68, 0.88];
+  rayPositions.forEach((rx, i) => {
+    const x = rx * W;
+    const groundY = H * 0.74;
+    const topY = H * 0.15 + Math.sin(t * 0.007 + i) * 20;
+    const spread = 30 + Math.sin(t * 0.01 + i * 1.2) * 15;
+    const hue = [165, 145, 175, 155, 160][i];
+    const alpha = 0.04 + 0.03 * Math.sin(t * 0.012 + i);
+
+    const lg = ctx.createLinearGradient(x, topY, x, groundY);
+    lg.addColorStop(0, `hsla(${hue}, 100%, 70%, ${alpha})`);
+    lg.addColorStop(1, `hsla(${hue + 30}, 60%, 40%, 0)`);
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.moveTo(x - spread * 0.3, topY);
+    ctx.lineTo(x - spread, groundY);
+    ctx.lineTo(x + spread, groundY);
+    ctx.lineTo(x + spread * 0.3, topY);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+// ── RENDER LOOP ────────────────────────────────────────────
+function render() {
+  t++;
+  ctx.clearRect(0, 0, W, H);
+  drawSky();
+  drawStars();
+  drawVel();
+  drawFilament();
+  drawAurora();
+  drawLightRays();
+
+  // Background crystal clusters (far)
+  const bgSeeds = [0.05, 0.15, 0.25, 0.38, 0.48, 0.57, 0.67, 0.77, 0.87, 0.95];
+  bgSeeds.forEach((bx, i) => {
+    const by = H * (0.67 + Math.sin(bx * 10) * 0.02);
+    drawCrystalCluster(bx * W, by, 0.45 + Math.sin(i) * 0.1, 160 + i * 5, 0);
+  });
+
+  // Mid-ground mist
+  [0, 1, 2].forEach(l => drawMist(l));
+
+  // Mid-ground crystals
+  const midSeeds = [0.08, 0.2, 0.33, 0.45, 0.55, 0.65, 0.75, 0.88];
+  midSeeds.forEach((mx, i) => {
+    const my = H * (0.73 + Math.sin(mx * 8 + 1) * 0.015);
+    drawCrystalCluster(mx * W, my, 0.7 + Math.sin(i * 1.3) * 0.15, 155 + i * 6, 1);
+  });
+
+  drawGround();
+
+  // Foreground crystals
+  const fgSeeds = [0.05, 0.18, 0.32, 0.47, 0.6, 0.72, 0.84, 0.93];
+  fgSeeds.forEach((fx, i) => {
+    const fy = H * (0.8 + Math.sin(fx * 12 + 2) * 0.01);
+    drawCrystalCluster(fx * W, fy, 1.0 + Math.sin(i) * 0.2, 150 + i * 4, 2);
+  });
+
+  // Fungi clusters on ground
+  [0.12, 0.28, 0.44, 0.59, 0.71, 0.86].forEach(fx => {
+    const fy = H * (0.79 + Math.sin(fx * 15) * 0.01);
+    drawFungus(fx * W, fy, 0.8 + Math.random() * 0.001);
+  });
+
+  drawSpores();
+
+  // Drift Mantas
+  mantas.forEach(m => {
+    m.x = (m.x + m.speed) % 1.15;
+    if (m.x > 1.1) m.x = -0.1;
+    const wy = m.y + Math.sin(t * 0.012 + m.phase) * (m.amplitude / H);
+    drawManta(m.x, wy, m.scale, t + m.phase * 10);
+  });
+
+  // Ground mist overlay
+  const gmist = ctx.createLinearGradient(0, H * 0.76, 0, H);
+  gmist.addColorStop(0, 'rgba(30,100,70,0)');
+  gmist.addColorStop(0.4, 'rgba(20,80,55,0.12)');
+  gmist.addColorStop(1, 'rgba(5,20,12,0.6)');
+  ctx.fillStyle = gmist;
+  ctx.fillRect(0, H * 0.76, W, H * 0.24);
+
+  requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>

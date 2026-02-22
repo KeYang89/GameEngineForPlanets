@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UFO Journey — From Galaxy to Planet (5 Phases)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --holo: #00ffcc;
+  --holo2: #ff44dd;
+  --warn: #ff8800;
+  --dim: rgba(0,255,204,0.15);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+
+#stage {
+  position: relative;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position:fixed; width:16px; height:16px;
+  border:1px solid var(--holo); border-radius:50%;
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  transition: width .15s, height .15s;
+  box-shadow: 0 0 8px var(--holo);
+}
+
+/* ── PHASE CANVASES / LAYERS ── */
+.phase {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  opacity:0;
+  transition: opacity 1.8s ease;
+  pointer-events:none;
+}
+.phase.active { opacity:1; pointer-events:all; }
+
+/* ══════════════════════════════
+   PHASE 1 — UFO INTERIOR
+══════════════════════════════ */
+#p1 { background: #000; }
+
+#p1 svg { width:100%; height:100%; }
+
+/* Cockpit HUD panels */
+.hud-panel {
+  position:absolute;
+  border:1px solid rgba(0,255,204,0.3);
+  border-radius:6px;
+  background:rgba(0,20,30,0.7);
+  backdrop-filter:blur(4px);
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;
+  color:var(--holo);
+  padding:8px 10px;
+  line-height:1.8;
+}
+
+#hud-tl { top:18px; left:18px; width:180px; }
+#hud-tr { top:18px; right:18px; width:180px; text-align:right; }
+#hud-bl { bottom:80px; left:18px; width:160px; }
+#hud-br { bottom:80px; right:18px; width:160px; text-align:right; }
+
+.hud-title {
+  font-family:'Orbitron',monospace; font-size:9px;
+  letter-spacing:3px; color:rgba(0,255,204,0.6);
+  border-bottom:1px solid rgba(0,255,204,0.2);
+  padding-bottom:4px; margin-bottom:5px;
+}
+
+.bar-row { display:flex; align-items:center; gap:6px; margin:3px 0; }
+.bar { flex:1; height:3px; background:rgba(0,255,204,0.15); border-radius:2px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:2px; transition:width 2s; }
+
+/* Phase indicator */
+#phase-label {
+  position:absolute; bottom:24px; left:50%;
+  transform:translateX(-50%);
+  font-family:'Orbitron',monospace;
+  font-size:11px; letter-spacing:4px;
+  color:rgba(0,255,204,0.7);
+  z-index:100;
+  pointer-events:none;
+}
+
+/* Skip / nav */
+#nav {
+  position: absolute;
+  bottom: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  gap: 10px;
+}
+.nav-btn {
+  font-family:'Orbitron',monospace; font-size:10px;
+  letter-spacing:2px; color:var(--holo);
+  background:rgba(0,255,204,0.07);
+  border:1px solid rgba(0,255,204,0.3);
+  padding:7px 14px; cursor:pointer;
+  border-radius:3px;
+  transition:background .2s, box-shadow .2s;
+}
+.nav-btn:hover {
+  background:rgba(0,255,204,0.15);
+  box-shadow:0 0 12px rgba(0,255,204,0.3);
+}
+
+/* ══════════════════════════════
+   PHASE 2 — GALAXY WARP
+══════════════════════════════ */
+#p2 { background:radial-gradient(ellipse at 50% 50%,#0a0020 0%,#000 100%); }
+
+/* ══════════════════════════════
+   PHASE 3 — PLANET APPROACH
+══════════════════════════════ */
+#p3 { background:#000; }
+
+/* ══════════════════════════════
+   PHASE 4 — BIRD'S EYE VIEW
+══════════════════════════════ */
+#p4 { background:#000; }
+
+/* ══════════════════════════════
+   PHASE 5 — ALIEN PLANET SURFACE
+══════════════════════════════ */
+#p5 { background:#000; }
+
+/* ── SCANLINE OVERLAY ── */
+#scanlines {
+  position:fixed; inset:0; z-index:500;
+  pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.08) 3px,
+    rgba(0,0,0,0.08) 4px
+  );
+}
+
+/* ── VIGNETTE ── */
+#vignette {
+  position:fixed; inset:0; z-index:490;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+}
+
+/* ── COCKPIT FRAME OVERLAY ── */
+#cockpit-overlay {
+  position:fixed; inset:0; z-index:400;
+  pointer-events:none;
+  transition:opacity 1.5s;
+}
+
+/* ── TRANSMISSION TEXT ── */
+#transmission {
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;
+  font-size:clamp(12px,2vw,20px);
+  letter-spacing:6px;
+  color:rgba(0,255,204,0.9);
+  z-index:600;
+  pointer-events:none;
+  text-align:center;
+  text-shadow: 0 0 20px rgba(0,255,204,0.5);
+  opacity:0;
+  transition:opacity .8s;
+}
+
+/* WARP animations */
+@keyframes warpStar {
+  from { transform:translateX(0) scaleX(1); opacity:0.9; }
+  to   { transform:translateX(150vw) scaleX(8); opacity:0; }
+}
+@keyframes pulse-ring {
+  0%   { transform:scale(1); opacity:0.7; }
+  100% { transform:scale(3); opacity:0; }
+}
+@keyframes scanFlicker {
+  0%,100%{opacity:1} 50%{opacity:0.92} 75%{opacity:0.96}
+}
+@keyframes holoBlink {
+  0%,100%{opacity:1} 48%{opacity:1} 50%{opacity:0.4} 52%{opacity:1}
+}
+@keyframes enginePulse {
+  0%,100%{opacity:0.6} 50%{opacity:1}
+}
+@keyframes float {
+  0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)}
+}
+@keyframes rot {
+  from{transform:rotate(0deg)} to{transform:rotate(360deg)}
+}
+@keyframes landingShake {
+  0%,100%{transform:translate(0,0)}
+  25%{transform:translate(-2px,1px)}
+  50%{transform:translate(2px,-1px)}
+  75%{transform:translate(-1px,2px)}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<!-- COCKPIT FRAME (persistent through phases 1-3) -->
+<svg id="cockpit-overlay" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+
+<!-- TRANSMISSION TEXT -->
+<div id="transmission"></div>
+
+<!-- ══ PHASES ══ -->
+
+<!-- PHASE 1: UFO INTERIOR -->
+<div id="p1" class="phase active">
+  <svg id="svg1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+
+  <div class="hud-panel" id="hud-tl">
+    <div class="hud-title">NAVIGATION</div>
+    <div>SYS ▸ ONLINE</div>
+    <div>WARP ▸ PRIMING</div>
+    <div class="bar-row">FUEL<div class="bar"><div class="bar-fill" style="width:87%;background:#00ffcc"></div></div>87%</div>
+    <div class="bar-row">SHLD<div class="bar"><div class="bar-fill" style="width:100%;background:#44aaff"></div></div>100%</div>
+  </div>
+
+  <div class="hud-panel" id="hud-tr">
+    <div class="hud-title">TELEMETRY</div>
+    <div id="coords">X: 0.00 LY</div>
+    <div id="speed-read">VEL: 0.0c</div>
+    <div id="dest-read">DEST: KEPLER-7b</div>
+    <div id="eta-read">ETA: CALC...</div>
+  </div>
+
+  <div class="hud-panel" id="hud-bl">
+    <div class="hud-title">ENGINES</div>
+    <div id="eng1" class="bar-row">E1<div class="bar"><div class="bar-fill" style="width:30%;background:#ff8800"></div></div></div>
+    <div id="eng2" class="bar-row">E2<div class="bar"><div class="bar-fill" style="width:30%;background:#ff8800"></div></div></div>
+    <div id="eng3" class="bar-row">E3<div class="bar"><div class="bar-fill" style="width:30%;background:#ff8800"></div></div></div>
+  </div>
+
+  <div class="hud-panel" id="hud-br">
+    <div class="hud-title">LIFE SUPPORT</div>
+    <div>O² ▸ NOMINAL</div>
+    <div>TEMP ▸ 21.4°C</div>
+    <div>GRAVITY ▸ 1.0G</div>
+  </div>
+</div>
+
+<!-- PHASE 2: GALAXY WARP -->
+<div id="p2" class="phase">
+  <svg id="svg2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+</div>
+
+<!-- PHASE 3: PLANET APPROACH -->
+<div id="p3" class="phase">
+  <svg id="svg3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+</div>
+
+<!-- PHASE 4: BIRD'S EYE VIEW -->
+<div id="p4" class="phase">
+  <svg id="svg4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+</div>
+
+<!-- PHASE 5: SAMPLE COLLECTION -->
+<div id="p5" class="phase">
+  <svg id="svg5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+</div>
+
+<!-- PHASE 6: ALIEN PLANET SURFACE -->
+<div id="p6" class="phase">
+  <svg id="svg6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"></svg>
+</div>
+
+<!-- NAV -->
+<div id="phase-label">PHASE 01 — UFO INTERIOR</div>
+<div id="nav">
+  <button class="nav-btn" onclick="prevPhase()">◀ PREV</button>
+  <button class="nav-btn" onclick="nextPhase()">NEXT ▶</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════
+const W=1000, H=600;
+let currentPhase=1;
+const totalPhases=6;
+
+const cursor=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{
+  cursor.style.left=e.clientX+'px'; cursor.style.top=e.clientY+'px';
+});
+
+function svgEl(tag,attrs={},parent=null){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+const rand=(a,b)=>a+Math.random()*(b-a);
+const randInt=(a,b)=>Math.floor(rand(a,b+1));
+function lerp(a,b,t){return a+(b-a)*t;}
+
+// Transmission text
+function showTransmission(text, duration=2500){
+  const el=document.getElementById('transmission');
+  el.textContent=text; el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0', duration);
+}
+
+// Phase labels
+const phaseLabels=[
+  'PHASE 01 — UFO INTERIOR',
+  'PHASE 02 — GALAXY WARP TRAVEL',
+  'PHASE 03 — PLANETARY APPROACH',
+  'PHASE 04 — BIRD\'S EYE VIEW',
+  'PHASE 05 — SAMPLE COLLECTION DRONES',
+  'PHASE 06 — ALIEN SURFACE LANDING'
+];
+
+function setPhase(n){
+  for(let i=1;i<=totalPhases;i++){
+    document.getElementById('p'+i).classList.remove('active');
+  }
+  currentPhase=n;
+  document.getElementById('p'+n).classList.add('active');
+  document.getElementById('phase-label').textContent=phaseLabels[n-1];
+
+  const co=document.getElementById('cockpit-overlay');
+  co.style.opacity=(n<=3)?'1':'0';
+
+  if(n===1) initPhase1();
+  if(n===2) initPhase2();
+  if(n===3) initPhase3();
+  if(n===4) initPhase4();
+  if(n===5) initPhase5();
+  if(n===6) initPhase6();
+}
+
+function nextPhase(){ if(currentPhase<totalPhases) setPhase(currentPhase+1); }
+function prevPhase(){ if(currentPhase>1) setPhase(currentPhase-1); }
+
+// ══════════════════════════════════════════════════════
+// COCKPIT FRAME (shared SVG overlay)
+// ══════════════════════════════════════════════════════
+(function buildCockpit(){
+  const svg=document.getElementById('cockpit-overlay');
+  const defs=svgEl('defs',{},svg);
+
+  // Cockpit window shape - elliptical viewport
+  const clipPath=svgEl('clipPath',{id:'cockpit-clip'},defs);
+  svgEl('ellipse',{cx:500,cy:280,rx:460,ry:260},clipPath);
+
+  // Radial vignette for window
+  const rg=svgEl('radialGradient',{id:'win-vignette',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'60%','stop-color':'transparent'},rg);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0.85)'},rg);
+
+  // MAIN COCKPIT STRUCTURE
+  // Outer hull bottom
+  const hullBottom=svgEl('path',{
+    d:'M0,440 Q100,500 500,520 Q900,500 1000,440 L1000,600 L0,600 Z',
+    fill:'#050d14'
+  },svg);
+
+  // Console desk
+  svgEl('path',{
+    d:'M0,480 Q200,460 500,470 Q800,460 1000,480 L1000,600 L0,600 Z',
+    fill:'#020a10'
+  },svg);
+
+  // Console panel gradient
+  const cg=svgEl('linearGradient',{id:'console-grad',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#0a2030'},cg);
+  svgEl('stop',{offset:'100%','stop-color':'#030d18'},cg);
+
+  svgEl('path',{
+    d:'M50,500 Q250,485 500,490 Q750,485 950,500 L960,560 L40,560 Z',
+    fill:'url(#console-grad)',stroke:'rgba(0,255,204,0.2)','stroke-width':'1'
+  },svg);
+
+  // Console buttons / indicators
+  const buttonColors=['#00ffcc','#ff4444','#ffaa00','#44aaff','#ff44dd','#00ff88'];
+  for(let i=0;i<24;i++){
+    const bx=120+i*32, by=515+Math.sin(i*0.6)*8;
+    const col=buttonColors[i%buttonColors.length];
+    svgEl('rect',{x:bx-5,y:by-3,width:10,height:6,rx:1,fill:col,opacity:0.7},svg);
+    // Button glow
+    if(Math.random()>0.5){
+      const glow=svgEl('rect',{x:bx-7,y:by-5,width:14,height:10,rx:2,fill:col,opacity:0.1,filter:'url(#holo-blur)'},svg);
+    }
+  }
+
+  // Screen dividers on console
+  for(let i=0;i<3;i++){
+    const sx=200+i*210, sy=488;
+    svgEl('rect',{x:sx,y:sy,width:170,height:60,rx:4,
+      fill:'rgba(0,20,35,0.8)',stroke:'rgba(0,255,204,0.25)','stroke-width':1},svg);
+    // Mini screen content - scanline lines
+    for(let j=0;j<5;j++){
+      svgEl('line',{x1:sx+8,y1:sy+10+j*10,x2:sx+162,y2:sy+10+j*10,
+        stroke:`rgba(0,255,204,${0.1+Math.random()*0.2})`,'stroke-width':1},svg);
+    }
+  }
+
+  // Throttle levers
+  [350,430,510,590,670].forEach((lx,i)=>{
+    svgEl('rect',{x:lx-4,y:530,width:8,height:25,rx:3,fill:'#0a2535',stroke:'rgba(0,255,204,0.3)','stroke-width':1},svg);
+    svgEl('rect',{x:lx-6,y:530+rand(0,18),width:12,height:8,rx:2,fill:'#1a4560'},svg);
+  });
+
+  // Side wall panels - left
+  svgEl('path',{d:'M0,100 L0,500 L80,480 L80,120 Z',fill:'#030d18',stroke:'rgba(0,255,204,0.12)','stroke-width':1},svg);
+  for(let i=0;i<6;i++){
+    svgEl('rect',{x:12,y:130+i*55,width:48,height:40,rx:3,fill:'rgba(0,30,50,0.8)',stroke:'rgba(0,255,204,0.2)','stroke-width':1},svg);
+    svgEl('line',{x1:16,y1:140+i*55,x2:56,y2:140+i*55,stroke:'rgba(0,255,204,0.2)','stroke-width':1},svg);
+    svgEl('circle',{cx:22,cy:152+i*55,r:4,fill:buttonColors[i],opacity:0.8},svg);
+  }
+
+  // Side wall panels - right
+  svgEl('path',{d:'M1000,100 L1000,500 L920,480 L920,120 Z',fill:'#030d18',stroke:'rgba(0,255,204,0.12)','stroke-width':1},svg);
+  for(let i=0;i<6;i++){
+    svgEl('rect',{x:940,y:130+i*55,width:48,height:40,rx:3,fill:'rgba(0,30,50,0.8)',stroke:'rgba(0,255,204,0.2)','stroke-width':1},svg);
+    svgEl('line',{x1:944,y1:140+i*55,x2:984,y2:140+i*55,stroke:'rgba(0,255,204,0.2)','stroke-width':1},svg);
+    svgEl('circle',{cx:978,cy:152+i*55,r:4,fill:buttonColors[(i+3)%6],opacity:0.8},svg);
+  }
+
+  // MAIN WINDOW FRAME
+  // Outer bezel
+  svgEl('ellipse',{cx:500,cy:280,rx:472,ry:272,
+    fill:'none',stroke:'rgba(0,255,204,0.35)','stroke-width':4},svg);
+  svgEl('ellipse',{cx:500,cy:280,rx:466,ry:268,
+    fill:'none',stroke:'rgba(0,255,204,0.12)','stroke-width':10},svg);
+
+  // Window glass reflection
+  svgEl('ellipse',{cx:500,cy:280,rx:460,ry:260,fill:'url(#win-vignette)'},svg);
+
+  // Structural ribs across top
+  for(let i=0;i<5;i++){
+    const t=0.2+i*0.15;
+    const x=500-Math.cos(Math.asin(t))*460;
+    svgEl('line',{x1:0,y1:280-260*t,x2:x,y2:280-260*t,
+      stroke:'rgba(0,30,50,0.6)','stroke-width':2},svg);
+    svgEl('line',{x1:1000,y1:280-260*t,x2:1000-x+500*2-1000,y2:280-260*t,
+      stroke:'rgba(0,30,50,0.6)','stroke-width':2},svg);
+  }
+
+  // Corner HUD brackets
+  const brackets=[
+    [[40,30],[90,30],[40,75]], [[960,30],[910,30],[960,75]],
+    [[40,570],[90,570],[40,525]], [[960,570],[910,570],[960,525]]
+  ];
+  brackets.forEach(pts=>{
+    const d=`M${pts[0][0]},${pts[0][1]} L${pts[1][0]},${pts[1][1]} M${pts[0][0]},${pts[0][1]} L${pts[2][0]},${pts[2][1]}`;
+    svgEl('path',{d,stroke:'rgba(0,255,204,0.5)','stroke-width':2,'fill':'none'},svg);
+  });
+
+  // Targeting reticle center
+  const ret=svgEl('g',{opacity:0.4},svg);
+  svgEl('circle',{cx:500,cy:280,r:8,fill:'none',stroke:'rgba(0,255,204,0.6)','stroke-width':1},ret);
+  svgEl('circle',{cx:500,cy:280,r:40,fill:'none',stroke:'rgba(0,255,204,0.2)','stroke-width':1},ret);
+  svgEl('line',{x1:460,y1:280,x2:452,y2:280,stroke:'rgba(0,255,204,0.5)','stroke-width':1.5},ret);
+  svgEl('line',{x1:540,y1:280,x2:548,y2:280,stroke:'rgba(0,255,204,0.5)','stroke-width':1.5},ret);
+  svgEl('line',{x1:500,y1:236,x2:500,y2:228,stroke:'rgba(0,255,204,0.5)','stroke-width':1.5},ret);
+  svgEl('line',{x1:500,y1:324,x2:500,y2:332,stroke:'rgba(0,255,204,0.5)','stroke-width':1.5},ret);
+
+  // Filter for glows
+  const fdefs=svgEl('defs',{},svg);
+  const hf=svgEl('filter',{id:'holo-blur',x:'-50%',y:'-50%',width:'200%',height:'200%'},fdefs);
+  svgEl('feGaussianBlur',{stdDeviation:'3'},hf);
+})();
+
+
+// ══════════════════════════════════════════════════════
+// PHASE 1: UFO INTERIOR
+// ══════════════════════════════════════════════════════
+let p1Interval=null;
+function initPhase1(){
+  const svg=document.getElementById('svg1');
+  svg.innerHTML='';
+
+  const defs=svgEl('defs',{},svg);
+
+  // Deep space background
+  const bg=svgEl('radialGradient',{id:'p1bg',cx:'50%',cy:'50%',r:'70%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#060020'},bg);
+  svgEl('stop',{offset:'100%','stop-color':'#000008'},bg);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#p1bg)'},svg);
+
+  // Starfield - through window
+  const starGroup=svgEl('g',{'clip-path':'url(#cockpit-clip)'},svg);
+  for(let i=0;i<300;i++){
+    const s=svgEl('circle',{
+      cx:rand(40,960),cy:rand(40,500),
+      r:rand(0.3,1.8),
+      fill:`hsl(${rand(200,280)},${rand(20,80)}%,${rand(70,100)}%)`,
+      opacity:rand(0.3,1)
+    },starGroup);
+  }
+
+  // Distant nebula
+  const ng=svgEl('radialGradient',{id:'p1neb',cx:'30%',cy:'40%',r:'40%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(120,40,180,0.18)'},ng);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},ng);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#p1neb)','clip-path':'url(#cockpit-clip)'},svg);
+
+  const ng2=svgEl('radialGradient',{id:'p1neb2',cx:'70%',cy:'60%',r:'35%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(0,80,160,0.15)'},ng2);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},ng2);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#p1neb2)','clip-path':'url(#cockpit-clip)'},svg);
+
+  // Distant galaxy spiral (faint)
+  const galaxyG=svgEl('g',{opacity:0.6,'clip-path':'url(#cockpit-clip)'},svg);
+  for(let arm=0;arm<3;arm++){
+    for(let i=0;i<60;i++){
+      const t=i/60;
+      const angle=arm*(Math.PI*2/3)+t*Math.PI*3;
+      const r=20+t*120;
+      const gx=680+Math.cos(angle)*r, gy=200+Math.sin(angle)*r*0.4;
+      svgEl('circle',{cx:gx,cy:gy,r:rand(0.3,1.5),
+        fill:`hsl(${220+t*60},80%,${60+t*30}%)`,opacity:0.5+t*0.3},galaxyG);
+    }
+  }
+  svgEl('circle',{cx:680,cy:200,r:6,fill:'rgba(255,230,180,0.6)',filter:'url(#glow6)'},galaxyG);
+
+  // Glow filter
+  const gf=svgEl('filter',{id:'glow6',x:'-100%',y:'-100%',width:'300%',height:'300%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:6,result:'b'},gf);
+  svgEl('feMerge',{},gf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+
+  const gf2=svgEl('filter',{id:'glow3',x:'-50%',y:'-50%',width:'200%',height:'200%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:3,result:'b'},gf2);
+  svgEl('feMerge',{},gf2).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+
+  // Holographic display - center console (through window)
+  const holoG=svgEl('g',{'clip-path':'url(#cockpit-clip)'},svg);
+
+  // Engine glow - bottom
+  const eg=svgEl('radialGradient',{id:'eng-glow',cx:'50%',cy:'100%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(0,180,255,0.25)'},eg);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},eg);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#eng-glow)'},svg);
+
+  // Animate coords
+  clearInterval(p1Interval);
+  let tick=0;
+  p1Interval=setInterval(()=>{
+    tick++;
+    const x=(tick*0.0003).toFixed(4);
+    const v=(0.01+tick*0.002).toFixed(3);
+    const eta=Math.max(0,120-tick).toFixed(0);
+    const doc=document.getElementById('coords');
+    const spd=document.getElementById('speed-read');
+    const etaEl=document.getElementById('eta-read');
+    if(doc) doc.textContent=`X: ${x} LY`;
+    if(spd) spd.textContent=`VEL: ${v}c`;
+    if(etaEl) etaEl.textContent=`ETA: ${eta}s`;
+    // Engine bars animate
+    ['hud-bl'].forEach(id=>{
+      const panel=document.getElementById(id);
+      if(panel){
+        const fills=panel.querySelectorAll('.bar-fill');
+        fills.forEach((f,i)=>{
+          const pct=30+Math.sin(tick*0.1+i)*25;
+          f.style.width=pct+'%';
+        });
+      }
+    });
+  },100);
+
+  showTransmission('SYSTEMS ONLINE — PREPARING WARP JUMP', 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE 2: GALAXY WARP
+// ══════════════════════════════════════════════════════
+let warpStars=[], p2RAF=null, warpPhase=0;
+function initPhase2(){
+  clearInterval(p1Interval);
+  const svg=document.getElementById('svg2');
+  svg.innerHTML='';
+
+  const defs=svgEl('defs',{},svg);
+  const gf=svgEl('filter',{id:'w-glow',x:'-50%',y:'-50%',width:'200%',height:'200%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'4',result:'b'},gf);
+  svgEl('feMerge',{},gf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+
+  // Background
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'#000008'},svg);
+
+  // Central warp tunnel gradient rings
+  for(let i=20;i>0;i--){
+    const r=i*28;
+    const alpha=0.02+i*0.008;
+    svgEl('ellipse',{cx:W/2,cy:H/2,rx:r,ry:r*0.45,
+      fill:'none',stroke:`rgba(80,${100+i*5},${200+i*2},${alpha})`,'stroke-width':3},svg);
+  }
+
+  // Warp star streaks - create many
+  warpStars=[];
+  const warpG=svgEl('g',{},svg);
+  for(let i=0;i<180;i++){
+    const angle=rand(0,Math.PI*2);
+    const startR=rand(5,60);
+    const hue=rand(180,280);
+    const starEl=svgEl('line',{
+      x1:W/2+Math.cos(angle)*startR,
+      y1:H/2+Math.sin(angle)*startR*0.5,
+      x2:W/2+Math.cos(angle)*(startR+10),
+      y2:H/2+Math.sin(angle)*(startR+10)*0.5,
+      stroke:`hsl(${hue},90%,80%)`,'stroke-width':rand(0.5,2),'stroke-linecap':'round',
+      opacity:rand(0.5,1)
+    },warpG);
+    warpStars.push({el:starEl,angle,r:startR,speed:rand(6,20),hue,width:rand(0.5,2)});
+  }
+
+  // Center vortex glow
+  const vortexG=svgEl('radialGradient',{id:'vortex',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(180,80,255,0.4)'},vortexG);
+  svgEl('stop',{offset:'30%','stop-color':'rgba(0,100,255,0.15)'},vortexG);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},vortexG);
+  svgEl('ellipse',{cx:W/2,cy:H/2,rx:150,ry:80,fill:'url(#vortex)'},svg);
+
+  // Rotating galaxy arms visible at edges
+  const galaxyEdge=svgEl('g',{opacity:0.3},svg);
+  for(let i=0;i<200;i++){
+    const a=rand(0,Math.PI*2), edge=rand(350,520);
+    svgEl('circle',{
+      cx:W/2+Math.cos(a)*edge,cy:H/2+Math.sin(a)*edge*0.45,
+      r:rand(0.3,1.5),
+      fill:`hsl(${rand(200,300)},80%,80%)`,opacity:rand(0.2,0.7)
+    },galaxyEdge);
+  }
+
+  // Transmission
+  setTimeout(()=>showTransmission('WARP DRIVE ENGAGED — CROSSING GALAXY IN 4.7 SECONDS', 3500),200);
+
+  // Animate
+  warpPhase=0;
+  if(p2RAF) cancelAnimationFrame(p2RAF);
+  const rotateEl=galaxyEdge;
+
+  function warpLoop(){
+    warpPhase+=0.025;
+    warpStars.forEach(s=>{
+      s.r+=s.speed*0.4;
+      if(s.r>580){s.r=rand(5,30);}
+      const len=Math.min(s.r*0.7, 120);
+      const ex=W/2+Math.cos(s.angle)*s.r;
+      const ey=H/2+Math.sin(s.angle)*s.r*0.5;
+      const sx=W/2+Math.cos(s.angle)*(s.r-len);
+      const sy=H/2+Math.sin(s.angle)*(s.r-len)*0.5;
+      s.el.setAttribute('x1',sx); s.el.setAttribute('y1',sy);
+      s.el.setAttribute('x2',ex); s.el.setAttribute('y2',ey);
+      const alpha=Math.min(1, s.r/200);
+      s.el.setAttribute('opacity',alpha);
+      const w=s.width*(1+s.r/150);
+      s.el.setAttribute('stroke-width',Math.min(w,4));
+    });
+    rotateEl.setAttribute('transform',`rotate(${warpPhase*20},${W/2},${H/2})`);
+    p2RAF=requestAnimationFrame(warpLoop);
+  }
+  warpLoop();
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE 3: PLANET APPROACH
+// ══════════════════════════════════════════════════════
+let p3RAF=null, approachPhase=0;
+function initPhase3(){
+  if(p2RAF){cancelAnimationFrame(p2RAF);p2RAF=null;}
+  const svg=document.getElementById('svg3');
+  svg.innerHTML='';
+
+  const defs=svgEl('defs',{},svg);
+
+  // Deep space
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'#000005'},svg);
+
+  // Stars
+  const starG=svgEl('g',{'clip-path':'url(#cockpit-clip)'},svg);
+  for(let i=0;i<250;i++){
+    svgEl('circle',{cx:rand(0,W),cy:rand(0,H*0.85),r:rand(0.3,1.5),
+      fill:`hsl(${rand(200,280)},${rand(20,80)}%,${rand(70,100)}%)`,opacity:rand(0.3,0.9)},starG);
+  }
+
+  // Second smaller planet in background
+  const sp=svgEl('g',{'clip-path':'url(#cockpit-clip)'},svg);
+  const spg=svgEl('radialGradient',{id:'smpl',cx:'35%',cy:'35%',r:'60%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#553322'},spg);
+  svgEl('stop',{offset:'100%','stop-color':'#1a0800'},spg);
+  svgEl('circle',{cx:200,cy:160,r:55,fill:'url(#smpl)'},sp);
+  // Rings
+  svgEl('ellipse',{cx:200,cy:160,rx:90,ry:18,fill:'none',stroke:'rgba(200,150,80,0.3)','stroke-width':8},sp);
+  svgEl('ellipse',{cx:200,cy:160,rx:110,ry:22,fill:'none',stroke:'rgba(200,150,80,0.15)','stroke-width':5},sp);
+
+  // Glow filters
+  const gf=svgEl('filter',{id:'p3glow',x:'-50%',y:'-50%',width:'200%',height:'200%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'8',result:'b'},gf);
+  svgEl('feMerge',{},gf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+  const af=svgEl('filter',{id:'atm-glow',x:'-30%',y:'-30%',width:'160%',height:'160%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'15',result:'b'},af);
+  svgEl('feMerge',{},af).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+
+  // MAIN PLANET - alien world
+  const planetG=svgEl('g',{'clip-path':'url(#cockpit-clip)'},svg);
+
+  // Atmosphere glow (outer halo)
+  const atmg=svgEl('radialGradient',{id:'atm',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'75%','stop-color':'rgba(0,0,0,0)'},atmg);
+  svgEl('stop',{offset:'88%','stop-color':'rgba(80,220,160,0.35)'},atmg);
+  svgEl('stop',{offset:'95%','stop-color':'rgba(40,180,120,0.25)'},atmg);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},atmg);
+
+  // Planet surface gradient
+  const pg=svgEl('radialGradient',{id:'planet',cx:'35%',cy:'30%',r:'65%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#1a5e40'},pg);
+  svgEl('stop',{offset:'35%','stop-color':'#0d3d28'},pg);
+  svgEl('stop',{offset:'70%','stop-color':'#0a2d20'},pg);
+  svgEl('stop',{offset:'100%','stop-color':'#051408'},pg);
+
+  // Ocean color
+  const og=svgEl('radialGradient',{id:'ocean',cx:'60%',cy:'55%',r:'40%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(0,100,160,0.7)'},og);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,40,80,0.4)'},og);
+
+  // Planet base
+  approachPhase=0;
+  const planetCX=W/2, planetCY=H/2+20;
+  let planetR=80; // starts small
+
+  const atmEl=svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR*1.15,fill:'rgba(0,0,0,0)'},planetG);
+  const planetEl=svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR,fill:'url(#planet)'},planetG);
+
+  // Cloud/continent shapes on planet (clipped to circle)
+  const pClip=svgEl('clipPath',{id:'pclip'},defs);
+  const pClipC=svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR-2},pClip);
+  const surfaceG=svgEl('g',{'clip-path':'url(#pclip)'},planetG);
+
+  // Continent blobs
+  const contColors=['#2a7a50','#1e6040','#154d30','#1a5540','#0d3d28'];
+  for(let i=0;i<18;i++){
+    const cx=planetCX+rand(-planetR*0.7,planetR*0.7);
+    const cy=planetCY+rand(-planetR*0.6,planetR*0.6);
+    svgEl('ellipse',{cx,cy,rx:rand(8,35),ry:rand(5,22),
+      fill:contColors[randInt(0,4)],opacity:rand(0.5,0.9),
+      transform:`rotate(${rand(0,180)},${cx},${cy})`},surfaceG);
+  }
+
+  // Ocean patches
+  for(let i=0;i<8;i++){
+    const cx=planetCX+rand(-planetR*0.6,planetR*0.6);
+    const cy=planetCY+rand(-planetR*0.5,planetR*0.5);
+    svgEl('ellipse',{cx,cy,rx:rand(12,40),ry:rand(8,25),
+      fill:'rgba(0,80,140,0.6)',opacity:rand(0.4,0.7),
+      transform:`rotate(${rand(0,180)},${cx},${cy})`},surfaceG);
+  }
+
+  // Cloud layer on planet
+  for(let i=0;i<12;i++){
+    const cx=planetCX+rand(-planetR*0.8,planetR*0.8);
+    const cy=planetCY+rand(-planetR*0.7,planetR*0.7);
+    svgEl('ellipse',{cx,cy,rx:rand(6,25),ry:rand(3,10),
+      fill:`rgba(200,240,220,${rand(0.08,0.2)})`,opacity:rand(0.3,0.7)},surfaceG);
+  }
+
+  // Atmosphere ring overlay
+  const atmRing=svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR,fill:'none',
+    stroke:'rgba(80,220,160,0.3)','stroke-width':8,filter:'url(#atm-glow)'},planetG);
+
+  // Sunlit edge
+  const litG=svgEl('radialGradient',{id:'lit',cx:'25%',cy:'25%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(200,255,230,0.15)'},litG);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},litG);
+  svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR,fill:'url(#lit)','clip-path':'url(#pclip)'},planetG);
+
+  // Shadow side
+  const shadg=svgEl('radialGradient',{id:'shad',cx:'75%',cy:'70%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(0,0,0,0.7)'},shadg);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,0,0,0)'},shadg);
+  svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR,fill:'url(#shad)','clip-path':'url(#pclip)'},planetG);
+
+  // Planet atmosphere outer
+  svgEl('circle',{cx:planetCX,cy:planetCY,r:planetR*1.12,fill:'url(#atm)'},planetG);
+
+  // Targeting brackets on planet
+  const tg=svgEl('g',{opacity:0.5},svg);
+  const tBrackets=[
+    `M${planetCX-100},${planetCY-10} L${planetCX-100},${planetCY-90} L${planetCX-10},${planetCY-90}`,
+    `M${planetCX+100},${planetCY-10} L${planetCX+100},${planetCY-90} L${planetCX+10},${planetCY-90}`,
+    `M${planetCX-100},${planetCY+50} L${planetCX-100},${planetCY+130} L${planetCX-10},${planetCY+130}`,
+    `M${planetCX+100},${planetCY+50} L${planetCX+100},${planetCY+130} L${planetCX+10},${planetCY+130}`,
+  ];
+  tBrackets.forEach(d=>svgEl('path',{d,stroke:'rgba(0,255,204,0.6)','stroke-width':2,'fill':'none'},tg));
+  const tLabel=svgEl('text',{x:planetCX+15,y:planetCY-95,fill:'rgba(0,255,204,0.7)',
+    'font-family':'Share Tech Mono','font-size':11,'letter-spacing':2},tg);
+  tLabel.textContent='KEPLER-7b ◈ CLASS-M';
+
+  showTransmission('TARGET ACQUIRED — KEPLER-7b — INITIATING DESCENT', 3000);
+
+  // Animate - planet grows as we approach
+  if(p3RAF) cancelAnimationFrame(p3RAF);
+  let t=0;
+  function approachLoop(){
+    t+=0.008;
+    approachPhase=t;
+    const newR=80+t*t*900;
+    planetEl.setAttribute('r',newR);
+    atmEl.setAttribute('r',newR*1.15);
+    atmRing.setAttribute('r',newR);
+    atmRing.setAttribute('stroke-width', Math.min(8+t*15,40));
+    pClipC.setAttribute('r',newR-2);
+
+    // Slightly rotate planet
+    surfaceG.setAttribute('transform',`rotate(${t*8},${planetCX},${planetCY})`);
+
+    // Adjust atmosphere overlay
+    svgEl('stop',{},atmg); // just reference
+
+    if(t < 2.5) p3RAF=requestAnimationFrame(approachLoop);
+    else {
+      // Wipe to white then phase 4
+      const flash=svgEl('rect',{x:0,y:0,width:W,height:H,fill:'rgba(200,255,230,0)',opacity:0},svg);
+      let fo=0;
+      const fi=setInterval(()=>{
+        fo+=0.04;
+        flash.setAttribute('opacity',fo);
+        if(fo>=1){clearInterval(fi); nextPhase();}
+      },30);
+    }
+  }
+  approachLoop();
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE 4: BIRD'S EYE VIEW
+// ══════════════════════════════════════════════════════
+let p4RAF=null, birdFrame=0;
+function initPhase4(){
+  if(p3RAF){cancelAnimationFrame(p3RAF);p3RAF=null;}
+  const svg=document.getElementById('svg4');
+  svg.innerHTML='';
+  const defs=svgEl('defs',{},svg);
+
+  // Filters
+  const gf=svgEl('filter',{id:'b-glow',x:'-60%',y:'-60%',width:'220%',height:'220%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'5',result:'b'},gf);
+  svgEl('feMerge',{},gf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+  const bgf=svgEl('filter',{id:'b-bigglow',x:'-100%',y:'-100%',width:'300%',height:'300%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'14',result:'b'},bgf);
+  svgEl('feMerge',{},bgf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+  const sf=svgEl('filter',{id:'b-soft',x:'-30%',y:'-30%',width:'160%',height:'160%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'8'},sf);
+
+  // Deep ocean base
+  const oceanG=svgEl('linearGradient',{id:'b-ocean',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#020d18'},oceanG);
+  svgEl('stop',{offset:'100%','stop-color':'#010810'},oceanG);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#b-ocean)'},svg);
+
+  // Ocean body
+  const seaG=svgEl('radialGradient',{id:'b-sea',cx:'55%',cy:'45%',r:'55%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#0a3d4a'},seaG);
+  svgEl('stop',{offset:'60%','stop-color':'#062830'},seaG);
+  svgEl('stop',{offset:'100%','stop-color':'#021520'},seaG);
+  svgEl('ellipse',{cx:340,cy:310,rx:330,ry:260,fill:'url(#b-sea)'},svg);
+
+  // Ocean shimmer
+  for(let i=0;i<18;i++){
+    svgEl('line',{
+      x1:rand(50,620),y1:rand(80,540),x2:rand(80,620),y2:rand(100,520),
+      stroke:`rgba(0,${randInt(160,220)},${randInt(180,255)},${rand(0.04,0.12)})`,
+      'stroke-width':rand(1,4),'stroke-linecap':'round'
+    },svg);
+  }
+
+  // Continent A – large landmass right
+  const contA=[[620,60],[780,40],[920,80],[970,160],[960,280],[900,380],
+    [820,440],[720,470],[650,430],[590,350],[560,240],[580,140],[620,60]];
+  const cag=svgEl('linearGradient',{id:'b-cont-a',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#1a4a28'},cag);
+  svgEl('stop',{offset:'100%','stop-color':'#0d2e16'},cag);
+  svgEl('path',{d:`M${contA.map(p=>p.join(',')).join('L')}Z`,fill:'url(#b-cont-a)'},svg);
+
+  // Continent B – bottom strip
+  const contB=[[0,480],[120,460],[250,470],[380,490],[420,520],[360,560],[200,580],[80,570],[0,550],[0,480]];
+  svgEl('path',{d:`M${contB.map(p=>p.join(',')).join('L')}Z`,fill:'#122a18'},svg);
+
+  // Islands
+  svgEl('ellipse',{cx:180,cy:120,rx:80,ry:55,fill:'#163520',transform:'rotate(-20,180,120)'},svg);
+  svgEl('ellipse',{cx:100,cy:200,rx:45,ry:30,fill:'#122c1a',transform:'rotate(10,100,200)'},svg);
+
+  // Mountain ridges (top-down blobs)
+  [[750,180,60,22,-30],[820,260,50,18,20],[700,320,70,25,-10],[680,140,40,14,40],[870,150,35,12,-20]
+  ].forEach(([cx,cy,rx,ry,rot])=>{
+    svgEl('ellipse',{cx,cy,rx,ry,fill:'#0c1e0f',transform:`rotate(${rot},${cx},${cy})`,opacity:0.85},svg);
+    svgEl('ellipse',{cx:cx-rx*0.2,cy:cy-ry*0.2,rx:rx*0.3,ry:ry*0.35,fill:'rgba(200,230,210,0.12)'},svg);
+  });
+
+  // Forest canopy clusters
+  [[720,100,35,120],[780,200,40,130],[670,380,30,110],[860,310,28,125],
+   [640,270,22,115],[750,420,35,135],[900,220,25,120],[170,110,30,110],[140,170,25,130],[90,210,20,115]
+  ].forEach(([x,y,r,h])=>{
+    const g=svgEl('g',{},svg);
+    for(let i=0;i<8;i++){
+      svgEl('circle',{cx:x+rand(-r,r),cy:y+rand(-r*0.8,r*0.8),
+        r:rand(r*0.25,r*0.55),fill:`hsla(${h},${rand(45,70)}%,${rand(16,28)}%,0.85)`},g);
+    }
+    svgEl('circle',{cx:x-r*0.15,cy:y-r*0.15,r:r*0.2,fill:'rgba(100,200,100,0.08)'},g);
+  });
+
+  // Desert patches
+  [[680,90,55,45],[930,340,40,50]].forEach(([x,y,r,h])=>{
+    svgEl('ellipse',{cx:x,cy:y,rx:r,ry:r*0.6,fill:`hsla(${h},55%,22%,0.7)`,
+      transform:`rotate(${rand(-30,30)},${x},${y})`},svg);
+  });
+
+  // River
+  svgEl('path',{d:'M720,60 C700,120 740,180 700,230 C660,280 690,340 650,390',
+    fill:'none',stroke:'rgba(0,140,200,0.45)','stroke-width':4,'stroke-linecap':'round'},svg);
+  ['M650,390 C630,420 600,440 580,460',
+   'M650,390 C660,415 650,445 640,465',
+   'M650,390 C670,410 680,440 670,465'
+  ].forEach(d=>svgEl('path',{d,fill:'none',stroke:'rgba(0,140,200,0.3)','stroke-width':2,'stroke-linecap':'round'},svg));
+
+  // Clouds
+  const cloudData=[];
+  for(let i=0;i<14;i++){
+    const cx=rand(0,W),cy=rand(0,H);
+    const g=svgEl('g',{transform:`translate(${cx},${cy})`},svg);
+    svgEl('ellipse',{cx:8,cy:8,rx:rand(30,80),ry:rand(15,40),fill:'rgba(0,0,0,0.18)',filter:'url(#b-soft)'},g);
+    const nr=randInt(3,6);
+    for(let j=0;j<nr;j++){
+      svgEl('ellipse',{cx:rand(-30,30),cy:rand(-10,10),rx:rand(20,50),ry:rand(12,28),
+        fill:`rgba(220,240,235,${rand(0.55,0.85)})`,filter:'url(#b-glow)'},g);
+    }
+    cloudData.push({el:g,x:cx,y:cy,vx:rand(0.15,0.5),phase:rand(0,Math.PI*2)});
+  }
+
+  // Alien city – top-down grid of structures
+  const cityX=750,cityY=320,cityW=130,cityH=90;
+  svgEl('ellipse',{cx:cityX,cy:cityY,rx:cityW*0.9,ry:cityH*0.9,
+    fill:'rgba(100,220,180,0.07)',filter:'url(#b-bigglow)'},svg);
+  const cityG=svgEl('g',{},svg);
+  for(let gx=0;gx<8;gx++){
+    for(let gy=0;gy<6;gy++){
+      const bx=cityX-cityW*0.5+gx*cityW/8+rand(-2,2);
+      const by=cityY-cityH*0.5+gy*cityH/6+rand(-2,2);
+      const bw=rand(6,16),bh=rand(5,13),hue=rand(140,200);
+      svgEl('rect',{x:bx,y:by,width:bw,height:bh,fill:`hsla(${hue},70%,${rand(20,35)}%,0.9)`,rx:1},cityG);
+      if(Math.random()>0.4)
+        svgEl('rect',{x:bx+1,y:by+1,width:bw-2,height:bh-2,
+          fill:`hsla(${hue},90%,65%,0.2)`,rx:1,filter:'url(#b-glow)'},cityG);
+    }
+  }
+  ['M690,310 L810,310','M750,280 L750,360','M710,295 L790,295','M710,330 L790,330'].forEach(d=>{
+    svgEl('path',{d,fill:'none',stroke:'rgba(0,200,160,0.2)','stroke-width':1.5},cityG);
+  });
+
+  // UFO shadow + beam on ground
+  const ufoShEl=svgEl('ellipse',{cx:400,cy:300,rx:45,ry:18,fill:'rgba(0,0,0,0.35)',filter:'url(#b-soft)'},svg);
+  const beamCirc=svgEl('ellipse',{cx:400,cy:300,rx:60,ry:24,fill:'rgba(100,255,200,0.06)',
+    stroke:'rgba(100,255,200,0.15)','stroke-width':1},svg);
+
+  // Scan grid
+  const gridG=svgEl('g',{opacity:0.055},svg);
+  for(let gx=0;gx<W;gx+=50) svgEl('line',{x1:gx,y1:0,x2:gx,y2:H,stroke:'#00ffcc','stroke-width':0.5},gridG);
+  for(let gy=0;gy<H;gy+=50) svgEl('line',{x1:0,y1:gy,x2:W,y2:gy,stroke:'#00ffcc','stroke-width':0.5},gridG);
+
+  // HUD altitude text
+  const altT=svgEl('text',{x:20,y:30,fill:'rgba(0,255,204,0.7)','font-family':'Share Tech Mono','font-size':11,'letter-spacing':2},svg);
+  altT.textContent='ALT: 4200 m';
+  svgEl('text',{x:20,y:48,fill:'rgba(0,255,204,0.6)','font-family':'Share Tech Mono','font-size':10,'letter-spacing':2},svg).textContent='SPD: 340 km/h ▾';
+  svgEl('text',{x:20,y:65,fill:'rgba(0,255,204,0.5)','font-family':'Share Tech Mono','font-size':10,'letter-spacing':2},svg).textContent='HDG: 187° S';
+
+  // Compass rose
+  const compass=svgEl('g',{transform:`translate(${W-60},55)`},svg);
+  svgEl('circle',{cx:0,cy:0,r:24,fill:'rgba(0,20,30,0.5)',stroke:'rgba(0,255,204,0.25)','stroke-width':1},compass);
+  [['N',0,-18],['S',0,22],['E',20,4],['W',-20,4]].forEach(([l,dx,dy])=>{
+    svgEl('text',{x:dx,y:dy,fill:l==='N'?'rgba(0,255,204,0.9)':'rgba(0,255,204,0.5)',
+      'font-family':'Share Tech Mono','font-size':9,'text-anchor':'middle'},compass).textContent=l;
+  });
+  const needle=svgEl('line',{x1:0,y1:-16,x2:0,y2:16,stroke:'rgba(0,255,204,0.7)','stroke-width':1.5,'stroke-linecap':'round'},compass);
+  svgEl('circle',{cx:0,cy:0,r:3,fill:'rgba(0,255,204,0.8)'},compass);
+
+  // Target ring on city
+  const tgtG=svgEl('g',{},svg);
+  svgEl('circle',{cx:cityX,cy:cityY,r:50,fill:'none',stroke:'rgba(0,255,204,0.3)','stroke-width':1.5,'stroke-dasharray':'4 4'},tgtG);
+  svgEl('circle',{cx:cityX,cy:cityY,r:8,fill:'none',stroke:'rgba(0,255,204,0.5)','stroke-width':1.5},tgtG);
+  [[-60,-12,-1,0],[12,60,0,0],[0,0,-60,-12],[0,0,12,60]].forEach(([x1,x2,y1,y2])=>{
+    svgEl('line',{x1:cityX+x1,y1:cityY+y1,x2:cityX+x2,y2:cityY+y2,stroke:'rgba(0,255,204,0.35)','stroke-width':1},tgtG);
+  });
+  svgEl('text',{x:cityX+55,y:cityY-55,fill:'rgba(0,255,204,0.65)',
+    'font-family':'Share Tech Mono','font-size':10,'letter-spacing':1},tgtG).textContent='CITY SECTOR 7 ◈';
+
+  // Scan sweep line
+  const scanLine=svgEl('line',{x1:0,y1:0,x2:W,y2:0,stroke:'rgba(0,255,204,0.1)','stroke-width':3},svg);
+
+  showTransmission("DESCENDING — BIRD'S EYE VIEW — KEPLER-7b SURFACE SCAN", 4000);
+
+  birdFrame=0;
+  if(p4RAF) cancelAnimationFrame(p4RAF);
+  let ufoShX=200,ufoShY=250,ufoShVX=0.6,ufoShVY=0.3;
+  let needleAngle=187, scanY=0;
+
+  function birdLoop(){
+    birdFrame++;
+
+    // UFO shadow drifts
+    ufoShX+=ufoShVX; ufoShY+=ufoShVY;
+    if(ufoShX>620||ufoShX<80) ufoShVX*=-1;
+    if(ufoShY>480||ufoShY<100) ufoShVY*=-1;
+    ufoShEl.setAttribute('cx',ufoShX); ufoShEl.setAttribute('cy',ufoShY);
+    beamCirc.setAttribute('cx',ufoShX); beamCirc.setAttribute('cy',ufoShY);
+    beamCirc.setAttribute('fill',`rgba(100,255,200,${0.06+Math.sin(birdFrame*0.07)*0.04})`);
+
+    // Clouds drift
+    cloudData.forEach(c=>{
+      c.phase+=0.012; c.x+=c.vx;
+      if(c.x>W+100) c.x=-150;
+      c.el.setAttribute('transform',`translate(${c.x},${c.y+Math.sin(c.phase)*4})`);
+    });
+
+    // Compass needle
+    needleAngle+=Math.sin(birdFrame*0.03)*0.3;
+    const nr=needleAngle*Math.PI/180;
+    needle.setAttribute('x1',Math.sin(nr)*-16); needle.setAttribute('y1',Math.cos(nr)*-16);
+    needle.setAttribute('x2',Math.sin(nr)*16);  needle.setAttribute('y2',Math.cos(nr)*16);
+
+    // Scan sweep
+    scanY=(scanY+1.8)%H;
+    scanLine.setAttribute('y1',scanY); scanLine.setAttribute('y2',scanY);
+
+    // Altitude countdown
+    const alt=Math.max(600, 4200-birdFrame*2.5);
+    altT.textContent=`ALT: ${Math.floor(alt)} m`;
+
+    // Target ring rotate
+    tgtG.setAttribute('transform',`rotate(${birdFrame*0.15},${cityX},${cityY})`);
+
+    p4RAF=requestAnimationFrame(birdLoop);
+  }
+  birdLoop();
+
+  setTimeout(()=>{
+    showTransmission('ALIEN CITY DETECTED — LIFE FORMS CONFIRMED — INITIATING LANDING', 3500);
+  },5000);
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE 5: SAMPLE COLLECTION DRONES
+// ══════════════════════════════════════════════════════
+let p5RAF=null;
+function initPhase5(){
+  if(p4RAF){cancelAnimationFrame(p4RAF);p4RAF=null;}
+  const svg=document.getElementById('svg5');
+  svg.innerHTML='';
+  const defs=svgEl('defs',{},svg);
+
+  // ── Filters ──────────────────────────────────────────
+  function mkF(id,blur){
+    const f=svgEl('filter',{id,x:'-80%',y:'-80%',width:'260%',height:'260%'},defs);
+    svgEl('feGaussianBlur',{stdDeviation:blur,result:'b'},f);
+    svgEl('feMerge',{},f).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+  }
+  mkF('sc-g2',2); mkF('sc-g6',6); mkF('sc-g14',14);
+  const fsoft=svgEl('filter',{id:'sc-soft',x:'-40%',y:'-40%',width:'180%',height:'180%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'10'},fsoft);
+
+  // ── Background – close alien ground view (dusk) ──────
+  const skyG=svgEl('linearGradient',{id:'sc-sky',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#06101a'},skyG);
+  svgEl('stop',{offset:'55%','stop-color':'#0c2018'},skyG);
+  svgEl('stop',{offset:'100%','stop-color':'#142a1c'},skyG);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#sc-sky)'},svg);
+
+  const groundY=410;
+
+  // Stars
+  for(let i=0;i<120;i++){
+    svgEl('circle',{cx:rand(0,W),cy:rand(0,groundY*0.65),r:rand(0.3,1.4),
+      fill:`hsl(${rand(160,240)},60%,80%)`,opacity:rand(0.2,0.7)},svg);
+  }
+
+  // Alien moons
+  svgEl('circle',{cx:820,cy:70,r:30,fill:'rgba(180,220,255,0.5)',filter:'url(#sc-g6)'},svg);
+  svgEl('circle',{cx:820,cy:70,r:30,fill:'none',stroke:'rgba(120,180,255,0.25)','stroke-width':8,filter:'url(#sc-g14)'},svg);
+  svgEl('circle',{cx:200,cy:100,r:16,fill:'rgba(255,200,160,0.35)',filter:'url(#sc-g6)'},svg);
+
+  // Far mountains
+  let fmx=0; const fmp=[[0,groundY]];
+  while(fmx<W+60){fmp.push([fmx,groundY-50-Math.random()*100]);fmx+=rand(40,100);}
+  fmp.push([W,groundY],[W,H+10],[0,H+10]);
+  svgEl('path',{d:`M${fmp.map(p=>p.join(',')).join('L')}Z`,fill:'rgba(8,28,18,0.9)'},svg);
+
+  // Ground
+  const gndG=svgEl('linearGradient',{id:'sc-gnd',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#1c4828'},gndG);
+  svgEl('stop',{offset:'100%','stop-color':'#0a1e10'},gndG);
+  const gpts=[[0,groundY]]; let gx2=0;
+  while(gx2<W+30){gpts.push([gx2,groundY+rand(-6,6)]);gx2+=rand(15,40);}
+  gpts.push([W,groundY],[W,H+10],[0,H+10]);
+  svgEl('path',{d:`M${gpts.map(p=>p.join(',')).join('L')}Z`,fill:'url(#sc-gnd)'},svg);
+
+  // Ground flora – glowing alien plants
+  for(let i=0;i<35;i++){
+    const px=rand(0,W), py=groundY+rand(3,20), ph=rand(12,50), hue=rand(100,180);
+    svgEl('line',{x1:px,y1:py,x2:px+rand(-8,8),y2:py-ph,
+      stroke:`hsl(${hue},70%,30%)`,'stroke-width':rand(1.5,3),'stroke-linecap':'round'},svg);
+    svgEl('ellipse',{cx:px+rand(-4,4),cy:py-ph,rx:rand(4,12),ry:rand(3,7),
+      fill:`hsl(${hue},90%,55%)`,filter:'url(#sc-g6)',opacity:rand(0.6,1)},svg);
+  }
+
+  // Biolum mushrooms
+  for(let i=0;i<18;i++){
+    const mx=rand(0,W), my=groundY+rand(5,25), mh=rand(8,22), hue=rand(120,200);
+    svgEl('rect',{x:mx-2,y:my-mh,width:4,height:mh,fill:`hsl(${hue},40%,18%)`,rx:1},svg);
+    svgEl('ellipse',{cx:mx,cy:my-mh,rx:rand(5,14),ry:rand(3,7),
+      fill:`hsl(${hue},90%,60%)`,filter:'url(#sc-g6)'},svg);
+  }
+
+  // Crystals
+  for(let i=0;i<10;i++){
+    const cx=rand(0,W), cy=groundY+rand(5,20), ch=rand(18,45), hue=rand(150,230);
+    svgEl('polygon',{points:`${cx-4},${cy} ${cx},${cy-ch} ${cx+4},${cy}`,
+      fill:`hsla(${hue},80%,55%,0.75)`,filter:'url(#sc-g2)'},svg);
+  }
+
+  // ── LIFE FORM POOLS on ground (liquid to be collected) ──
+  const poolDefs=[
+    {x:160, y:groundY+18, rx:45, ry:14, hue:175, label:'BIO-FLUID α'},
+    {x:430, y:groundY+22, rx:38, ry:12, hue:140, label:'CHLORO-SAP β'},
+    {x:700, y:groundY+16, rx:50, ry:15, hue:200, label:'NEURO-GEL γ'},
+    {x:870, y:groundY+20, rx:32, ry:10, hue:160, label:'SPORE-BROTH δ'},
+  ];
+
+  const pools = poolDefs.map(p=>{
+    // Glow halo
+    svgEl('ellipse',{cx:p.x,cy:p.y,rx:p.rx+12,ry:p.ry+8,
+      fill:`hsla(${p.hue},80%,45%,0.12)`,filter:'url(#sc-soft)'},svg);
+    // Pool body
+    const poolEl=svgEl('ellipse',{cx:p.x,cy:p.y,rx:p.rx,ry:p.ry,
+      fill:`hsla(${p.hue},85%,35%,0.85)`},svg);
+    // Shimmer
+    const shimEl=svgEl('ellipse',{cx:p.x-p.rx*0.25,cy:p.y-p.ry*0.2,
+      rx:p.rx*0.5,ry:p.ry*0.4,fill:`hsla(${p.hue},90%,75%,0.25)`},svg);
+    // Label
+    svgEl('text',{x:p.x,y:p.y-p.ry-8,fill:`hsla(${p.hue},80%,70%,0.8)`,
+      'font-family':'Share Tech Mono','font-size':9,'text-anchor':'middle','letter-spacing':1},svg
+    ).textContent=p.label;
+    return {...p, poolEl, shimEl, level:1.0};
+  });
+
+  // ── LIFE FORM CREATURES near pools ──
+  const lifeforms=[];
+  poolDefs.forEach(p=>{
+    for(let i=0;i<2;i++){
+      const lx=p.x+rand(-60,60), ly=groundY+rand(5,30);
+      const hue=p.hue; const g=svgEl('g',{},svg);
+      svgEl('ellipse',{cx:0,cy:0,rx:10,ry:7,fill:`hsl(${hue},65%,38%)`},g);
+      svgEl('circle',{cx:9,cy:-4,r:5.5,fill:`hsl(${hue},75%,48%)`},g);
+      svgEl('circle',{cx:12,cy:-5,r:2,fill:'rgba(220,255,220,0.9)'},g);
+      svgEl('circle',{cx:12,cy:-5,r:1,fill:'#000'},g);
+      // antennae
+      svgEl('line',{x1:7,y1:-8,x2:9,y2:-15,stroke:`hsl(${hue},60%,50%)`,'stroke-width':1.2},g);
+      svgEl('circle',{cx:9,cy:-15,r:1.8,fill:`hsl(${hue},90%,65%)`,filter:'url(#sc-g2)'},g);
+      svgEl('line',{x1:11,y1:-8,x2:14,y2:-15,stroke:`hsl(${hue},60%,50%)`,'stroke-width':1.2},g);
+      svgEl('circle',{cx:14,cy:-15,r:1.8,fill:`hsl(${hue},90%,65%)`,filter:'url(#sc-g2)'},g);
+      g.setAttribute('transform',`translate(${lx},${ly})`);
+      lifeforms.push({el:g,x:lx,y:ly,vx:rand(-0.3,0.3),phase:rand(0,Math.PI*2),scared:false,scareTimer:0});
+    }
+  });
+
+  // ── MOTHER UFO (hovering high, centre) ──────────────────
+  const motherX=W/2, motherY=110;
+  const motherG=svgEl('g',{},svg);
+
+  const mUfoBg=svgEl('radialGradient',{id:'sc-mufo',cx:'38%',cy:'32%',r:'62%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#aad4ff'},mUfoBg);
+  svgEl('stop',{offset:'55%','stop-color':'#3a6aaa'},mUfoBg);
+  svgEl('stop',{offset:'100%','stop-color':'#1a3355'},mUfoBg);
+
+  const mEngG=svgEl('radialGradient',{id:'sc-meng',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(80,255,200,0.95)'},mEngG);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,200,150,0)'},mEngG);
+
+  // Engine beam downward
+  svgEl('polygon',{
+    points:'-80,22 80,22 180,400 -180,400',
+    fill:'rgba(80,255,180,0.04)'
+  },motherG);
+
+  // Glow halo
+  svgEl('ellipse',{cx:0,cy:0,rx:130,ry:50,fill:'rgba(60,200,150,0.07)',filter:'url(#sc-g14)'},motherG);
+
+  // Disc
+  svgEl('ellipse',{cx:0,cy:0,rx:100,ry:26,fill:'url(#sc-mufo)'},motherG);
+  svgEl('ellipse',{cx:-28,cy:-6,rx:40,ry:10,fill:'rgba(180,220,255,0.22)'},motherG); // shine
+  // Dome
+  svgEl('ellipse',{cx:0,cy:-20,rx:50,ry:36,fill:'url(#sc-mufo)',opacity:0.92},motherG);
+  svgEl('ellipse',{cx:-10,cy:-30,rx:22,ry:16,fill:'rgba(180,230,255,0.3)'},motherG); // dome shine
+  // Bottom engine ring
+  const mRing=svgEl('ellipse',{cx:0,cy:16,rx:78,ry:16,fill:'none',
+    stroke:'rgba(80,255,200,0.65)','stroke-width':4,filter:'url(#sc-g6)'},motherG);
+  // Engine glow pad
+  const mEng=svgEl('ellipse',{cx:0,cy:26,rx:55,ry:24,fill:'url(#sc-meng)',filter:'url(#sc-g14)'},motherG);
+  // Portal lights
+  for(let i=0;i<10;i++){
+    const a=(i/10)*Math.PI*2;
+    svgEl('circle',{cx:Math.cos(a)*74,cy:16+Math.sin(a)*12,r:3.5,
+      fill:`hsl(${170+i*18},100%,72%)`,filter:'url(#sc-g2)'},motherG);
+  }
+  // Window portholes on dome
+  for(let i=0;i<4;i++){
+    const a=-0.6+i*0.4;
+    svgEl('ellipse',{cx:Math.cos(a)*36,cy:-20+Math.sin(a)*24,rx:6,ry:5,
+      fill:`rgba(180,240,255,0.35)`,stroke:'rgba(100,200,255,0.4)','stroke-width':1},motherG);
+  }
+  motherG.setAttribute('transform',`translate(${motherX},${motherY})`);
+
+  // ── TINY DRONE UFOs state machine ────────────────────────
+  // States: 'launching' → 'descending' → 'hovering' → 'extending' → 'collecting' → 'retracting' → 'ascending' → 'docking'
+  const droneCount=4;
+  const droneData=pools.map((p,i)=>({
+    poolIdx:i,
+    x:motherX, y:motherY+28,
+    tx:p.x, ty:groundY-50, // hover target above pool
+    state:'launching',
+    stateTimer:0,
+    launchAngle: (-0.6+i*0.4), // spread from mother
+    // tube
+    tubeProgress:0,   // 0..1 extending/retracting
+    liquidFill:0,     // 0..1
+    sampleColor:`hsl(${p.hue},85%,55%)`,
+    // tank visuals (updated each frame)
+    tankFill:0,
+    el:null, tubeEl:null, liquidEl:null, tankEl:null, glowEl:null
+  }));
+
+  // Build drone SVG elements
+  const dUfoBg=svgEl('radialGradient',{id:'sc-dufo',cx:'38%',cy:'32%',r:'62%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#cceeFF'},dUfoBg);
+  svgEl('stop',{offset:'55%','stop-color':'#4488cc'},dUfoBg);
+  svgEl('stop',{offset:'100%','stop-color':'#1a3a5a'},dUfoBg);
+
+  droneData.forEach((d,i)=>{
+    const g=svgEl('g',{},svg);
+    // Glow
+    d.glowEl=svgEl('ellipse',{cx:0,cy:0,rx:24,ry:10,fill:`hsla(${pools[i].hue},90%,60%,0.15)`,filter:'url(#sc-g6)'},g);
+    // Disc body
+    svgEl('ellipse',{cx:0,cy:0,rx:20,ry:5,fill:'url(#sc-dufo)'},g);
+    svgEl('ellipse',{cx:-5,cy:-1,rx:7,ry:2,fill:'rgba(200,230,255,0.25)'},g); // shine
+    // Mini dome
+    svgEl('ellipse',{cx:0,cy:-5,rx:11,ry:8,fill:'url(#sc-dufo)',opacity:0.9},g);
+    svgEl('ellipse',{cx:-3,cy:-7,rx:4,ry:3,fill:'rgba(200,230,255,0.3)'},g);
+    // Ring light
+    const dring=svgEl('ellipse',{cx:0,cy:3,rx:16,ry:3.5,fill:'none',
+      stroke:`hsl(${pools[i].hue},100%,70%)`,'stroke-width':2,filter:'url(#sc-g2)'},g);
+    // 4 portal lights
+    for(let j=0;j<4;j++){
+      const a=(j/4)*Math.PI*2;
+      svgEl('circle',{cx:Math.cos(a)*15,cy:3+Math.sin(a)*2.5,r:1.8,
+        fill:`hsl(${pools[i].hue+j*25},100%,75%)`,filter:'url(#sc-g2)'},g);
+    }
+
+    // Tube + liquid (drawn as path, updated each frame)
+    d.tubeEl=svgEl('line',{x1:0,y1:6,x2:0,y2:6,
+      stroke:'rgba(180,255,220,0.55)','stroke-width':2.5,'stroke-dasharray':'4 3'},g);
+    d.liquidEl=svgEl('line',{x1:0,y1:6,x2:0,y2:6,
+      stroke:d.sampleColor,'stroke-width':1.5,opacity:0},g);
+
+    // Sample tank (cylinder on drone belly)
+    d.tankEl=svgEl('ellipse',{cx:0,cy:8,rx:6,ry:3,
+      fill:`hsla(${pools[i].hue},70%,30%,0.0)`,stroke:`hsla(${pools[i].hue},80%,60%,0.0)`,'stroke-width':1},g);
+
+    g.setAttribute('transform',`translate(${d.x},${d.y})`);
+    d.el=g;
+    d.dring=dring;
+  });
+
+  // HUD counter panel
+  const hudG=svgEl('g',{},svg);
+  svgEl('rect',{x:W-200,y:10,width:190,height:110,rx:5,
+    fill:'rgba(0,20,30,0.75)',stroke:'rgba(0,255,204,0.25)','stroke-width':1},hudG);
+  svgEl('text',{x:W-105,y:28,fill:'rgba(0,255,204,0.7)',
+    'font-family':'Orbitron','font-size':9,'text-anchor':'middle','letter-spacing':3},hudG
+  ).textContent='SAMPLE LOG';
+  const sampleTexts=pools.map((p,i)=>{
+    const t=svgEl('text',{x:W-190,y:46+i*18,fill:`hsla(${p.hue},80%,65%,0.8)`,
+      'font-family':'Share Tech Mono','font-size':9,'letter-spacing':1},hudG);
+    t.textContent=`${p.label}  0%`;
+    return t;
+  });
+
+  showTransmission('DEPLOYING COLLECTION DRONES — INITIATING SAMPLE EXTRACTION', 4000);
+
+  // ── ANIMATION LOOP ──────────────────────────────────────
+  let sc5Frame=0;
+  if(p5RAF) cancelAnimationFrame(p5RAF);
+
+  function sc5Loop(){
+    sc5Frame++;
+
+    // Mother UFO hover bob + ring pulse
+    const mHover=Math.sin(sc5Frame*0.04)*5;
+    const mEngPulse=0.6+Math.sin(sc5Frame*0.08)*0.4;
+    motherG.setAttribute('transform',`translate(${motherX},${motherY+mHover})`);
+    mEng.setAttribute('opacity',mEngPulse);
+    mRing.setAttribute('stroke-width',3+Math.sin(sc5Frame*0.1)*1.5);
+
+    // Life forms wander / flee
+    lifeforms.forEach(lf=>{
+      lf.phase+=0.04; lf.stateTimer=(lf.stateTimer||0)+1;
+      // check if any drone is near
+      let flee=false;
+      droneData.forEach(d=>{
+        if(Math.hypot(d.x-lf.x,d.y-lf.y)<90) flee=true;
+      });
+      if(flee){ lf.vx=lf.x<W/2?-0.8:0.8; }
+      else if(Math.random()<0.01){ lf.vx=rand(-0.3,0.3); }
+      lf.x+=lf.vx+Math.sin(lf.phase)*0.2;
+      lf.x=Math.max(20,Math.min(W-20,lf.x));
+      lf.el.setAttribute('transform',`translate(${lf.x},${lf.y}) scale(${lf.vx<0?-1:1},1)`);
+    });
+
+    // Pool shimmer
+    pools.forEach((p,i)=>{
+      const osc=Math.sin(sc5Frame*0.06+i)*0.08;
+      p.shimEl.setAttribute('opacity',0.2+osc+0.1);
+      // Shrink pool as liquid collected
+      const lvl=Math.max(0.3, p.level);
+      p.poolEl.setAttribute('rx',p.rx*lvl);
+      p.poolEl.setAttribute('ry',p.ry*lvl);
+      p.shimEl.setAttribute('rx',p.rx*0.5*lvl);
+      p.shimEl.setAttribute('ry',p.ry*0.4*lvl);
+    });
+
+    // ── Drone state machine ──────────────────────────────
+    droneData.forEach((d,i)=>{
+      d.stateTimer++;
+      const pool=pools[d.poolIdx];
+      const hoverX=pool.x, hoverY=groundY-55;
+
+      switch(d.state){
+
+        case 'launching':{
+          // Stagger launch: drone i waits i*60 frames
+          if(d.stateTimer < i*55) break;
+          // Arc out from mother underside
+          const launchT=Math.min(1,(d.stateTimer-i*55)/60);
+          const spreadX=motherX+Math.cos(d.launchAngle)*160;
+          const spreadY=motherY+120;
+          d.x=lerp(motherX,spreadX,launchT);
+          d.y=lerp(motherY+28,spreadY,launchT);
+          if(launchT>=1){ d.state='descending'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'descending':{
+          const t=Math.min(1,d.stateTimer/90);
+          // Ease-in curve
+          const et=t*t*(3-2*t);
+          d.x=lerp(d.x,hoverX,0.03);
+          d.y=lerp(d.y,hoverY,0.025);
+          if(Math.abs(d.y-hoverY)<3 && Math.abs(d.x-hoverX)<4){
+            d.state='hovering'; d.stateTimer=0;
+          }
+          break;
+        }
+
+        case 'hovering':{
+          d.x=hoverX+Math.sin(sc5Frame*0.05+i)*8;
+          d.y=hoverY+Math.sin(sc5Frame*0.07+i*0.5)*3;
+          if(d.stateTimer>50){ d.state='extending'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'extending':{
+          d.x=hoverX+Math.sin(sc5Frame*0.05+i)*5;
+          d.y=hoverY+Math.sin(sc5Frame*0.07+i*0.5)*2;
+          d.tubeProgress=Math.min(1,d.tubeProgress+0.018);
+          if(d.tubeProgress>=1){ d.state='collecting'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'collecting':{
+          d.x=hoverX+Math.sin(sc5Frame*0.04+i)*3;
+          d.y=hoverY+Math.sin(sc5Frame*0.06+i*0.5)*2;
+          d.liquidFill=Math.min(1,d.liquidFill+0.007);
+          pool.level=Math.max(0.3,pool.level-0.003);
+          d.tankFill=d.liquidFill;
+          if(d.liquidFill>=1){ d.state='retracting'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'retracting':{
+          d.x=hoverX+Math.sin(sc5Frame*0.04+i)*3;
+          d.y=hoverY+Math.sin(sc5Frame*0.06+i*0.5)*2;
+          d.tubeProgress=Math.max(0,d.tubeProgress-0.025);
+          if(d.tubeProgress<=0){ d.state='ascending'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'ascending':{
+          d.x=lerp(d.x,motherX+Math.cos(d.launchAngle)*80,0.03);
+          d.y=lerp(d.y,motherY+60,0.025);
+          if(Math.abs(d.y-(motherY+60))<5){ d.state='docking'; d.stateTimer=0; }
+          break;
+        }
+
+        case 'docking':{
+          d.x=lerp(d.x,motherX,0.04);
+          d.y=lerp(d.y,motherY+20,0.04);
+          d.el.setAttribute('opacity',Math.max(0,1-d.stateTimer/40));
+          if(d.stateTimer>45){
+            // drone is docked – hide and update HUD
+            d.el.setAttribute('opacity',0);
+            // show delivery flash on mother
+            const flash=svgEl('circle',{cx:0,cy:0,r:10,fill:d.sampleColor,opacity:0.7,filter:'url(#sc-g14)'},motherG);
+            setTimeout(()=>flash.remove(),600);
+          }
+          break;
+        }
+      }
+
+      // Update drone transform
+      const hover2=Math.sin(sc5Frame*0.09+i*1.2)*2;
+      d.el.setAttribute('transform',`translate(${d.x},${d.y+hover2})`);
+      d.dring.setAttribute('stroke-width',1.5+Math.sin(sc5Frame*0.15+i)*0.8);
+
+      // ── Draw tube ──
+      const tubeLen=(groundY+8-d.y)*d.tubeProgress;
+      d.tubeEl.setAttribute('y2', 6+tubeLen);
+      d.tubeEl.setAttribute('opacity', d.tubeProgress>0?0.7:0);
+
+      // ── Liquid rising in tube during collecting ──
+      if(d.state==='collecting'||d.state==='retracting'){
+        const liqLen=tubeLen*d.liquidFill;
+        const liqStart=6+tubeLen-liqLen;
+        d.liquidEl.setAttribute('y1', liqStart);
+        d.liquidEl.setAttribute('y2', 6+tubeLen);
+        d.liquidEl.setAttribute('opacity', d.liquidFill>0?0.85:0);
+        // Drips at tube tip during collecting
+        if(d.state==='collecting' && sc5Frame%8===0){
+          const drip=svgEl('circle',{
+            cx:d.x, cy:d.y+6+tubeLen+3,
+            r:rand(2,4), fill:d.sampleColor, opacity:0.8,
+            filter:'url(#sc-g2)'
+          },svg);
+          let dy=0, dop=0.8;
+          const di=setInterval(()=>{
+            dy+=1.5; dop-=0.06;
+            drip.setAttribute('cy',d.y+6+tubeLen+3+dy);
+            drip.setAttribute('opacity',dop);
+            if(dop<=0){clearInterval(di);drip.remove();}
+          },20);
+        }
+      } else {
+        d.liquidEl.setAttribute('opacity',0);
+      }
+
+      // ── Tank fill indicator on drone ──
+      d.tankEl.setAttribute('fill',`hsla(${pool.hue},70%,30%,${d.tankFill*0.85})`);
+      d.tankEl.setAttribute('stroke',`hsla(${pool.hue},80%,60%,${d.tankFill})`);
+      d.glowEl.setAttribute('fill',`hsla(${pool.hue},90%,60%,${0.05+d.tankFill*0.2})`);
+
+      // HUD update
+      sampleTexts[i].textContent=`${pool.label}  ${Math.floor(d.liquidFill*100)}%`;
+    });
+
+    p5RAF=requestAnimationFrame(sc5Loop);
+  }
+  sc5Loop();
+
+  setTimeout(()=>showTransmission('EXTRACTION COMPLETE — SAMPLES SECURED — PROCEEDING TO LANDING',3500),12000);
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE 6: ALIEN PLANET SURFACE + LANDING (was Phase 5)
+// ══════════════════════════════════════════════════════
+let p6RAF=null, landingPhase=0;
+function initPhase6(){
+  if(p5RAF){cancelAnimationFrame(p5RAF);p5RAF=null;}
+  const svg=document.getElementById('svg6');
+  svg.innerHTML='';
+  const defs=svgEl('defs',{},svg);
+
+  // Filters
+  const gf=svgEl('filter',{id:'s-glow',x:'-50%',y:'-50%',width:'200%',height:'200%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'5',result:'b'},gf);
+  svgEl('feMerge',{},gf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+  const bgf=svgEl('filter',{id:'s-bigglow',x:'-100%',y:'-100%',width:'300%',height:'300%'},defs);
+  svgEl('feGaussianBlur',{stdDeviation:'15',result:'b'},bgf);
+  svgEl('feMerge',{},bgf).innerHTML='<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+
+  // SKY GRADIENT - alien sky
+  const skyg=svgEl('linearGradient',{id:'sky4',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#0a1a12'},skyg);
+  svgEl('stop',{offset:'40%','stop-color':'#0f2e1e'},skyg);
+  svgEl('stop',{offset:'100%','stop-color':'#1a4428'},skyg);
+  svgEl('rect',{x:0,y:0,width:W,height:H,fill:'url(#sky4)'},svg);
+
+  const groundY=380;
+
+  // Alien sun - pale greenish
+  const sunG=svgEl('radialGradient',{id:'asun',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#e8ffe0'},sunG);
+  svgEl('stop',{offset:'40%','stop-color':'#aaff88'},sunG);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(100,220,80,0)'},sunG);
+  svgEl('circle',{cx:750,cy:100,r:55,fill:'url(#asun)',filter:'url(#s-bigglow)'},svg);
+
+  // Stars/moons in alien sky
+  for(let i=0;i<80;i++){
+    svgEl('circle',{cx:rand(0,W),cy:rand(0,groundY*0.7),r:rand(0.3,1.2),
+      fill:`hsl(${rand(140,200)},60%,80%)`,opacity:rand(0.2,0.6)},svg);
+  }
+  // Second moon
+  svgEl('circle',{cx:150,cy:80,r:22,fill:'rgba(160,200,255,0.5)',filter:'url(#s-glow)'},svg);
+  svgEl('circle',{cx:150,cy:80,r:22,fill:'none',stroke:'rgba(100,180,255,0.3)','stroke-width':6,filter:'url(#s-bigglow)'},svg);
+
+  // Atmospheric haze bands
+  for(let i=0;i<4;i++){
+    const hy=100+i*60;
+    svgEl('ellipse',{cx:W/2,cy:hy,rx:W*0.7,ry:30+i*20,
+      fill:`rgba(0,${80+i*20},${40+i*15},${0.04+i*0.02})`},svg);
+  }
+
+  // BACKGROUND MOUNTAINS - range 1 (far)
+  const mtn1pts=[[0,groundY-10]]; let mx=0;
+  while(mx<W+60){mtn1pts.push([mx,groundY-60-Math.random()*120]);mx+=rand(40,100);}
+  mtn1pts.push([W,groundY-10],[W,H],[0,H]);
+  svgEl('path',{d:`M${mtn1pts.map(p=>p.join(',')).join('L')}Z`,fill:'rgba(10,35,20,0.8)'},svg);
+
+  // BACKGROUND MOUNTAINS - range 2 (closer)
+  const mtn2pts=[[0,groundY+5]]; mx=0;
+  while(mx<W+40){mtn2pts.push([mx,groundY-20-Math.random()*80]);mx+=rand(25,70);}
+  mtn2pts.push([W,groundY+5],[W,H],[0,H]);
+  svgEl('path',{d:`M${mtn2pts.map(p=>p.join(',')).join('L')}Z`,fill:'rgba(12,40,25,0.9)'},svg);
+
+  // ALIEN FOREST - strange tall trees
+  function alienTree(x,y,h,hue){
+    const g=svgEl('g',{},svg);
+    // Trunk
+    svgEl('rect',{x:x-3,y:y-h,width:6,height:h,fill:`hsl(${hue},40%,15%)`,rx:2},g);
+    // Canopy blobs - multi-level
+    for(let i=0;i<4;i++){
+      const cy=y-h*(0.5+i*0.14);
+      const r=h*0.25-i*4;
+      if(r<3) continue;
+      svgEl('circle',{cx:x+rand(-r*0.3,r*0.3),cy:cy,r,
+        fill:`hsla(${hue},${60+i*8}%,${25+i*5}%,0.9)`,filter:'url(#s-glow)'},g);
+    }
+    // Biolum dots
+    for(let i=0;i<5;i++){
+      svgEl('circle',{cx:x+rand(-h*0.2,h*0.2),cy:y-h*rand(0.3,0.9),r:rand(1.5,3.5),
+        fill:`hsl(${hue+40},100%,70%)`,filter:'url(#s-glow)',opacity:rand(0.5,0.9)},g);
+    }
+    return g;
+  }
+
+  // Background trees
+  for(let i=0;i<30;i++){
+    const tx=rand(0,W), ty=groundY+rand(0,15), th=rand(30,80);
+    const hue=rand(100,160);
+    alienTree(tx,ty,th,hue);
+  }
+
+  // GROUND SURFACE
+  const gndg=svgEl('linearGradient',{id:'gnd4',x1:0,y1:0,x2:0,y2:1},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#1a4a2a'},gndg);
+  svgEl('stop',{offset:'100%','stop-color':'#0a2015'},gndg);
+  svgEl('path',{
+    d:`M0,${groundY} Q${W*0.25},${groundY-15} ${W*0.5},${groundY+5} Q${W*0.75},${groundY+18} ${W},${groundY-8} L${W},${H} L0,${H}Z`,
+    fill:'url(#gnd4)'},svg);
+
+  // Ground texture / moss patches
+  for(let i=0;i<25;i++){
+    const px=rand(0,W), py=groundY+rand(5,50);
+    svgEl('ellipse',{cx:px,cy:py,rx:rand(10,50),ry:rand(4,15),
+      fill:`hsla(${rand(100,150)},60%,${rand(20,35)}%,0.6)`},svg);
+  }
+
+  // Foreground alien plants
+  for(let i=0;i<12;i++){
+    const tx=rand(0,W), ty=groundY+rand(5,20);
+    alienTree(tx,ty,rand(60,140),rand(90,160));
+  }
+
+  // Bioluminescent ground mushrooms
+  for(let i=0;i<20;i++){
+    const mx2=rand(0,W), my=groundY+rand(8,30);
+    const mh=rand(8,25), hue=rand(120,200);
+    svgEl('rect',{x:mx2-2,y:my-mh,width:4,height:mh,fill:`hsl(${hue},40%,20%)`,rx:1},svg);
+    svgEl('ellipse',{cx:mx2,cy:my-mh,rx:rand(5,14),ry:rand(3,7),
+      fill:`hsl(${hue},90%,55%)`,filter:'url(#s-glow)'},svg);
+  }
+
+  // Foreground crystals
+  for(let i=0;i<12;i++){
+    const cx2=rand(0,W), cy2=groundY+rand(5,25), ch=rand(20,55);
+    const hue=rand(140,220);
+    const pts=`${cx2-5},${cy2} ${cx2},${cy2-ch} ${cx2+5},${cy2}`;
+    svgEl('polygon',{points:pts,fill:`hsla(${hue},80%,50%,0.7)`,filter:'url(#s-glow)'},svg);
+    svgEl('polygon',{points:`${cx2-3},${cy2} ${cx2},${cy2-ch*0.6} ${cx2+3},${cy2}`,
+      fill:`hsla(${hue},90%,80%,0.4)`},svg);
+  }
+
+  // Floating spores
+  const spores=[];
+  for(let i=0;i<40;i++){
+    const s=svgEl('circle',{cx:rand(0,W),cy:rand(groundY-200,groundY),
+      r:rand(1,4),fill:`hsl(${rand(100,180)},90%,70%)`,filter:'url(#s-glow)',opacity:rand(0.3,0.8)},svg);
+    spores.push({el:s,x:parseFloat(s.getAttribute('cx')),y:parseFloat(s.getAttribute('cy')),
+      vy:rand(-0.5,-0.1),vx:rand(-0.2,0.2),phase:rand(0,Math.PI*2)});
+  }
+
+  // ALIEN CREATURES on surface
+  // Small creatures wandering
+  const creatures=[];
+  for(let i=0;i<8;i++){
+    const g=svgEl('g',{},svg);
+    const cx3=rand(50,W-50), cy3=groundY+rand(5,20);
+    const hue=rand(100,200);
+    svgEl('ellipse',{cx:0,cy:0,rx:12,ry:7,fill:`hsl(${hue},70%,35%)`},g);
+    svgEl('circle',{cx:10,cy:-5,r:6,fill:`hsl(${hue},80%,45%)`},g);
+    svgEl('circle',{cx:13,cy:-7,r:2.5,fill:'rgba(200,255,200,0.9)'},g);
+    svgEl('circle',{cx:13,cy:-7,r:1.2,fill:'#000'},g);
+    g.setAttribute('transform',`translate(${cx3},${cy3})`);
+    creatures.push({el:g,x:cx3,y:cy3,vx:rand(-0.5,0.5),phase:rand(0,Math.PI*2)});
+  }
+
+  // UFO LANDING SEQUENCE
+  const ufoG=svgEl('g',{},svg);
+  const ufoStartY=-120;
+  let ufoX=W/2, ufoY=ufoStartY;
+
+  // UFO body
+  const ufog2=svgEl('radialGradient',{id:'ufob',cx:'40%',cy:'35%',r:'60%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'#88ccff'},ufog2);
+  svgEl('stop',{offset:'60%','stop-color':'#3366aa'},ufog2);
+  svgEl('stop',{offset:'100%','stop-color':'#1a3355'},ufog2);
+
+  // Engine glow gradient
+  const engg=svgEl('radialGradient',{id:'eng4',cx:'50%',cy:'50%',r:'50%'},defs);
+  svgEl('stop',{offset:'0%','stop-color':'rgba(100,255,200,0.9)'},engg);
+  svgEl('stop',{offset:'100%','stop-color':'rgba(0,200,150,0)'},engg);
+
+  // UFO components
+  const ufoBeam=svgEl('polygon',{
+    points:`${-60},${60} ${60},${60} ${200},${500} ${-200},${500}`,
+    fill:'rgba(100,255,200,0.06)'
+  },ufoG);
+  const ufoDome=svgEl('ellipse',{cx:0,cy:-18,rx:35,ry:28,fill:'url(#ufob)',opacity:0.9},ufoG);
+  const ufoDomeShine=svgEl('ellipse',{cx:-8,cy:-25,rx:15,ry:12,fill:'rgba(180,230,255,0.3)'},ufoG);
+  const ufoDisc=svgEl('ellipse',{cx:0,cy:0,rx:70,ry:18,fill:'url(#ufob)'},ufoG);
+  const ufoDiscShine=svgEl('ellipse',{cx:-20,cy:-5,rx:30,ry:7,fill:'rgba(150,200,255,0.25)'},ufoG);
+  // Bottom ring
+  const ufoRing=svgEl('ellipse',{cx:0,cy:12,rx:55,ry:11,fill:'none',
+    stroke:'rgba(100,255,200,0.6)','stroke-width':3,filter:'url(#s-glow)'},ufoG);
+  // Engine glow
+  const ufoEng=svgEl('ellipse',{cx:0,cy:20,rx:40,ry:20,fill:'url(#eng4)',filter:'url(#s-bigglow)'},ufoG);
+  // Portal lights
+  for(let i=0;i<8;i++){
+    const a=(i/8)*Math.PI*2;
+    svgEl('circle',{cx:Math.cos(a)*52,cy:12+Math.sin(a)*8,r:3,
+      fill:`hsl(${180+i*15},100%,75%)`,filter:'url(#s-glow)'},ufoG);
+  }
+  // Shadow on ground
+  const ufoShadow=svgEl('ellipse',{cx:W/2,cy:groundY+10,rx:0,ry:0,fill:'rgba(0,0,0,0.3)'},svg);
+
+  ufoG.setAttribute('transform',`translate(${ufoX},${ufoY})`);
+
+  // LANDING SEQUENCE animation
+  landingPhase=0;
+  let landed=false;
+  const targetY=groundY-80;
+
+  if(p6RAF) cancelAnimationFrame(p6RAF);
+
+  showTransmission('LANDING SEQUENCE INITIATED — WELCOME TO KEPLER-7b', 4000);
+
+  let surfaceFrame=0;
+  function surfaceLoop(){
+    surfaceFrame++;
+    landingPhase+=0.008;
+
+    // UFO descend
+    if(!landed){
+      ufoY=lerp(ufoY, targetY, 0.012);
+      const shadowScale=Math.max(0, 1-(targetY-ufoY)/300);
+      ufoShadow.setAttribute('rx',60*shadowScale);
+      ufoShadow.setAttribute('ry',15*shadowScale);
+      ufoShadow.setAttribute('cx',W/2);
+      ufoShadow.setAttribute('cy',groundY+10);
+
+      // Shake near landing
+      const dist=Math.abs(ufoY-targetY);
+      let shakeX=0,shakeY=0;
+      if(dist<50){
+        shakeX=rand(-2,2)*(1-dist/50);
+        shakeY=rand(-1,1)*(1-dist/50);
+      }
+      ufoG.setAttribute('transform',`translate(${ufoX+shakeX},${ufoY+shakeY})`);
+
+      if(Math.abs(ufoY-targetY)<3) landed=true;
+    } else {
+      // Idle hover
+      const hover=Math.sin(surfaceFrame*0.05)*4;
+      ufoG.setAttribute('transform',`translate(${ufoX},${targetY+hover})`);
+      ufoEng.setAttribute('ry',18+Math.sin(surfaceFrame*0.08)*4);
+    }
+
+    // Spores float
+    spores.forEach(s=>{
+      s.phase+=0.02; s.y+=s.vy; s.x+=s.vx+Math.sin(s.phase)*0.3;
+      if(s.y<-20){s.y=groundY+10; s.x=rand(0,W);}
+      s.el.setAttribute('cx',s.x); s.el.setAttribute('cy',s.y);
+      s.el.setAttribute('opacity',0.2+Math.abs(Math.sin(s.phase))*0.6);
+    });
+
+    // Creatures wander
+    creatures.forEach(c=>{
+      c.phase+=0.04;
+      c.x+=c.vx+Math.sin(c.phase)*0.3;
+      if(c.x<20)c.vx=Math.abs(c.vx);
+      if(c.x>W-20)c.vx=-Math.abs(c.vx);
+      c.el.setAttribute('transform',`translate(${c.x},${c.y}) scale(${c.vx>0?1:-1},1)`);
+    });
+
+    // Engine pulse
+    const ePulse=0.7+Math.sin(surfaceFrame*0.15)*0.3;
+    ufoEng.setAttribute('opacity',ePulse);
+    ufoRing.setAttribute('stroke-width',2+Math.sin(surfaceFrame*0.12)*1.5);
+
+    p6RAF=requestAnimationFrame(surfaceLoop);
+  }
+  surfaceLoop();
+
+  // After 4 seconds show info
+  setTimeout(()=>{
+    showTransmission('LANDED — LIFE SIGNS DETECTED — INITIATING CONTACT PROTOCOL', 5000);
+  },4500);
+}
+
+// ══════════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════════
+initPhase1();
+
+// Auto-advance timer messages
+// (user controls manually or auto-starts after 5s)
+setTimeout(()=>{
+  if(currentPhase===1) showTransmission('ENGAGE WARP — PRESS NEXT TO CONTINUE', 2000);
+},4000);
+</script>
+</body>
+</html>

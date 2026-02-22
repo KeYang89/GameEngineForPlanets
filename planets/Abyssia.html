@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Abyssia — Deep Ocean Ecosystem</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --deep: #00040f;
+    --mid: #000d2a;
+    --glow1: #00ffcc;
+    --glow2: #ff44dd;
+    --glow3: #44aaff;
+    --glow4: #ffdd00;
+    --amber: #ff8800;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #00040f;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+    cursor: crosshair;
+  }
+
+  svg#world {
+    width:100%; height:100%;
+    display:block;
+  }
+
+  #hud {
+    position: absolute;
+    top: 14px; left: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--glow1);
+    background: rgba(0,10,30,0.7);
+    border: 1px solid rgba(0,255,204,0.2);
+    border-radius: 3px;
+    padding: 10px 16px;
+    line-height: 2;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+    min-width: 210px;
+  }
+
+  #hud h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: #fff;
+    border-bottom: 1px solid rgba(0,255,204,0.25);
+    padding-bottom: 5px;
+    margin-bottom: 4px;
+  }
+
+  #species-panel {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #aaddff;
+    background: rgba(0,10,30,0.75);
+    border: 1px solid rgba(68,170,255,0.2);
+    border-radius: 3px;
+    padding: 10px 14px;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+    max-width: 220px;
+  }
+
+  #species-panel h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--glow2);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .s-row {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 3px;
+  }
+  .s-dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink:0;
+  }
+
+  #thought {
+    position: absolute;
+    background: rgba(0,5,20,0.92);
+    border: 1px solid var(--glow2);
+    border-radius: 8px;
+    padding: 7px 11px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #ffccff;
+    max-width: 170px;
+    pointer-events: none;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 0 20px rgba(255,68,221,0.3);
+  }
+
+  #info {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #cceeff;
+    background: rgba(0,10,30,0.8);
+    border: 1px solid rgba(68,170,255,0.3);
+    border-radius: 3px;
+    padding: 9px 13px;
+    pointer-events: none;
+    z-index: 10;
+    display: none;
+    line-height: 1.8;
+    min-width: 160px;
+  }
+  #info h3 { font-family:'Cinzel',serif; color:var(--glow2); font-size:11px; margin-bottom:3px; }
+
+  #click-hint {
+    position: absolute;
+    bottom: 14px; left: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,255,204,0.5);
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>
+</head>
+<!-- Welcome to Planet Abyssia — a pitch-black deep ocean world with zero sunlight! Here's what lurks in the depths:
+🧠 Sapient Species
+
+Neurathid — Tri-eyed cephalopod beings with 8 bioluminescent tentacles, a psionic crown, and telepathic pulse rings. They actively map currents and communicate across the abyss.
+
+🦑 Fauna (8 species)
+
+Abyssal Leviathan — Enormous serpentine megafauna with undulating body segments and enormous predator eyes
+Driftsiphon — Colonial jellyfish with contracting bells and trailing oral arms
+Goldmantis — Ambush predators with striking claws that snap in real-time
+Voidray — Manta-like gliders riding magnetic currents with wing-flap animation
+Seaghost — Phase-shifting fish that fade in and out and occasionally teleport
+Crystalmedusa — Slowly rotating crystalline creatures that shed sparkles
+Sanguineel — Sinuous electric eels that discharge lightning arcs
+Thermovore — Heat-absorbing crustaceans that cluster around magma vents
+
+🌿 Flora & Microorganisms (5 types)
+
+Echospine coral, Rootfang carnivorous plants, Ghostbloom hovering flowers, Magma Vent Tubeworms, and Biolume Plankton that scatter when you click -->
+<body>
+<div style="position:relative;width:100%;height:100%">
+  <svg id="world" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="hud">
+    <h1>PLANET ABYSSIA</h1>
+    <div id="h-depth">Depth: —</div>
+    <div id="h-pressure">Pressure: —</div>
+    <div id="h-pop">Entities: —</div>
+    <div id="h-event">Event: Calm</div>
+    <div id="h-cycle">Tide Cycle: 0</div>
+  </div>
+  <div id="species-panel">
+    <h2>SPECIES LOG</h2>
+    <div class="s-row"><div class="s-dot" style="background:#ff44dd;box-shadow:0 0 5px #ff44dd"></div>Neurathid (Sapient)</div>
+    <div class="s-row"><div class="s-dot" style="background:#00ffcc"></div>Abyssal Leviathan</div>
+    <div class="s-row"><div class="s-dot" style="background:#44aaff"></div>Driftsiphon</div>
+    <div class="s-row"><div class="s-dot" style="background:#ffdd00"></div>Goldmantis</div>
+    <div class="s-row"><div class="s-dot" style="background:#ff6600"></div>Thermovore</div>
+    <div class="s-row"><div class="s-dot" style="background:#aa44ff"></div>Voidray</div>
+    <div class="s-row"><div class="s-dot" style="background:#00ff88"></div>Seaghost</div>
+    <div class="s-row"><div class="s-dot" style="background:#ffffff"></div>Crystalmedusa</div>
+    <div class="s-row"><div class="s-dot" style="background:#ff4488"></div>Sanguineel</div>
+    <div class="s-row"><div class="s-dot" style="background:#66ddff"></div>Echospine (flora)</div>
+    <div class="s-row"><div class="s-dot" style="background:#88ff44"></div>Rootfang (flora)</div>
+    <div class="s-row"><div class="s-dot" style="background:#ff8844"></div>Magma Vent Flora</div>
+    <div class="s-row"><div class="s-dot" style="background:#ddaaff"></div>Ghostbloom (flora)</div>
+    <div class="s-row"><div class="s-dot" style="background:#44ffee"></div>Biolume Plankton</div>
+  </div>
+  <div id="thought"></div>
+  <div id="info"><h3 id="info-name"></h3><div id="info-desc"></div></div>
+  <div id="click-hint">[ click anywhere to send sonar pulse ]</div>
+</div>
+
+<script>
+const svg = document.getElementById('world');
+function getViewportSize() {
+  const w = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+  const h = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+  return { w: w || 1200, h: h || 800 }; // fallback safety
+}
+
+const { w: W, h: H } = getViewportSize();
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+let frame = 0;
+let tideCycle = 0;
+let tidePhase = 0;
+let event = 'Calm';
+let eventTimer = 0;
+
+const rand = (a,b) => a + Math.random()*(b-a);
+const randInt = (a,b) => Math.floor(rand(a,b+1));
+const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+const lerp = (a,b,t) => a+(b-a)*t;
+const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+
+function el(tag,attrs={}) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+
+// ── LAYERS ────────────────────────────────────────────────────────────────
+const L = {};
+['bg','gradient-layer','floor','thermal','flora','mid','creatures','sapient','particles','ui'].forEach(n=>{
+  const g = el('g',{id:n});
+  svg.appendChild(g);
+  L[n] = g;
+});
+
+// ── DEFS ──────────────────────────────────────────────────────────────────
+const defs = el('defs');
+svg.insertBefore(defs, svg.firstChild);
+
+// Deep ocean gradient
+const oceanGrad = el('linearGradient',{id:'ocean',x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+oceanGrad.innerHTML = `
+  <stop id="og0" offset="0%" stop-color="#000818"/>
+  <stop id="og1" offset="40%" stop-color="#00040f"/>
+  <stop id="og2" offset="100%" stop-color="#000208"/>
+`;
+defs.appendChild(oceanGrad);
+
+// Volume light from surface
+const surfaceGrad = el('radialGradient',{id:'surflight',cx:'50%',cy:'0%',r:'60%',gradientUnits:'objectBoundingBox'});
+surfaceGrad.innerHTML = `
+  <stop offset="0%" stop-color="rgba(0,100,180,0.12)"/>
+  <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+`;
+defs.appendChild(surfaceGrad);
+
+// Filters
+function makeFilter(id, blur, extra='') {
+  const f = el('filter',{id,x:'-50%',y:'-50%',width:'200%',height:'200%'});
+  f.innerHTML = `<feGaussianBlur stdDeviation="${blur}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>${extra}`;
+  defs.appendChild(f);
+}
+makeFilter('glow2',2);
+makeFilter('glow5',5);
+makeFilter('glow10',10);
+makeFilter('glow20',20);
+
+// Ripple/distort
+const turbulence = el('feTurbulence',{type:'fractalNoise',baseFrequency:'0.01 0.02',numOctaves:2,seed:2});
+const displace = el('feDisplacementMap',{in:'SourceGraphic',scale:4,xChannelSelector:'R',yChannelSelector:'G'});
+const distFilter = el('filter',{id:'wavedist',x:'-10%',y:'-10%',width:'120%',height:'120%'});
+distFilter.appendChild(turbulence); distFilter.appendChild(displace);
+defs.appendChild(distFilter);
+
+// ── BACKGROUND ────────────────────────────────────────────────────────────
+const bgRect = el('rect',{x:0,y:0,width:W,height:H,fill:'url(#ocean)'});
+L.bg.appendChild(bgRect);
+
+// Volume light cones from surface
+for(let i=0;i<4;i++) {
+  const lx = rand(W*0.1, W*0.9);
+  const cone = el('polygon',{
+    points:`${lx-rand(5,20)},0 ${lx+rand(5,20)},0 ${lx+rand(40,120)},${H} ${lx-rand(40,120)},${H}`,
+    fill:`rgba(0,${randInt(80,150)},${randInt(180,255)},0.025)`,
+    filter:'url(#glow20)'
+  });
+  L['gradient-layer'].appendChild(cone);
+}
+
+// Surface ripple
+const surfLight = el('rect',{x:0,y:0,width:W,height:H,fill:'url(#surflight)'});
+L['gradient-layer'].appendChild(surfLight);
+
+// Particle field - distant bioluminescence
+const bgParticles = [];
+for(let i=0;i<300;i++) {
+  const p = el('circle',{
+    cx:rand(0,W), cy:rand(0,H),
+    r:rand(0.3,1.5),
+    fill:`hsl(${rand(160,240)},100%,${rand(60,90)}%)`,
+    opacity:rand(0.1,0.5)
+  });
+  L['gradient-layer'].appendChild(p);
+  bgParticles.push({
+    el: p,
+    phase: rand(0, Math.PI*2),
+    x: parseFloat(p.getAttribute('cx')),
+    y: parseFloat(p.getAttribute('cy')),
+    vy: rand(-0.05, 0.05)
+});
+}
+
+// ── SEAFLOOR ──────────────────────────────────────────────────────────────
+const floorY = H * 0.72;
+
+// Layered floor
+function makeFloorLayer(yBase, color, jitter) {
+  const pts = [[0, yBase]];
+  let x = 0;
+  while(x < W+50) {
+    pts.push([x, yBase + rand(-jitter, jitter)]);
+    x += rand(15, 50);
+  }
+  pts.push([W, yBase], [W, H+10], [0, H+10]);
+  const d = `M${pts.map(p=>p.join(',')).join('L')}Z`;
+  const path = el('path',{d, fill:color});
+  L.floor.appendChild(path);
+  return path;
+}
+makeFloorLayer(floorY, '#020a18', 30);
+makeFloorLayer(floorY+15, '#030e1f', 20);
+makeFloorLayer(floorY+30, '#010810', 10);
+
+// Thermal vents
+const ventPositions = [];
+for(let i=0;i<5;i++) {
+  const vx = rand(80, W-80);
+  const vy = floorY + rand(5,20);
+  ventPositions.push({x:vx, y:vy});
+
+  const base = el('ellipse',{cx:vx,cy:vy+10,rx:12,ry:6,fill:'#1a0500'});
+  L.thermal.appendChild(base);
+
+  // Glowing crack
+  const crack = el('ellipse',{cx:vx,cy:vy+5,rx:5,ry:3,fill:'#ff4400',filter:'url(#glow5)',opacity:0.8});
+  L.thermal.appendChild(crack);
+}
+
+// ── FLORA ─────────────────────────────────────────────────────────────────
+const floraEls = [];
+
+// Echospine (tall bioluminescent spines)
+for(let i=0;i<25;i++) {
+  const x = rand(0,W), y = floorY + rand(0,20);
+  const h = rand(20,90), hue = rand(160,220);
+  const g = el('g');
+  // Main spine
+  const spine = el('line',{x1:x,y1:y,x2:x+rand(-10,10),y2:y-h,
+    stroke:`hsl(${hue},100%,60%)`,
+    'stroke-width':rand(1,3),'stroke-linecap':'round',
+    filter:'url(#glow2)',opacity:0.8});
+  // Branch nodes
+  for(let j=0;j<3;j++) {
+    const ny = y - h*(0.3+j*0.25);
+    const side = (Math.random()<0.5?1:-1)*rand(8,20);
+    const branch = el('line',{x1:x,y1:ny,x2:x+side,y2:ny-rand(5,15),
+      stroke:`hsl(${hue},100%,75%)`,'stroke-width':1.5,filter:'url(#glow2)'});
+    const tip = el('circle',{cx:x+side,cy:ny-rand(5,15),r:rand(2,4),
+      fill:`hsl(${hue},100%,85%)`,filter:'url(#glow5)'});
+    g.appendChild(branch); g.appendChild(tip);
+  }
+  g.appendChild(spine);
+  L.flora.appendChild(g);
+  floraEls.push({type:'echospine', el:g, x, y, phase:rand(0,Math.PI*2), spineEl:spine, hue});
+}
+
+// Rootfang (carnivorous anchor plants)
+for(let i=0;i<12;i++) {
+  const x = rand(0,W), y = floorY + rand(5,15);
+  const g = el('g');
+  const bulb = el('ellipse',{cx:x,cy:y-20,rx:12,ry:16,fill:`hsl(${rand(90,140)},60%,20%)`,opacity:0.9});
+  // Fang teeth
+  for(let j=0;j<5;j++) {
+    const tx = x + (j-2)*6;
+    const tooth = el('polygon',{points:`${tx-3},${y-8} ${tx},${y-20} ${tx+3},${y-8}`,
+      fill:`hsl(${rand(80,120)},80%,${rand(40,65)}%)`,filter:'url(#glow2)'});
+    g.appendChild(tooth);
+  }
+  // Lure tendril
+  const tendril = el('path',{d:`M${x},${y-36} Q${x+rand(-20,20)},${y-60} ${x+rand(-15,15)},${y-80}`,
+    stroke:`rgba(0,255,150,0.6)`,'stroke-width':1.5,'fill':'none',filter:'url(#glow5)'});
+  const lure = el('circle',{cx:x+rand(-15,15),cy:y-80,r:4,fill:'#88ff88',filter:'url(#glow10)'});
+  g.appendChild(bulb); g.appendChild(tendril); g.appendChild(lure);
+  L.flora.appendChild(g);
+  floraEls.push({type:'rootfang', el:g, x, y, phase:rand(0,Math.PI*2), lureEl:lure});
+}
+
+// Ghostbloom (translucent hovering flowers)
+for(let i=0;i<18;i++) {
+  const x = rand(0,W), y = floorY - rand(20,120);
+  const g = el('g');
+  const hue = rand(280,340);
+  // Petals
+  for(let j=0;j<6;j++) {
+    const angle = (j/6)*Math.PI*2;
+    const petal = el('ellipse',{
+      cx:x+Math.cos(angle)*10, cy:y+Math.sin(angle)*10,
+      rx:7,ry:3,
+      fill:`hsla(${hue},80%,70%,0.35)`,
+      transform:`rotate(${angle*180/Math.PI},${x+Math.cos(angle)*10},${y+Math.sin(angle)*10})`,
+      filter:'url(#glow2)'
+    });
+    g.appendChild(petal);
+  }
+  const center = el('circle',{cx:x,cy:y,r:5,fill:`hsla(${hue},100%,80%,0.7)`,filter:'url(#glow5)'});
+  g.appendChild(center);
+  L.flora.appendChild(g);
+  floraEls.push({type:'ghostbloom', el:g, x, y:y, baseY:y, phase:rand(0,Math.PI*2)});
+}
+
+// Magma vent flora - heat-adapted tube worms
+ventPositions.forEach(v=>{
+  for(let i=0;i<6;i++) {
+    const x = v.x + rand(-25,25);
+    const g = el('g');
+    const h = rand(15,40);
+    const tube = el('rect',{x:x-2,y:v.y-h,width:4,height:h,fill:'#221100',rx:1});
+    const crown = el('circle',{cx:x,cy:v.y-h,r:rand(4,8),
+      fill:`hsl(${rand(20,50)},100%,60%)`,filter:'url(#glow5)'});
+    g.appendChild(tube); g.appendChild(crown);
+    L.flora.appendChild(g);
+    floraEls.push({type:'ventworm', el:g, x, y:v.y, phase:rand(0,Math.PI*2), crownEl:crown});
+  }
+});
+
+// ── BIOLUME PLANKTON ──────────────────────────────────────────────────────
+const plankton = [];
+for(let i=0;i<80;i++) {
+  const p = el('circle',{
+    cx:rand(0,W), cy:rand(0, floorY),
+    r:rand(1,3),
+    fill:`hsl(${rand(160,200)},100%,80%)`,
+    opacity:rand(0.2,0.6),
+    filter:'url(#glow2)'
+  });
+  L.mid.appendChild(p);
+  plankton.push({el:p, x:parseFloat(p.getAttribute('cx')), y:parseFloat(p.getAttribute('cy')),
+    vx:rand(-0.3,0.3), vy:rand(-0.15,0.15), phase:rand(0,Math.PI*2)});
+}
+
+// ── CREATURE BASE ─────────────────────────────────────────────────────────
+class Creature {
+  constructor(opts) {
+    Object.assign(this, {
+      x:rand(50,W-50), y:rand(H*0.2, floorY-30),
+      vx:0, vy:0, speed:1, size:12,
+      color:'#ffffff', type:'generic',
+      label:'Unknown', thoughts:['...'],
+      phase:rand(0,Math.PI*2), age:0
+    }, opts);
+    this.el = el('g',{cursor:'pointer'});
+    L.creatures.appendChild(this.el);
+    this.build();
+    this.el.addEventListener('mouseenter',()=>this.hover(true));
+    this.el.addEventListener('mouseleave',()=>this.hover(false));
+  }
+
+  hover(on) {
+    document.getElementById('info').style.display = on?'block':'none';
+    document.getElementById('thought').style.display = on?'block':'none';
+    if(on) {
+      document.getElementById('info-name').textContent = this.label;
+      document.getElementById('info-desc').textContent = this.getDesc();
+      const t = document.getElementById('thought');
+      t.textContent = this.thoughts[randInt(0,this.thoughts.length-1)];
+      t.style.left = (this.x+20)+'px';
+      t.style.top = (this.y-40)+'px';
+    }
+  }
+
+  getDesc() { return `State: ${this.type}\nPos: (${Math.floor(this.x)},${Math.floor(this.y)})`; }
+  build() {}
+
+  wander(x0=0,x1=W,y0=0,y1=floorY-20) {
+    if(Math.random()<0.02) {
+      this.vx += rand(-this.speed,this.speed)*0.3;
+      this.vy += rand(-this.speed*0.5,this.speed*0.5)*0.3;
+    }
+    this.vx = clamp(this.vx,-this.speed,this.speed);
+    this.vy = clamp(this.vy,-this.speed*0.5,this.speed*0.5);
+    this.x += this.vx; this.y += this.vy;
+    this.x = clamp(this.x,x0,x1); this.y = clamp(this.y,y0,y1);
+    this.vx*=0.96; this.vy*=0.96;
+  }
+
+  tick() {
+    this.age++; this.phase+=0.05;
+    this.update();
+    this.el.setAttribute('transform',`translate(${this.x},${this.y})`);
+  }
+  update() { this.wander(); }
+}
+
+// ── NEURATHID (Sapient) ───────────────────────────────────────────────────
+class Neurathid extends Creature {
+  constructor() {
+    super({type:'neurathid',label:'Neurathid (Sapient)',color:'#ff44dd',speed:1.3,
+      thoughts:[
+        '◈ Mapping thermal currents',
+        '◈ Signal from kin — 340m NE',
+        '◈ Prey cluster detected',
+        '◈ Constructing memory palace',
+        '◈ The Deep hums at 7Hz',
+        '◈ Observing leviathan migration',
+        '◈ Biolume code: warning',
+        '◈ Architecture of silence',
+        '◈ Teaching the young ones',
+      ]
+    });
+    this.psiTimer = 0;
+    this.brain = {nodes:[], arcs:[]};
+  }
+
+  build() {
+    // Mantle body
+    const mantle = el('ellipse',{cx:0,cy:0,rx:14,ry:18,fill:'#44006a',opacity:0.9});
+    // Bioluminescent pattern on mantle
+    for(let i=0;i<8;i++) {
+      const spot = el('circle',{
+        cx:rand(-10,10),cy:rand(-14,14),
+        r:rand(1.5,3.5),
+        fill:`hsl(${rand(290,330)},100%,80%)`,
+        filter:'url(#glow5)',opacity:0.7
+      });
+      this.el.appendChild(spot);
+    }
+    this.el.appendChild(mantle);
+
+    // Head dome
+    const head = el('ellipse',{cx:0,cy:-20,rx:11,ry:10,fill:'#7700cc',filter:'url(#glow5)'});
+    // Neural crown glow
+    this.crownEl = el('ellipse',{cx:0,cy:-26,rx:9,ry:5,fill:'rgba(255,68,221,0.4)',filter:'url(#glow10)'});
+    // Eyes (tri-ocular)
+    const eyes = [[-5,-22],[0,-24],[5,-22]];
+    eyes.forEach(([ex,ey])=>{
+      const eye = el('circle',{cx:ex,cy:ey,r:2.5,fill:'#ffffff',filter:'url(#glow2)'});
+      const pupil = el('circle',{cx:ex,cy:ey,r:1.2,fill:'#ff44ff'});
+      this.el.appendChild(eye); this.el.appendChild(pupil);
+    });
+
+    // Tentacles (8)
+    this.tentacleEls = [];
+    for(let i=0;i<8;i++) {
+      const angle = (i/8)*Math.PI*2;
+      const tx = el('path',{
+        d:`M0,8 Q${Math.cos(angle)*20},${Math.sin(angle)*20+8} ${Math.cos(angle)*35},${Math.sin(angle)*35+10}`,
+        stroke:`hsla(${280+i*5},100%,65%,0.8)`,'stroke-width':1.8,'fill':'none','stroke-linecap':'round',
+        filter:'url(#glow2)'
+      });
+      this.tentacleEls.push({el:tx, baseAngle:angle, phase:rand(0,Math.PI*2)});
+      this.el.appendChild(tx);
+    }
+
+    [head,this.crownEl].forEach(e=>this.el.appendChild(e));
+    this.el.setAttribute('cursor','pointer');
+  }
+
+  getDesc() { return `Intelligence: Elite\nPsi power: Active\nDepth: ${Math.floor(this.y)}m`; }
+
+  update() {
+    // Tentacle wave
+    this.tentacleEls.forEach((t,i)=>{
+      t.phase+=0.04;
+      const sway = Math.sin(t.phase)*15;
+      const a = t.baseAngle + sway*0.04;
+      const tx = Math.cos(a)*35, ty = Math.sin(a)*35+10;
+      t.el.setAttribute('d',`M0,8 Q${Math.cos(a)*20},${Math.sin(a)*20+8} ${tx},${ty}`);
+    });
+
+    // Crown pulse
+    this.crownEl.setAttribute('rx',9+Math.sin(this.phase)*3);
+    this.crownEl.setAttribute('opacity',0.4+Math.sin(this.phase*1.5)*0.2);
+
+    // Psi emission
+    this.psiTimer++;
+    if(this.psiTimer > 180) {
+      this.psiTimer=0;
+      this.emitPsi();
+    }
+
+    this.wander(20,W-20,H*0.1,floorY-40);
+  }
+
+  emitPsi() {
+    const ring = el('ellipse',{cx:this.x,cy:this.y,rx:10,ry:6,fill:'none',
+      stroke:'rgba(255,68,221,0.7)','stroke-width':1.5,filter:'url(#glow5)'});
+    L.particles.appendChild(ring);
+    let r=10,op=0.7;
+    const ai=setInterval(()=>{
+      r+=3; op-=0.03;
+      ring.setAttribute('rx',r); ring.setAttribute('ry',r*0.6);
+      ring.setAttribute('opacity',op);
+      if(op<=0){clearInterval(ai);ring.remove();}
+    },20);
+  }
+}
+
+// ── ABYSSAL LEVIATHAN ─────────────────────────────────────────────────────
+class Leviathan extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.15,H*0.5),type:'leviathan',label:'Abyssal Leviathan',
+      color:'#00ffcc',size:60,speed:0.8,
+      thoughts:['Ancient... am ancient...','The deep is MINE','Migrating south','Echo of the void']
+    });
+  }
+  build() {
+    // Massive serpentine body with segments
+    this.segments = [];
+    for(let i=0;i<8;i++) {
+      const r = 30 - i*3;
+      const seg = el('ellipse',{cx:-i*25,cy:Math.sin(i*0.8)*15,rx:r,ry:r*0.6,
+        fill:`rgba(0,${180-i*15},${160-i*12},${0.8-i*0.05})`,filter:'url(#glow5)'});
+      this.segments.push({el:seg,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(seg);
+    }
+    // Head
+    const head = el('ellipse',{cx:32,cy:0,rx:35,ry:22,fill:'rgba(0,200,180,0.85)',filter:'url(#glow10)'});
+    // Jaws
+    this.jawEl = el('path',{d:'M15,10 Q32,25 45,10',stroke:'rgba(0,255,200,0.8)','stroke-width':4,'fill':'none','stroke-linecap':'round'});
+    // Eyes (huge predator eyes)
+    const eye1 = el('circle',{cx:45,cy:-8,r:9,fill:'#004433',filter:'url(#glow5)'});
+    const ep1 = el('circle',{cx:45,cy:-8,r:5,fill:'#00ffaa'});
+    const ep1p = el('circle',{cx:46,cy:-9,r:2,fill:'#000'});
+    // Fin
+    const fin = el('polygon',{points:'0,-22 -30,-60 -50,-22',fill:'rgba(0,180,150,0.5)',filter:'url(#glow2)'});
+    // Biolume stripes
+    for(let i=0;i<12;i++) {
+      const stripe = el('circle',{cx:rand(-150,30),cy:rand(-15,15),r:rand(2,5),
+        fill:`hsl(${rand(160,200)},100%,70%)`,filter:'url(#glow5)',opacity:0.6});
+      this.el.appendChild(stripe);
+    }
+    [head,fin,eye1,ep1,ep1p,this.jawEl].forEach(e=>this.el.appendChild(e));
+  }
+
+  update() {
+    this.segments.forEach((s,i)=>{
+      s.phase+=0.03;
+      s.el.setAttribute('cy',Math.sin(s.phase+i*0.5)*12);
+    });
+    // Jaw breathing
+    this.jawEl.setAttribute('d',`M15,${8+Math.sin(this.phase*0.5)*4} Q32,${22+Math.sin(this.phase*0.5)*4} 45,${8+Math.sin(this.phase*0.5)*4}`);
+
+    this.wander(0,W, H*0.05, floorY-80);
+    const scaleX = this.vx < 0 ? -1 : 1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return; // override pos update
+  }
+  tick() { this.age++; this.phase+=0.03; this.update(); }
+}
+
+// ── DRIFTSIPHON (colonial jellyfish) ──────────────────────────────────────
+class Driftsiphon extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.05,floorY-60),type:'driftsiphon',label:'Driftsiphon',
+      color:'#44aaff',speed:0.4,
+      thoughts:['Filter feeding','Colony mind','Drift... drift...','Bell contraction']
+    });
+  }
+  build() {
+    const hue = rand(190,240);
+    // Bell
+    this.bellEl = el('ellipse',{cx:0,cy:0,rx:20,ry:14,fill:`hsla(${hue},90%,55%,0.4)`,filter:'url(#glow5)'});
+    const inner = el('ellipse',{cx:0,cy:4,rx:12,ry:7,fill:`hsla(${hue},100%,70%,0.3)`});
+    // Oral arms
+    this.arms=[];
+    for(let i=0;i<6;i++) {
+      const a = el('path',{d:`M${(i-2.5)*6},14 Q${(i-2.5)*8+rand(-10,10)},${30+rand(0,20)} ${(i-2.5)*10},${50+rand(0,30)}`,
+        stroke:`hsla(${hue},100%,70%,0.5)`,'stroke-width':1.5,'fill':'none','stroke-linecap':'round'});
+      this.arms.push({el:a,phase:rand(0,Math.PI*2)});
+      this.el.appendChild(a);
+    }
+    [this.bellEl,inner].forEach(e=>this.el.appendChild(e));
+    // Biolume spots on bell
+    for(let i=0;i<8;i++) {
+      const sp = el('circle',{cx:rand(-16,16),cy:rand(-10,8),r:rand(1,3),
+        fill:`hsl(${hue},100%,85%)`,filter:'url(#glow5)',opacity:0.6});
+      this.el.appendChild(sp);
+    }
+  }
+  update() {
+    // Pulse
+    const pulse = 1+Math.sin(this.phase*0.8)*0.12;
+    this.bellEl.setAttribute('rx',20*pulse);
+    this.bellEl.setAttribute('ry',14/pulse);
+    // Arm sway
+    this.arms.forEach((a,i)=>{
+      a.phase+=0.03;
+      const s=Math.sin(a.phase)*12;
+      a.el.setAttribute('d',`M${(i-2.5)*6},14 Q${(i-2.5)*8+s},${35} ${(i-2.5)*10+s*0.5},${60}`);
+    });
+    this.wander(0,W,H*0.02,floorY-60);
+  }
+}
+
+// ── GOLDMANTIS ────────────────────────────────────────────────────────────
+class Goldmantis extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:floorY-rand(20,40),type:'goldmantis',label:'Goldmantis',
+      color:'#ffdd00',speed:2.5,
+      thoughts:['Strike!','Camouflage active','Waiting... waiting...','PREY detected']
+    });
+  }
+  build() {
+    const body = el('ellipse',{cx:0,cy:0,rx:16,ry:7,fill:'#aa8800'});
+    const thorax = el('ellipse',{cx:12,cy:-2,rx:8,ry:5,fill:'#ccaa00',filter:'url(#glow2)'});
+    const head = el('circle',{cx:20,cy:-4,r:6,fill:'#ffdd00',filter:'url(#glow5)'});
+    const eye1 = el('circle',{cx:23,cy:-6,r:3,fill:'#ff8800'});
+    const ep = el('circle',{cx:24,cy:-6,r:1.5,fill:'#000'});
+    // Mantis claws
+    this.claw1 = el('path',{d:'M16,-8 Q22,-18 28,-10',stroke:'#ffcc00','stroke-width':3,'fill':'none','stroke-linecap':'round',filter:'url(#glow2)'});
+    this.claw2 = el('path',{d:'M16,-6 Q26,-2 24,6',stroke:'#ffcc00','stroke-width':2.5,'fill':'none','stroke-linecap':'round'});
+    // Tail fan
+    const fan = el('polygon',{points:'-16,0 -22,-10 -28,0 -22,10',fill:'rgba(255,200,0,0.5)'});
+    // Legs
+    for(let i=0;i<6;i++) {
+      const ly = -3+i*2, side = i<3?-1:1;
+      const leg = el('line',{x1:i*4-8,y1:ly,x2:i*5-12+side*14,y2:ly+side*8,stroke:'#886600','stroke-width':2,'stroke-linecap':'round'});
+      this.el.appendChild(leg);
+    }
+    [body,thorax,head,eye1,ep,fan,this.claw1,this.claw2].forEach(e=>this.el.appendChild(e));
+  }
+  update() {
+    // Claw attack animation
+    const clawAngle = Math.sin(this.phase*2)*0.2;
+    this.claw1.setAttribute('d',`M16,-8 Q${22+clawAngle*10},-${18+Math.abs(Math.sin(this.phase*2))*5} 28,-10`);
+    this.wander(0,W,floorY-60,floorY-10);
+    const scaleX = this.vx < -0.05 ? -1 : 1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick() { this.age++; this.phase+=0.05; this.update(); }
+}
+
+// ── VOIDRAY ───────────────────────────────────────────────────────────────
+class Voidray extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.15,floorY-50),type:'voidray',label:'Voidray',
+      color:'#aa44ff',speed:1.2,
+      thoughts:['Gliding on magnetic currents','Perfect spiral','Hunting from below','Electrosense active']
+    });
+  }
+  build() {
+    // Manta-like body
+    this.wingL = el('path',{d:'M0,0 Q-30,-15 -55,10 Q-30,20 0,8',fill:'rgba(120,40,200,0.75)',filter:'url(#glow5)'});
+    this.wingR = el('path',{d:'M0,0 Q30,-15 55,10 Q30,20 0,8',fill:'rgba(120,40,200,0.75)',filter:'url(#glow5)'});
+    const body = el('ellipse',{cx:0,cy:4,rx:12,ry:8,fill:'#7722cc',filter:'url(#glow2)'});
+    const head = el('circle',{cx:0,cy:-5,r:7,fill:'#9933ee'});
+    // Eyes
+    const e1=el('circle',{cx:-4,cy:-6,r:2.5,fill:'#ddaaff',filter:'url(#glow2)'}),
+          e2=el('circle',{cx:4,cy:-6,r:2.5,fill:'#ddaaff',filter:'url(#glow2)'}),
+          ep1=el('circle',{cx:-4,cy:-6,r:1.2,fill:'#000'}),
+          ep2=el('circle',{cx:4,cy:-6,r:1.2,fill:'#000'});
+    // Tail
+    const tail = el('line',{x1:0,y1:12,x2:rand(-5,5),y2:50,stroke:'rgba(150,60,255,0.6)','stroke-width':2,'stroke-linecap':'round'});
+    // Electro pattern
+    for(let i=0;i<6;i++) {
+      const sp=el('circle',{cx:rand(-40,40),cy:rand(-5,15),r:rand(1,3),fill:'#cc88ff',filter:'url(#glow2)',opacity:0.5});
+      this.el.appendChild(sp);
+    }
+    [this.wingL,this.wingR,body,head,e1,e2,ep1,ep2,tail].forEach(e=>this.el.appendChild(e));
+  }
+  update() {
+    // Wing flap
+    const flap = Math.sin(this.phase)*8;
+    this.wingL.setAttribute('d',`M0,0 Q-30,${-15+flap} -55,${10+flap*0.5} Q-30,20 0,8`);
+    this.wingR.setAttribute('d',`M0,0 Q30,${-15+flap} 55,${10+flap*0.5} Q30,20 0,8`);
+    this.wander(0,W,H*0.1,floorY-40);
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) rotate(${this.vy*20})`);
+    return;
+  }
+  tick() { this.age++; this.phase+=0.04; this.update(); }
+}
+
+// ── SEAGHOST ──────────────────────────────────────────────────────────────
+class Seaghost extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.05,floorY-30),type:'seaghost',label:'Seaghost',
+      color:'#00ff88',speed:0.6,
+      thoughts:['Phase shifting','Quantum tunneling fins','Invisible to sonar','Haunt the thermocline']
+    });
+    this.opacity = rand(0.2,0.7);
+  }
+  build() {
+    const body = el('ellipse',{cx:0,cy:0,rx:15,ry:8,fill:'rgba(0,255,136,0.4)',filter:'url(#glow10)'});
+    const inner = el('ellipse',{cx:0,cy:0,rx:8,ry:4,fill:'rgba(0,255,180,0.6)',filter:'url(#glow5)'});
+    const eye = el('circle',{cx:10,cy:-2,r:4,fill:'rgba(200,255,220,0.8)',filter:'url(#glow5)'});
+    const ep = el('circle',{cx:11,cy:-2,r:2,fill:'#005533'});
+    // Ghostly fins
+    for(let i=0;i<3;i++) {
+      const fin = el('ellipse',{cx:rand(-10,10),cy:rand(-12,-6),rx:rand(4,8),ry:rand(2,4),
+        fill:'rgba(0,255,150,0.2)',filter:'url(#glow5)'});
+      this.el.appendChild(fin);
+    }
+    [body,inner,eye,ep].forEach(e=>this.el.appendChild(e));
+    this.bodyEl=body;
+  }
+  update() {
+    // Phase in/out
+    const osc = 0.3+Math.abs(Math.sin(this.phase*0.3))*0.5;
+    this.el.setAttribute('opacity',osc);
+    this.wander(0,W,H*0.02,floorY-30);
+    if(Math.random()<0.001) {
+      // Teleport
+      this.x=rand(0,W); this.y=rand(H*0.05,floorY-30);
+    }
+  }
+}
+
+// ── CRYSTALMEDUSA ─────────────────────────────────────────────────────────
+class Crystalmedusa extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.1,floorY-40),type:'crystalmedusa',label:'Crystalmedusa',
+      color:'#ffffff',speed:0.3,
+      thoughts:['Crystal lattice growing','Refracting light','Mineral absorption','Slow... perfect...']
+    });
+  }
+  build() {
+    // Octahedral crystal body
+    const pts = [];
+    for(let i=0;i<8;i++) {
+      const a = (i/8)*Math.PI*2;
+      pts.push(`${Math.cos(a)*18},${Math.sin(a)*12}`);
+    }
+    const body = el('polygon',{points:pts.join(' '),fill:'rgba(200,230,255,0.25)',stroke:'rgba(180,220,255,0.6)','stroke-width':1,filter:'url(#glow5)'});
+    // Crystal facets
+    for(let i=0;i<6;i++) {
+      const a = (i/6)*Math.PI*2;
+      const facet = el('line',{x1:0,y1:0,x2:Math.cos(a)*18,y2:Math.sin(a)*12,
+        stroke:'rgba(200,240,255,0.3)','stroke-width':1});
+      this.el.appendChild(facet);
+    }
+    // Core
+    const core = el('circle',{cx:0,cy:0,r:5,fill:'rgba(255,255,255,0.8)',filter:'url(#glow10)'});
+    // Crystal tentacles
+    this.xtals=[];
+    for(let i=0;i<10;i++) {
+      const a = (i/10)*Math.PI*2;
+      const xt = el('line',{x1:Math.cos(a)*18,y1:Math.sin(a)*12,
+        x2:Math.cos(a)*36,y2:Math.sin(a)*24,
+        stroke:'rgba(180,220,255,0.4)','stroke-width':1,'stroke-linecap':'round'});
+      this.xtals.push({el:xt,a});
+      this.el.appendChild(xt);
+    }
+    [body,core].forEach(e=>this.el.appendChild(e));
+    this.bodyEl=body;
+  }
+  update() {
+    // Slowly rotate and pulse
+    const scale = 1+Math.sin(this.phase*0.3)*0.08;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) rotate(${this.phase*5}) scale(${scale})`);
+    // Sparkle
+    if(Math.random()<0.05) {
+      const sp=el('circle',{cx:this.x+rand(-25,25),cy:this.y+rand(-15,15),r:rand(1,3),
+        fill:'white',filter:'url(#glow5)',opacity:0.8});
+      L.particles.appendChild(sp);
+      setTimeout(()=>sp.remove(),300);
+    }
+    this.wander(0,W,H*0.1,floorY-40);
+    return; // override transform above
+  }
+  tick() { this.age++; this.phase+=0.02; this.update(); }
+}
+
+// ── SANGUINEEL ────────────────────────────────────────────────────────────
+class Sanguineel extends Creature {
+  constructor() {
+    super({x:rand(0,W),y:rand(H*0.2,floorY-20),type:'sanguineel',label:'Sanguineel',
+      color:'#ff4488',speed:3,
+      thoughts:['Electric discharge ready','Coiling strike','Hunt by blood-sense','Pack signal sent']
+    });
+    this.bodyPts = [];
+    for(let i=0;i<12;i++) this.bodyPts.push({x:0,y:0,phase:rand(0,Math.PI*2)});
+  }
+  build() {
+    this.segments=[];
+    for(let i=0;i<12;i++) {
+      const s=el('ellipse',{cx:0,cy:0,rx:6-i*0.3,ry:4-i*0.2,
+        fill:`hsl(${340-i*5},100%,${60-i*2}%)`,filter:i<3?'url(#glow5)':'none'});
+      this.segments.push(s);
+      this.el.appendChild(s);
+    }
+    const head = el('ellipse',{cx:0,cy:0,rx:8,ry:6,fill:'#ff2266',filter:'url(#glow10)'});
+    const eye = el('circle',{cx:6,cy:-2,r:2.5,fill:'#ffddee',filter:'url(#glow2)'});
+    this.el.appendChild(head); this.el.appendChild(eye);
+  }
+  update() {
+    // Sinusoidal body
+    this.segments.forEach((s,i)=>{
+      const t = this.phase - i*0.4;
+      s.setAttribute('cx',Math.sin(t)*12*i*0.15);
+      s.setAttribute('cy',i*7+Math.cos(t)*5*i*0.1);
+    });
+    // Emit electric spark
+    if(Math.random()<0.02) {
+      const zap=el('line',{x1:this.x,y1:this.y,x2:this.x+rand(-20,20),y2:this.y+rand(-20,20),
+        stroke:'rgba(255,100,180,0.8)','stroke-width':1.5});
+      L.particles.appendChild(zap);
+      setTimeout(()=>zap.remove(),100);
+    }
+    this.wander(0,W,H*0.05,floorY-20);
+    const scaleX = this.vx<-0.05?-1:1;
+    this.el.setAttribute('transform',`translate(${this.x},${this.y}) scale(${scaleX},1)`);
+    return;
+  }
+  tick() { this.age++; this.phase+=0.08; this.update(); }
+}
+
+// ── THERMOVORE ────────────────────────────────────────────────────────────
+class Thermovore extends Creature {
+  constructor() {
+    const vp = ventPositions[randInt(0,ventPositions.length-1)];
+    super({x:vp?vp.x+rand(-40,40):rand(0,W), y:floorY-rand(20,50),
+      type:'thermovore',label:'Thermovore',color:'#ff6600',speed:0.6,
+      thoughts:['Absorbing heat energy','Vent proximity +2°','Thermal glands full','Basking in magma plume']
+    });
+    this.ventX = vp?vp.x:W/2;
+    this.ventY = vp?vp.y:floorY;
+  }
+  build() {
+    const shell = el('ellipse',{cx:0,cy:0,rx:16,ry:10,fill:'#551100',filter:'url(#glow2)'});
+    const core = el('ellipse',{cx:0,cy:0,rx:10,ry:6,fill:'#ff4400',filter:'url(#glow10)'});
+    // Heat spines
+    for(let i=0;i<8;i++) {
+      const a = (i/8)*Math.PI*2;
+      const spine = el('line',{x1:Math.cos(a)*10,y1:Math.sin(a)*6,
+        x2:Math.cos(a)*22,y2:Math.sin(a)*14,
+        stroke:`hsl(${rand(10,40)},100%,60%)`,'stroke-width':2,'stroke-linecap':'round',filter:'url(#glow2)'});
+      this.el.appendChild(spine);
+    }
+    const eye1=el('circle',{cx:-5,cy:-3,r:2.5,fill:'#ffaa00',filter:'url(#glow5)'}),
+          eye2=el('circle',{cx:5,cy:-3,r:2.5,fill:'#ffaa00',filter:'url(#glow5)'});
+    [shell,core,eye1,eye2].forEach(e=>this.el.appendChild(e));
+  }
+  update() {
+    // Move toward vent
+    const dx = this.ventX-this.x, dy = (floorY-20)-this.y;
+    if(Math.abs(dx)>60 || Math.abs(dy)>30) {
+      this.vx += dx*0.001; this.vy += dy*0.001;
+    }
+    // Emit heat shimmer
+    if(Math.random()<0.04) {
+      const h=el('circle',{cx:this.x,cy:this.y,r:rand(3,10),fill:'rgba(255,80,0,0.1)',filter:'url(#glow10)'});
+      L.particles.appendChild(h);
+      let r=3; const ai=setInterval(()=>{r+=2;h.setAttribute('r',r);h.setAttribute('opacity',0.1-r/200);if(r>60){clearInterval(ai);h.remove();}},20);
+    }
+    this.vx=clamp(this.vx,-this.speed,this.speed);
+    this.vy=clamp(this.vy,-this.speed,this.speed);
+    this.x+=this.vx; this.y+=this.vy;
+    this.x=clamp(this.x,0,W); this.y=clamp(this.y,floorY-80,floorY-5);
+    this.vx*=0.92; this.vy*=0.92;
+  }
+}
+
+// ── POPULATE ──────────────────────────────────────────────────────────────
+const creatures = [];
+for(let i=0;i<6;i++) creatures.push(new Neurathid());
+for(let i=0;i<2;i++) creatures.push(new Leviathan());
+for(let i=0;i<10;i++) creatures.push(new Driftsiphon());
+for(let i=0;i<6;i++) creatures.push(new Goldmantis());
+for(let i=0;i<8;i++) creatures.push(new Voidray());
+for(let i=0;i<6;i++) creatures.push(new Seaghost());
+for(let i=0;i<5;i++) creatures.push(new Crystalmedusa());
+for(let i=0;i<8;i++) creatures.push(new Sanguineel());
+for(let i=0;i<6;i++) creatures.push(new Thermovore());
+
+// Move sapient to top layer
+creatures.filter(c=>c.type==='neurathid').forEach(c=>{
+  L.sapient.appendChild(c.el);
+});
+
+// ── VENT PARTICLE SYSTEM ──────────────────────────────────────────────────
+const ventParticles = [];
+function spawnVentPuff(vx,vy) {
+  const p=el('circle',{cx:vx,cy:vy,r:rand(2,8),
+    fill:`hsla(${rand(10,40)},100%,${rand(50,80)}%,0.4)`,filter:'url(#glow5)'});
+  L.particles.appendChild(p);
+  ventParticles.push({el:p,x:vx,y:vy,vy:rand(-1,-3),vx:rand(-0.5,0.5),life:80,r:parseFloat(p.getAttribute('r'))});
+}
+
+// ── SONAR PULSE (click) ────────────────────────────────────────────────────
+svg.addEventListener('click',e=>{
+  const rect=svg.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  // Multi-ring sonar
+  for(let i=0;i<3;i++) {
+    setTimeout(()=>{
+      const ring=el('circle',{cx:x,cy:y,r:5,fill:'none',stroke:`rgba(0,255,204,${0.6-i*0.15})`,'stroke-width':2,filter:'url(#glow5)'});
+      L.particles.appendChild(ring);
+      let r=5;
+      const ai=setInterval(()=>{
+        r+=5; ring.setAttribute('r',r);
+        ring.setAttribute('opacity',(1-r/300)*0.6);
+        if(r>=300){clearInterval(ai);ring.remove();}
+      },16);
+    },i*120);
+  }
+  // Scatter nearby plankton
+  plankton.forEach(p=>{
+    const dx=p.x-x,dy=p.y-y,d=Math.hypot(dx,dy);
+    if (d < 120 && d > 0.001) {
+      p.vx += (dx / d) * 2;
+      p.vy += (dy / d) * 2;
+    }
+  });
+});
+
+// ── EVENT SYSTEM ──────────────────────────────────────────────────────────
+const events=['Calm','Thermal Surge','Biolume Storm','Deep Current','Pressure Wave'];
+let activeEvent=null;
+const eventEls=[];
+
+function triggerEvent(ev) {
+  event = ev;
+  eventEls.forEach(e=>e.remove()); eventEls.length=0;
+  if(ev==='Biolume Storm') {
+    for(let i=0;i<30;i++) {
+      const b=el('circle',{cx:rand(0,W),cy:rand(0,floorY),r:rand(3,12),
+        fill:`hsl(${rand(160,240)},100%,70%)`,filter:'url(#glow10)',opacity:rand(0.3,0.8)});
+      L.particles.appendChild(b);
+      eventEls.push(b);
+      let lf=200;
+      const ai=setInterval(()=>{
+        lf--;
+        b.setAttribute('cx',parseFloat(b.getAttribute('cx'))+rand(-1,1));
+        b.setAttribute('opacity',lf/200*0.8);
+        if(lf<=0){clearInterval(ai);b.remove();}
+      },30);
+    }
+  }
+  if(ev==='Pressure Wave') {
+    const wave=el('ellipse',{cx:W/2,cy:H/2,rx:10,ry:6,fill:'none',stroke:'rgba(68,170,255,0.5)','stroke-width':3,filter:'url(#glow10)'});
+    L.particles.appendChild(wave);
+    eventEls.push(wave);
+    let r=10;
+    const ai=setInterval(()=>{r+=8;wave.setAttribute('rx',r);wave.setAttribute('ry',r*0.6);wave.setAttribute('opacity',1-r/600);if(r>=600){clearInterval(ai);wave.remove();}},16);
+  }
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────────────
+function animate() {
+  frame++;
+  tideCycle = Math.floor(frame/60);
+  tidePhase = (frame%500)/500;
+
+  // BG particles drift
+  bgParticles.forEach(p=>{
+    p.phase+=0.02;
+    p.y+=p.vy+Math.sin(p.phase)*0.02;
+    if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    p.el.setAttribute('cy',p.y);
+    p.el.setAttribute('opacity',0.1+Math.abs(Math.sin(p.phase))*0.4);
+  });
+
+  // Plankton
+  plankton.forEach(p=>{
+    p.phase+=0.02;
+    p.vx+=rand(-0.05,0.05); p.vy+=rand(-0.02,0.02);
+    p.vx=clamp(p.vx,-0.5,0.5); p.vy=clamp(p.vy,-0.3,0.3);
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+    if(p.y<0)p.y=floorY; if(p.y>floorY)p.y=0;
+    p.el.setAttribute('cx',p.x); p.el.setAttribute('cy',p.y);
+    p.el.setAttribute('opacity',0.15+Math.abs(Math.sin(p.phase))*0.45);
+  });
+
+  // Flora animation
+  floraEls.forEach(f=>{
+    f.phase+=0.02;
+    const sway=Math.sin(f.phase+tidePhase*Math.PI*2)*3;
+    if(f.type==='ghostbloom') {
+      f.el.setAttribute('transform',`translate(0,${Math.sin(f.phase)*4})`);
+    }
+    if(f.type==='ventworm'&&f.crownEl) {
+      f.crownEl.setAttribute('opacity',0.6+Math.sin(f.phase*2)*0.3);
+    }
+    if(f.type==='echospine'&&f.spineEl) {
+      f.spineEl.setAttribute('transform',`rotate(${sway},${f.x},${f.y})`);
+    }
+    if(f.type==='rootfang'&&f.lureEl) {
+      f.lureEl.setAttribute('opacity',0.4+Math.abs(Math.sin(f.phase))*0.6);
+    }
+  });
+
+  // Thermal vent particles
+  if(frame%8===0) {
+    ventPositions.forEach(v=>{
+      if(Math.random()<0.5) spawnVentPuff(v.x+rand(-5,5),v.y);
+    });
+  }
+  for(let i=ventParticles.length-1;i>=0;i--) {
+    const p=ventParticles[i];
+    p.life--; p.x+=p.vx; p.y+=p.vy; p.vy*=0.99;
+    p.el.setAttribute('cx',p.x); p.el.setAttribute('cy',p.y);
+    p.el.setAttribute('r',p.r*(p.life/80));
+    p.el.setAttribute('opacity',(p.life/80)*0.4);
+    if(p.life<=0){p.el.remove();ventParticles.splice(i,1);}
+  }
+
+  // Creatures
+  creatures.forEach(c=>c.tick());
+
+  // Events
+  eventTimer++;
+  if(eventTimer > 400) {
+    eventTimer=0;
+    triggerEvent(events[randInt(0,events.length-1)]);
+  }
+
+  // Ambient light shift with tide
+  const brightness = 0.08+Math.sin(tidePhase*Math.PI*2)*0.04;
+  document.querySelector('#og0')?.setAttribute('stop-color',`rgba(0,${Math.floor(brightness*1000)},${Math.floor(brightness*2000)},1)`);
+
+  // HUD
+  const depthLabel = Math.floor(500+tidePhase*200);
+  document.getElementById('h-depth').textContent=`Depth: ${depthLabel}m`;
+  document.getElementById('h-pressure').textContent=`Pressure: ${(depthLabel*0.1).toFixed(1)} atm`;
+  document.getElementById('h-pop').textContent=`Entities: ${creatures.length}`;
+  document.getElementById('h-event').textContent=`Event: ${event}`;
+  document.getElementById('h-cycle').textContent=`Tide Cycle: ${tideCycle}`;
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,1166 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Sea of Ducks — styles.css
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --sky-dawn-1:  #ffeaa7;
+    --sky-dawn-2:  #fab1a0;
+    --sky-dawn-3:  #fd79a8;
+    --sky-night-1: #0f2027;
+    --sky-night-2: #203a43;
+    --sky-night-3: #2c5364;
+
+    --ocean-deep:  #0a2463;
+    --ocean-mid:   #1e5a8e;
+    --ocean-light: #3e8ed0;
+    --ocean-teal:  #4ecdc4;
+
+    /* shallow water palette */
+    --shallow-1:   rgba(78, 205, 196, 0.55);
+    --shallow-2:   rgba(62, 142, 208, 0.65);
+    --shallow-3:   rgba(30,  90, 142, 0.75);
+    --shallow-4:   rgba(10,  36,  99, 0.85);
+
+    --wave-foam:   rgba(255, 255, 255, 0.70);
+    --wave-foam-2: rgba(212, 241, 244, 0.55);
+
+    --duck-yellow: #ffd43b;
+
+    /* ── Zone proportions: sky 20% / shallow 60% / deep 20% ── */
+    --sky-h:      20dvh;
+    --shallow-h:  60dvh;
+    --deep-h:     20dvh;
+    --waterline:  var(--sky-h);
+    --deep-start: calc(var(--sky-h) + var(--shallow-h)); /* 80dvh */
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    /* Sky fills the whole viewport but the gradient fades out at 20dvh */
+    background: linear-gradient(180deg,
+        var(--sky-dawn-1)  0%,
+        var(--sky-dawn-2)  50%,
+        var(--sky-dawn-3) 100%);
+    background-size: 100% var(--sky-h);
+    background-repeat: no-repeat;
+    background-color: var(--sky-dawn-3); /* fallback below sky */
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    position: relative;
+    touch-action: none;
+    transition: background-image 2s ease, background-color 2s ease;
+}
+
+body.night {
+    background-image: linear-gradient(180deg,
+        var(--sky-night-1)  0%,
+        var(--sky-night-2)  50%,
+        var(--sky-night-3) 100%);
+    background-color: var(--sky-night-3);
+}
+
+
+/* ── Stars ─────────────────────────────────────────────────────────────────── */
+#stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--sky-h);   /* stars only live in the top 20% sky zone */
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 2s ease;
+}
+
+body.night #stars { opacity: 1; }
+
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50%       { opacity: 1;   }
+}
+
+
+/* ── Game Container ────────────────────────────────────────────────────────── */
+#game-container {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    overflow: hidden;
+    will-change: transform;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHALLOW WATER + LAYERED WAVES
+   Sits fixed at the bottom, above the coral reef but below game entities.
+   Stack (bottom → top):
+     .shallow-gradient  – sandy/teal colour wash
+     .wave-layer--back  – slowest, most transparent
+     .wave-layer--mid   – medium speed
+     .wave-layer--front – fastest, most opaque
+     .wave-layer--foam  – tiny cresting foam caps
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.shallow-water {
+    position: fixed;
+    top: var(--waterline);       /* starts at 20dvh waterline */
+    left: 0;
+    width: 100%;
+    height: var(--shallow-h);    /* exactly 60dvh */
+    z-index: 4;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Gradient wash — transparent at top, denser toward the deep boundary */
+.shallow-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+        rgba(78, 205, 196, 0.0)   0%,
+        rgba(78, 205, 196, 0.10) 15%,
+        rgba(62, 142, 208, 0.20) 40%,
+        rgba(30,  90, 142, 0.35) 70%,
+        rgba(14,  61, 107, 0.55) 100%);
+}
+
+/* ── Shared wave layer rules ─────────────────────────────────────────────── */
+.wave-layer {
+    position: absolute;
+    left: 0;
+    width: 200%;          /* doubled so we can slide it for seamless looping */
+    pointer-events: none;
+    will-change: transform;
+}
+
+/* Back wave — large, slow, most transparent — sits near top of shallow zone */
+.wave-layer--back {
+    bottom: 75%;
+    height: 60px;
+    fill: rgba(62, 142, 208, 0.18);
+    animation: wavePan 14s linear infinite;
+}
+
+/* Mid wave */
+.wave-layer--mid {
+    bottom: 45%;
+    height: 50px;
+    fill: rgba(46, 124, 190, 0.26);
+    animation: wavePan 9s linear infinite reverse;
+}
+
+/* Front wave — nearest, most opaque */
+.wave-layer--front {
+    bottom: 20%;
+    height: 40px;
+    fill: rgba(30, 90, 142, 0.38);
+    animation: wavePan 6s linear infinite;
+}
+
+/* Foam caps — tiny bright crests near the bottom of shallow zone */
+.wave-layer--foam {
+    bottom: 8%;
+    height: 20px;
+    fill: rgba(255, 255, 255, 0.50);
+    animation: wavePan 4.5s linear infinite reverse;
+}
+
+/* The wave SVGs are 200% wide; sliding by 50% = one full period */
+@keyframes wavePan {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Night-mode: darken the shallow water */
+body.night .shallow-gradient {
+    background: linear-gradient(180deg,
+        rgba(10, 20, 50, 0.0)  0%,
+        rgba(10, 20, 50, 0.25) 40%,
+        rgba( 5, 10, 30, 0.55) 100%);
+}
+
+body.night .wave-layer--back  { fill: rgba(20, 50, 90, 0.30); }
+body.night .wave-layer--mid   { fill: rgba(15, 40, 75, 0.40); }
+body.night .wave-layer--front { fill: rgba(10, 30, 60, 0.55); }
+body.night .wave-layer--foam  { fill: rgba(180, 220, 255, 0.25); }
+
+
+/* ── Coral Reef SVG — anchored at the shallow/deep boundary ─────────────────── */
+.svg-coral-reef {
+    position: fixed;
+    top: calc(var(--deep-start) - 80px); /* peek up into the bottom of shallow zone */
+    left: 0;
+    width: 100%;
+    height: calc(var(--deep-h) + 80px);  /* fills the deep zone + overlap */
+    z-index: 2;
+    pointer-events: none;
+    animation: coralSway 6s ease-in-out infinite;
+}
+
+@keyframes coralSway {
+    0%, 100% { transform: rotate(-0.15deg); }
+    50%       { transform: rotate( 0.15deg); }
+}
+
+/* Coral reef fill classes (referenced inside the SVG) */
+.reef-base { fill: #1f3447; }
+.reef-core { fill: #ff6f4e; }
+.reef-l1   { fill: #ff7f5f; }
+.reef-l2   { fill: #ff8f73; }
+.reef-l3   { fill: #ffa58c; }
+.reef-l4   { fill: #ffb8a4; }
+.reef-wide { fill: #ff8364; }
+
+
+/* ── Ocean background — bottom 80% of viewport ─────────────────────────────── */
+/* Split visually: shallow teal top 75%, deep navy bottom 25% (of this element) */
+.ocean {
+    position: fixed;
+    top: var(--waterline);       /* starts right at the 20dvh waterline */
+    left: 0;
+    width: 100%;
+    height: calc(var(--shallow-h) + var(--deep-h)); /* 80dvh */
+    background: linear-gradient(180deg,
+        /* shallow zone — teal/turquoise, top 75% of this element = 60dvh */
+        #4ecdc4  0%,
+        #3e8ed0 25%,
+        #1e6fa8 50%,
+        #1a5a8a 74%,
+        /* transition to deep zone at 75% of element = 80dvh from top */
+        #0e3d6b 75%,
+        #071f45 88%,
+        #040f28 100%);
+    border-top: 3px solid rgba(255, 255, 255, 0.5);
+    transition: background 2s ease;
+    z-index: 1;
+}
+
+body.night .ocean {
+    background: linear-gradient(180deg,
+        #1a4a5a  0%,
+        #0f2d45 25%,
+        #0a1e35 50%,
+        #071628 74%,
+        #04101e 75%,
+        #020a14 88%,
+        #010508 100%);
+    border-top-color: rgba(100, 180, 255, 0.25);
+}
+
+
+/* ── Seagrass ──────────────────────────────────────────────────────────────── */
+.seagrass {
+    position: absolute;
+    z-index: 1;
+    width: 25px;
+    height: 60px;
+    transform-origin: bottom center;
+    will-change: transform;
+}
+
+.seagrass-blade {
+    position: absolute;
+    bottom: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(to top,
+        #1a4d2e  0%,
+        #27613d 40%,
+        #34754c 70%,
+        #41895b 100%);
+    border-radius: 50% 50% 0 0;
+    box-shadow: inset -1px 0 2px rgba(0,0,0,0.3), 1px 0 2px rgba(0,0,0,0.2);
+}
+
+@keyframes seagrassSway {
+    0%, 100% { transform: rotate(-5deg); }
+    50%       { transform: rotate( 5deg); }
+}
+
+
+/* ── Kelp ──────────────────────────────────────────────────────────────────── */
+.kelp {
+    position: absolute;
+    z-index: 2;
+    width: 12px;
+    height: 80px;
+    transform-origin: bottom center;
+    animation: kelpSway 4s ease-in-out infinite;
+    will-change: transform;
+}
+
+.kelp-strand {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top,
+        #2d5016  0%,
+        #3a6b1f 30%,
+        #4a8527 60%,
+        #5a9f2f 100%);
+    border-radius: 50% 50% 0 0;
+    box-shadow: inset -2px 0 4px rgba(0,0,0,0.3), 2px 0 4px rgba(0,0,0,0.2);
+}
+
+.kelp-bulb {
+    position: absolute;
+    width: 8px;
+    height: 12px;
+    background: radial-gradient(ellipse, #6bb042, #4a8527);
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.kelp-bulb:nth-child(2) { top: 20%; }
+.kelp-bulb:nth-child(3) { top: 45%; }
+.kelp-bulb:nth-child(4) { top: 70%; }
+
+@keyframes kelpSway {
+    0%, 100% { transform: rotate(-8deg); }
+    50%       { transform: rotate( 8deg); }
+}
+
+
+/* ── Island ────────────────────────────────────────────────────────────────── */
+.island {
+    position: absolute;
+    z-index: 9;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+.island:hover { transform: scale(1.05); }
+
+.island-sand-base { pointer-events: none; will-change: transform; }
+
+.island-base {
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+    position: relative;
+    z-index: 1;
+}
+
+.island-grass {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.grass-blade-group {
+    position: relative;
+    width: 16px;
+    height: 30px;
+    animation: grassSway 3s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+.grass-blade-group:nth-child(2) { animation-delay: 0.3s; }
+.grass-blade-group:nth-child(3) { animation-delay: 0.6s; }
+.grass-blade-group:nth-child(4) { animation-delay: 0.9s; }
+.grass-blade-group:nth-child(5) { animation-delay: 1.2s; }
+
+.grass-blade {
+    position: absolute;
+    bottom: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(to top,
+        #2d6016  0%,
+        #3a7b1f 30%,
+        #4a9527 60%,
+        #5aaf2f 100%);
+    border-radius: 50% 50% 0 0;
+    box-shadow: inset -1px 0 2px rgba(0,0,0,0.3);
+}
+
+.grass-blade:nth-child(1) { left: 0;   height: 100%; transform: rotate(-5deg); }
+.grass-blade:nth-child(2) { left: 5px; height:  85%; transform: rotate( 2deg); }
+.grass-blade:nth-child(3) { left:10px; height:  95%; transform: rotate(-2deg); }
+
+@keyframes grassSway {
+    0%, 100% { transform: rotate(-8deg); }
+    50%       { transform: rotate( 8deg); }
+}
+
+
+/* ── Algae ─────────────────────────────────────────────────────────────────── */
+.algae {
+    position: absolute;
+    font-size: 24px;
+    z-index: 2;
+    animation: algaeGrow 3s ease-in-out infinite;
+    cursor: pointer;
+    will-change: transform, opacity;
+}
+
+@keyframes algaeGrow {
+    0%, 100% { transform: scale(1);   opacity: 0.8; }
+    50%       { transform: scale(1.1); opacity: 1;   }
+}
+
+
+/* ── Duck ──────────────────────────────────────────────────────────────────── */
+.duck {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    z-index: 10;
+    touch-action: none;
+    will-change: transform;
+}
+
+.duck:hover  { transform: scale(1.1);  }
+.duck:active { transform: scale(1.15); }
+.duck.old    { opacity: 0.7; }
+
+.duck-body {
+    font-size: 48px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    animation: bobFloat 2s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+@keyframes bobFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+}
+
+.duck.swimming  .duck-body { animation: swimFloat  0.8s ease-in-out infinite; }
+.duck.breeding  .duck-body { animation: loveFloat  0.5s ease-in-out infinite; }
+.duck.flying    .duck-body { animation: flyAnim    0.4s ease-in-out infinite; }
+.duck.eating    .duck-body { animation: eatAnim    0.6s ease-in-out;          }
+.duck.meeting   .duck-body { animation: meetAnim   1.0s ease-in-out;          }
+.duck.laying-egg .duck-body{ animation: layEggAnim 2.0s ease-in-out;          }
+
+@keyframes swimFloat {
+    0%, 100% { transform: translateY(0px)  rotate(-3deg); }
+    25%       { transform: translateY(-2px) rotate( 0deg); }
+    50%       { transform: translateY(-4px) rotate( 3deg); }
+    75%       { transform: translateY(-2px) rotate( 0deg); }
+}
+
+@keyframes loveFloat {
+    0%, 100% { transform: translateY(0px)   scale(1);   }
+    50%       { transform: translateY(-12px) scale(1.1); }
+}
+
+@keyframes flyAnim {
+    0%, 100% { transform: translateY(0px)  rotate(-2deg) scaleY(0.95); }
+    50%       { transform: translateY(-6px) rotate( 2deg) scaleY(1.05); }
+}
+
+@keyframes eatAnim {
+    0%, 100% { transform: scale(1)    rotate( 0deg); }
+    25%       { transform: scale(1.15) rotate(-5deg); }
+    50%       { transform: scale(0.95) rotate( 5deg); }
+    75%       { transform: scale(1.1)  rotate(-3deg); }
+}
+
+@keyframes meetAnim {
+    0%, 100% { transform: translateY(0)   scale(1);    }
+    25%       { transform: translateY(-8px) scale(1.05); }
+    50%       { transform: translateY(0)   scale(1);    }
+    75%       { transform: translateY(-5px) scale(1.03); }
+}
+
+@keyframes layEggAnim {
+    0%   { transform: scale(1)    translateY(0);    }
+    20%  { transform: scale(1.1)  translateY(-10px);}
+    40%  { transform: scale(1.05) translateY(-5px); }
+    60%  { transform: scale(1.15) translateY(-8px); }
+    80%  { transform: scale(0.95) translateY(5px);  }
+    100% { transform: scale(1)    translateY(0);    }
+}
+
+/* Ripple */
+.duck-ripple {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 8px;
+    background: radial-gradient(ellipse, rgba(212,241,244,0.6) 0%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.duck.swimming .duck-ripple {
+    animation: ripple 0.8s ease-out infinite;
+    opacity: 1;
+}
+
+@keyframes ripple {
+    0%   { transform: translateX(-50%) scale(0.8); opacity: 0.8; }
+    100% { transform: translateX(-50%) scale(1.5); opacity: 0;   }
+}
+
+/* Thought bubble */
+.duck-thinking {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: normal;
+    text-align: center;
+    max-width: 200px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+}
+
+.duck-thinking.show,
+.duck:hover .duck-thinking { opacity: 1; }
+
+.duck-thinking::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: white;
+    border-bottom: none;
+}
+
+/* Stats panel */
+.duck-stats {
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: white;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 99;
+    min-width: 140px;
+}
+
+.duck:hover .duck-stats { opacity: 1; }
+
+.stat-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 4px 0;
+    overflow: hidden;
+}
+
+.stat-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 2px;
+    will-change: width;
+}
+
+.stat-hunger { background: #ff6b6b; }
+.stat-energy { background: #4ecdc4; }
+.stat-social { background: #ffe66d; }
+
+
+/* ── Fish / Sea Creatures ──────────────────────────────────────────────────── */
+.fish {
+    position: absolute;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    z-index: 3;
+    will-change: transform;
+}
+
+.fish:hover { transform: scale(1.2); }
+
+.sea-creature {
+    position: absolute;
+    font-size: 28px;
+    z-index: 3;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+.sea-creature:hover { transform: scale(1.2); }
+
+.sea-creature.pufferfish { animation: puffFloat 4s ease-in-out infinite; }
+.sea-creature.shell      { animation: shellIdle 6s ease-in-out infinite; }
+.sea-creature.whale      { font-size: 48px; animation: whaleSwim 5s ease-in-out infinite; }
+.sea-creature.dolphin    { animation: dolphinJump 3s ease-in-out infinite; }
+
+@keyframes puffFloat   { 0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)} }
+@keyframes shellIdle   { 0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)} }
+@keyframes whaleSwim   { 0%,100%{transform:translateY(0px)rotate(-2deg)}50%{transform:translateY(-10px)rotate(2deg)} }
+@keyframes dolphinJump { 0%,100%{transform:translateY(0px)rotate(0deg)}25%{transform:translateY(-20px)rotate(-10deg)}75%{transform:translateY(-10px)rotate(10deg)} }
+
+
+/* ── Predator ──────────────────────────────────────────────────────────────── */
+.predator {
+    position: absolute;
+    font-size: 36px;
+    z-index: 11;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+.predator:hover   { transform: scale(1.15); }
+.predator.hunting { animation: predatorStalk 1s ease-in-out infinite; }
+.predator.eating  { animation: predatorEat   0.8s ease-in-out; }
+
+@keyframes predatorStalk {
+    0%,100%{transform:translateY(0px)rotate(-2deg)}50%{transform:translateY(-5px)rotate(2deg)}
+}
+
+@keyframes predatorEat {
+    0%,100%{transform:scale(1)rotate(0deg)}
+    25%{transform:scale(1.2)rotate(-10deg)}
+    50%{transform:scale(0.9)rotate(10deg)}
+    75%{transform:scale(1.15)rotate(-5deg)}
+}
+
+
+/* ── Octopus ───────────────────────────────────────────────────────────────── */
+.octopus {
+    position: absolute;
+    font-size: 36px;
+    cursor: pointer;
+    z-index: 3;
+    animation: octopusFloat 3s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+.octopus:hover { transform: scale(1.2); }
+
+@keyframes octopusFloat {
+    0%,100%{transform:translateY(0px)rotate(-3deg)}
+    50%    {transform:translateY(-10px)rotate(3deg)}
+}
+
+
+/* ── Elixir ────────────────────────────────────────────────────────────────── */
+.elixir {
+    position: absolute;
+    font-size: 32px;
+    cursor: grab;
+    z-index: 9;
+    animation: elixirGlow 2s ease-in-out infinite;
+    will-change: filter;
+}
+
+.elixir:active { cursor: grabbing; }
+
+@keyframes elixirGlow {
+    0%,100%{filter:drop-shadow(0 0 10px #00ffff)}
+    50%    {filter:drop-shadow(0 0 20px #00ffff)}
+}
+
+
+/* ── Food (shrimp) ─────────────────────────────────────────────────────────── */
+.food-item {
+    position: absolute;
+    font-size: 20px;
+    cursor: grab;
+    z-index: 8;
+    will-change: transform;
+    transition: transform 0.1s ease;
+}
+
+.food-item.falling  { animation: shrimpFall 0.8s ease-in forwards; }
+.food-item.swimming { animation: shrimpSwim 2s ease-in-out infinite; }
+.food-item:active   { cursor: grabbing; }
+
+@keyframes shrimpFall {
+    0%  { transform: translateY(0)   rotate(0deg)   scale(1);   opacity: 1; }
+    50% { transform: translateY(20px) rotate(180deg) scale(1.1); }
+    100%{ transform: translateY(40px) rotate(360deg) scale(1);   opacity: 1; }
+}
+
+@keyframes shrimpSwim {
+    0%,100%{transform:translateY(0px)  rotate(0deg)}
+    25%    {transform:translateY(-8px) rotate(-5deg)}
+    50%    {transform:translateY(-4px) rotate(0deg)}
+    75%    {transform:translateY(-8px) rotate(5deg)}
+}
+
+
+/* ── Egg ───────────────────────────────────────────────────────────────────── */
+.egg {
+    position: absolute;
+    font-size: 32px;
+    cursor: pointer;
+    z-index: 9;
+    animation: eggWiggle 2s ease-in-out infinite;
+    will-change: transform;
+}
+
+.egg:hover { transform: scale(1.1); }
+
+@keyframes eggWiggle {
+    0%,100%{transform:rotate(-2deg)}
+    50%    {transform:rotate( 2deg)}
+}
+
+.egg.hatching { animation: eggHatch 0.8s ease-out forwards; }
+
+@keyframes eggHatch {
+    0%  { transform: scale(1)   rotate( 0deg); }
+    25% { transform: scale(1.1) rotate(-5deg); }
+    50% { transform: scale(1.2) rotate( 5deg); }
+    75% { transform: scale(1.1) rotate(-5deg); }
+    100%{ transform: scale(0)   rotate( 0deg); }
+}
+
+
+/* ── Particles ─────────────────────────────────────────────────────────────── */
+.heart-particle,
+.splash-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+    will-change: transform, opacity;
+}
+
+.heart-particle  { animation: floatHeart 1.5s ease-out forwards; }
+.splash-particle { animation: splashFloat 1s ease-out forwards; }
+
+@keyframes floatHeart {
+    0%  { opacity: 1; transform: translateY(0)    scale(0.5); }
+    50% { opacity: 1; transform: translateY(-30px) scale(1);   }
+    100%{ opacity: 0; transform: translateY(-60px) scale(0.5); }
+}
+
+@keyframes splashFloat {
+    0%  { opacity: 1; transform: translateY(0)    scale(1)   rotate(0deg);   }
+    50% { opacity: 0.8; transform: translateY(-20px) scale(1.2) rotate(180deg); }
+    100%{ opacity: 0; transform: translateY(-40px) scale(0.5) rotate(360deg); }
+}
+
+
+/* ── General fade-in ───────────────────────────────────────────────────────── */
+.fade-in { animation: fadeIn 0.5s ease-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   UFO & SAMPLE TUBES
+   ══════════════════════════════════════════════════════════════════════════════ */
+.ufo {
+    position: absolute;
+    z-index: 15;
+    transform: rotate(-15deg); 
+}
+
+.ufo-body {
+    font-size: 80px;
+    filter: drop-shadow(0 0 20px rgba(100, 200, 255, 0.8));
+    animation: ufoFloat 2s ease-in-out infinite;
+}
+
+.ufo.hovering .ufo-body { animation: ufoHover 1.5s ease-in-out infinite; }
+
+@keyframes ufoFloat {
+    0%,100%{transform:translateY(0px)  rotate(-2deg)}
+    50%    {transform:translateY(-10px) rotate( 2deg)}
+}
+
+@keyframes ufoHover {
+    0%,100%{transform:translateY(0px)  scale(1)   }
+    50%    {transform:translateY(-5px) scale(1.05)}
+}
+
+.ufo-beam {
+    width: 120px;               /* beam width at bottom */
+    height: 140px;             /* beam length */
+    margin: 0 auto;
+    background: rgba(100,200,255,0.4);
+    filter: drop-shadow(0 0 10px rgba(100,200,255,0.6));
+    clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%); /* flat top triangle */
+    transition: all 0.4s;
+    animation: pulseBeam 1.5s ease-in-out infinite;
+    transform: rotate(15deg); 
+    transform-origin: top center; 
+}
+
+.ufo.hovering .ufo-beam {
+    opacity: 1;
+    animation: beamPulse 2s ease-in-out infinite;
+}
+
+@keyframes pulseBeam {
+    0%, 100% { background: rgba(100,200,255,0.4); filter: drop-shadow(0 0 10px rgba(100,200,255,0.6)); }
+    50%      { background: rgba(100,200,255,0.8); filter: drop-shadow(0 0 20px rgba(100,200,255,1)); }
+}
+
+@keyframes beamPulse {
+    0%,100%{opacity:0.3}
+    50%    {opacity:0.6}
+}
+
+.sample-tube { position: absolute; z-index: 14; pointer-events: none; }
+
+.tube-string {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 0;
+    background: linear-gradient(180deg, rgba(200,200,200,0.8), rgba(150,150,150,0.6));
+}
+
+.tube-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tube-cap  { font-size: 16px; margin-bottom: -2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+
+.tube-body {
+    width: 20px;
+    height: 60px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(220,220,255,0.8));
+    border: 2px solid rgba(200,200,255,0.6);
+    border-radius: 0 0 8px 8px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        inset 2px 2px 4px rgba(255,255,255,0.5),
+        inset -2px -2px 4px rgba(0,0,0,0.1),
+        0 4px 8px rgba(0,0,0,0.2);
+}
+
+.tube-water {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(180deg, #4ecdc4, #3e8ed0);
+    transition: height 0.3s ease;
+    border-radius: 0 0 6px 6px;
+}
+
+/* Celebration sparkles */
+.celebration-sparkle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 150;
+    animation: sparkleFloat 2s ease-out forwards;
+}
+
+@keyframes sparkleFloat {
+    0%  { opacity: 0; transform: translateY(0)     scale(0)   rotate(  0deg); }
+    20% { opacity: 1; transform: translateY(-20px)  scale(1.5) rotate(180deg); }
+    100%{ opacity: 0; transform: translateY(-100px) scale(0.5) rotate(360deg); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HUD
+   ══════════════════════════════════════════════════════════════════════════════ */
+#hud {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    font-family: 'DM Sans', sans-serif;
+    min-width: 220px;
+    max-width: 320px;
+    backdrop-filter: blur(12px);
+    z-index: 1000;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+}
+
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: #0a2463;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.hud-time { font-size: 11px; font-weight: 500; opacity: 0.75; }
+
+.hud-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: #0a2463;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.hud-toggle-btn:hover { background: rgba(0,0,0,0.07); }
+
+.hud-body { padding: 10px 14px 14px; }
+
+/* Counters */
+.hud-counters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.hud-counter {
+    background: rgba(10, 36, 99, 0.07);
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1e5a8e;
+}
+
+/* Bar rows */
+.hud-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #2d3436;
+}
+
+.hud-bar-label { flex-shrink: 0; width: 110px; }
+
+.hud-bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.hud-bar-value { flex-shrink: 0; width: 28px; text-align: right; }
+
+.pollution-fill, .biodiversity-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease, background 0.5s ease;
+    will-change: width;
+}
+
+.pollution-low    { background: #51cf66; }
+.pollution-medium { background: #ffd43b; }
+.pollution-high   { background: #ff6b6b; }
+
+.biodiversity-low    { background: #ff6b6b; }
+.biodiversity-medium { background: #ffd43b; }
+.biodiversity-high   { background: #51cf66; }
+
+/* Controls */
+.hud-controls { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+.control-group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+.control-group-label {
+    width: 100%;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.hud-controls button {
+    background: white;
+    border: 2px solid #0a2463;
+    border-radius: 50px;
+    padding: 5px 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0a2463;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.hud-controls button:hover {
+    background: var(--duck-yellow);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.hud-controls button:active { transform: translateY(0); }
+
+/* Perf row */
+.hud-perf {
+    margin-top: 10px;
+    font-size: 10px;
+    color: #aaa;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding-top: 8px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   EVENT LOG
+   ══════════════════════════════════════════════════════════════════════════════ */
+#ecosystem-log {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 16px;
+    max-width: 280px;
+    max-height: 300px;
+    color: white;
+    font-size: 12px;
+    line-height: 1.6;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+}
+
+#log-content {
+    padding: 8px 14px 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#log-content::-webkit-scrollbar       { width: 4px; }
+#log-content::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 2px; }
+#log-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2);  border-radius: 2px; }
+
+.log-entry {
+    margin: 6px 0;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    border-left: 3px solid var(--duck-yellow);
+    font-size: 11px;
+}
+
+.log-time {
+    color: rgba(212,241,244,0.7);
+    font-size: 9px;
+    margin-bottom: 2px;
+}
+
+
+/* ── Click Hint ────────────────────────────────────────────────────────────── */
+#click-hint {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.55);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 50px;
+    pointer-events: none;
+    z-index: 1000;
+    backdrop-filter: blur(6px);
+    opacity: 0.8;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    #hud          { min-width: 180px; max-width: 240px; }
+    .hud-header   { padding: 10px 12px; font-size: 13px; }
+    .duck-body    { font-size: 40px; }
+    .predator     { font-size: 30px; }
+    .ufo-body     { font-size: 60px; }
+    .shallow-water{ height: 120px; }
+
+    .ufo-beam {
+        border-left:  70px solid transparent;
+        border-right: 70px solid transparent;
+        border-top:   100px solid rgba(100, 200, 255, 0.3);
+    }
+
+    .tube-body { width: 16px; height: 50px; }
+
+    .grass-blade-group { width: 12px; height: 20px; }
+    .grass-blade       { width: 4px;  }
+    .grass-blade:nth-child(2) { left: 4px; }
+    .grass-blade:nth-child(3) { left: 8px; }
+}
+
+
+
+
+@keyframes pulseBeam {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(100,200,255,0.6)); }
+    50%      { filter: drop-shadow(0 0 20px rgba(100,200,255,1)); }
+}
