@@ -1,6 +1,6 @@
 # 🌊 Sea of Ducks
 
-> *A living ecosystem engine — from Earth's oceans to the alien waters of Quorra-7.*
+> *A living ecosystem engine — from Earth's oceans to the alien waters of various planets.*
 
 ---
 
@@ -128,11 +128,11 @@ Then open `http://localhost:8080` in any modern browser.
 ---
 
 ## 🔭 Roadmap
-
+- [ ] **Genome** — add Genome to for evolution and emergence behaviors (symbosis, stealth, etc)
+- [ ] **Evolution system** — traits drift across generations
 - [ ] **Planet select screen** — choose your biome before the simulation starts
 - [ ] **Alien native species** — organisms that evolved in the alien ocean
 - [ ] **Cross-contamination events** — Earth samples mutate in alien water
-- [ ] **Evolution system** — traits drift across generations
 - [ ] **Neural AI system** — plug in a behaviour tree or small net per species
 - [ ] **Headless simulation mode** — run 10,000 ticks in the background, replay the results
 - [ ] **Multiplayer world state** — server runs the engine, clients run RenderSystem only
