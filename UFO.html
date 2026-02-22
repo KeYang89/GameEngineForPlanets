@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UFO Journey — From Galaxy to Planet (5 Phases)</title>
+<title>UFO Journey — From Galaxy to Mother Planet (5 Phases)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
@@ -291,6 +291,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:#000; }
 <div id="nav">
   <button class="nav-btn" onclick="prevPhase()">◀ PREV</button>
   <button class="nav-btn" onclick="nextPhase()">NEXT ▶</button>
+  <button class="nav-btn" onclick="window.open('UFO-interior.html', '_blank');">Back to UFO</button>
+  <button class="nav-btn">Explore Universe</button>
 </div>
 
 <script>
@@ -1767,6 +1769,92 @@ initPhase1();
 setTimeout(()=>{
   if(currentPhase===1) showTransmission('ENGAGE WARP — PRESS NEXT TO CONTINUE', 2000);
 },4000);
+
+// Sample planets
+
+const fileNames = [
+  "Abyssia.html","Aethon.html","Orveth.html","Solara.html","twin-planets.html",
+  "Vel.html","Vespera.html","Voidthrax.html","Voidthrax-underwater.html",
+  "Xyrath.html","Yxara.html"
+];
+
+function showRandomPlanetModal() {
+    // Randomly pick a planet HTML file
+    const randomFile = fileNames[Math.floor(Math.random() * fileNames.length)];
+
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.id = 'planet-modal';
+    modal.style.cssText = `
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,0.8);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:2000;
+        cursor: pointer;
+    `;
+
+    // Create inner modal content
+    const content = document.createElement('iframe');
+    content.src = `planets/${randomFile}`;
+    content.style.cssText = `
+        width:80vw;
+        height:80vh;
+        border:2px solid var(--holo);
+        border-radius:12px;
+        box-shadow:0 0 24px rgba(0,255,204,0.5);
+        background:#000;
+        pointer-events:auto;
+        cursor: default;
+    `;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    // Click outside content closes modal
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+const exploreBtn = Array.from(document.querySelectorAll('.nav-btn'))
+    .find(btn => btn.textContent.trim() === 'Explore Universe');
+
+if (exploreBtn) {
+    exploreBtn.addEventListener('click', () => {
+        const phase1 = document.querySelector('#p1');
+        const phase2 = document.querySelector('#p2');
+
+        if (!phase1 || !phase2) return;
+
+        // Fade out Phase 1 cockpit
+        phase1.animate([{opacity:1},{opacity:0}], {duration:800, fill:'forwards'})
+             .onfinish = () => {
+                 phase1.classList.remove('active');
+
+                 // Activate Phase 2 (Galaxy Warp)
+                 phase2.classList.add('active');
+                 phase2.style.opacity = 0;
+                 phase2.animate([{opacity:0},{opacity:1}], {duration:1200, fill:'forwards'});
+
+                 // Optional: Warp effect on stars if any
+                 const stars = phase2.querySelectorAll('.warp-star');
+                 stars.forEach((star, i) => {
+                     star.animate([
+                         {transform:'translateX(0) scaleX(1)', opacity:0.9},
+                         {transform:`translateX(${150 + i*20}vw) scaleX(8)`, opacity:0}
+                     ], {duration:1500, easing:'ease-out', fill:'forwards'});
+                 });
+
+                 // Show a random planet modal shortly after warp
+                 setTimeout(showRandomPlanetModal, 1200);
+             };
+    });
+}
 </script>
 </body>
 </html>

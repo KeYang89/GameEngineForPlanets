@@ -98,6 +98,42 @@ function drawYxara() {
   ctx.fillStyle = disk; ctx.fill();
 }
 
+// -- Click interaction for Yxara --
+canvas.addEventListener('click', (e) => {
+  // Get the click coordinates relative to the canvas
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  // Calculate the current position of Yxara (matching the drawYxara function)
+  const vx = W * 0.15;
+  const vy = H * 0.1;
+  const vr = 30;
+
+  // Check if click is within the radius of the planet
+  const dist = Math.sqrt((mouseX - vx) ** 2 + (mouseY - vy) ** 2);
+
+  if (dist < vr) {
+    window.location.href = 'Yxara.html';
+  }
+});
+
+// -- Visual feedback: change cursor to pointer when hovering over Yxara --
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  
+  const vx = W * 0.15;
+  const vy = H * 0.1;
+  const vr = 30;
+
+  const dist = Math.sqrt((mouseX - vx) ** 2 + (mouseY - vy) ** 2);
+  
+  // Update cursor style
+  canvas.style.cursor = (dist < vr) ? 'pointer' : 'default';
+});
+
 // ── Magnetic filament particles (going up/right toward Yxara) ─
 const filP = Array.from({length:22}, (_, i) => ({
   progress: i / 22,

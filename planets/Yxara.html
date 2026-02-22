@@ -105,6 +105,40 @@ function drawVel() {
   ctx.fillStyle = rim; ctx.fill();
 }
 
+// -- Click interaction for Vel --
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  // Position of Vel in the sky (matching drawVel function)
+  const vx = W * 0.82;
+  const vy = H * 0.12;
+  const vr = 38;
+
+  // Distance check
+  const dist = Math.sqrt((mouseX - vx) ** 2 + (mouseY - vy) ** 2);
+
+  if (dist < vr) {
+    window.location.href = 'Vel.html';
+  }
+});
+
+// -- Cursor feedback for Vel --
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  
+  const vx = W * 0.82;
+  const vy = H * 0.12;
+  const vr = 38;
+
+  const dist = Math.sqrt((mouseX - vx) ** 2 + (mouseY - vy) ** 2);
+  
+  canvas.style.cursor = (dist < vr) ? 'pointer' : 'default';
+});
+
 // ── Magnetic filament particles ────────────────────────────
 const filamentParticles = Array.from({length:28}, (_, i) => ({
   progress: i / 28,

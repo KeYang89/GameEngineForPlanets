@@ -242,7 +242,7 @@ class UFO {
             if (e.target === modal) modal.remove();
         });
     }
-    
+
     update(dt) {
         switch (this.state) {
             case 'entering':
