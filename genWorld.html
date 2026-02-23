@@ -658,7 +658,7 @@ document.querySelectorAll('.chip').forEach(chip => {
   chip.addEventListener('click', () => chip.classList.toggle('active'));
 });
 
-document.getElementById('add-civ-btn').addEventListener('click', addCiv);
+document.getElementById('add-civ-btn').addEventListener('click', () => addCiv());
 
 // Planet name random suggestion
 const nameInput = document.getElementById('planet-name');
