@@ -2539,44 +2539,74 @@ function addContinentClickZones(ws) {
     layer.appendChild(hint);
   });
 }
+
 async function captureAndShare() {
   const svg = document.getElementById('world-svg');
   if (!svg) return;
 
   addInteraction('◈', 'Initializing high-res orbital photography...');
 
-  // 1. Prepare Canvas
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  const svgData = new XMLSerializer().serializeToString(svg);
   
-  // Increase quality by multiplying dimensions
   const dpr = 2; 
   const bounds = svg.getBoundingClientRect();
+  const footerHeight = 60; // Extra space for the branding
+  
+  // Increase height to accommodate the footer bar
   canvas.width = bounds.width * dpr;
-  canvas.height = bounds.height * dpr;
+  canvas.height = (bounds.height + footerHeight) * dpr;
   ctx.scale(dpr, dpr);
 
-  // 2. Load SVG into Image object
+  const svgData = new XMLSerializer().serializeToString(svg);
   const img = new Image();
   const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
   img.onload = async () => {
-    // Fill background (Black space)
+    // 1. Fill background (Black space)
     ctx.fillStyle = '#070a0f';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, bounds.width, bounds.height + footerHeight);
     
-    // Draw the Planet
+    // 2. Draw the Planet
     ctx.drawImage(img, 0, 0, bounds.width, bounds.height);
     URL.revokeObjectURL(url);
 
-    // 3. Convert to File and Share
+    // 3. Draw Footer Branding
+    const footerY = bounds.height;
+    
+    // Suble background for the footer bar
+    ctx.fillStyle = 'rgba(123, 95, 255, 0.15)';
+    ctx.fillRect(0, footerY, bounds.width, footerHeight);
+    
+    // Top border for the footer
+    ctx.strokeStyle = 'rgba(123, 95, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, footerY);
+    ctx.lineTo(bounds.width, footerY);
+    ctx.stroke();
+
+    // Text Credits
+    ctx.fillStyle = '#7b5fff';
+    ctx.font = "bold 11px 'Space Mono', monospace";
+    ctx.fillText("SOURCE UPLINK:", 20, footerY + 35);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = "11px 'Space Mono', monospace";
+    ctx.fillText("coyoteke.com/GameEngineForPlanets/genWorld.html", 125, footerY + 35);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = 'rgba(200, 216, 238, 0.4)';
+    ctx.font = "9px 'Space Mono', monospace";
+    ctx.fillText("GENWORLD ORBITAL SNAPSHOT v3.0", bounds.width - 20, footerY + 35);
+    ctx.textAlign = "left"; // Reset alignment
+
+    // 4. Convert to File and Share
     canvas.toBlob(async (blob) => {
       const fileName = `${worldState.cfg.name.replace(/\s+/g, '_')}_planet.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
 
-      // Check if the browser supports native sharing of files (Mobile)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -2589,27 +2619,23 @@ async function captureAndShare() {
           console.log('Share cancelled');
         }
       } else {
-        // Fallback for Desktop: Direct Download
         const link = document.createElement('a');
         link.download = fileName;
         link.href = canvas.toDataURL('image/png');
         link.click();
-        addInteraction('◈', 'Snapshot saved to local datastream (Downloads).');
+        addInteraction('◈', 'Snapshot saved to local datastream.');
       }
     }, 'image/png');
   };
 
   img.src = url;
 }
-
 async function exportCreaturePNG() {
   const svg = document.getElementById('creature-scene-svg');
-  // Use event.currentTarget if called via listener, otherwise fallback to finding the button
   const btn = (window.event && window.event.currentTarget) || document.querySelector('.btn-share');
   
   if (!svg) return;
 
-  // Visual feedback
   const originalText = btn.innerHTML;
   btn.innerHTML = "<span>⏳</span> EXPORTING...";
   btn.style.opacity = "0.5";
@@ -2618,8 +2644,8 @@ async function exportCreaturePNG() {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const dpr = 2; 
-  const w = 560; // Standard card width
-  const h = 850; // Increased height to accommodate Logs section
+  const w = 560; 
+  const h = 880; // Slightly taller to fit the URL comfortably
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   ctx.scale(dpr, dpr);
@@ -2641,120 +2667,81 @@ async function exportCreaturePNG() {
     ctx.lineWidth = 3;
     ctx.strokeRect(10, 10, w - 20, h - 20);
 
-    // 2. ASPECT RATIO FIX (Prevent Stretching)
+    // 2. SCENE DRAWING
     const targetW = w - 40;
     const targetH = 220;
-    const targetX = 20;
-    const targetY = 25;
-
     const imgRatio = sceneImg.width / sceneImg.height;
-    const areaRatio = targetW / targetH;
-    
-    let drawW, drawH, drawX, drawY;
-
-    if (imgRatio > areaRatio) {
-      drawW = targetW;
-      drawH = targetW / imgRatio;
-      drawX = targetX;
-      drawY = targetY + (targetH - drawH) / 2;
-    } else {
-      drawH = targetH;
-      drawW = targetH * imgRatio;
-      drawX = targetX + (targetW - drawW) / 2;
-      drawY = targetY;
-    }
-
+    const drawW = targetW;
+    const drawH = targetW / imgRatio;
     ctx.fillStyle = '#000';
-    ctx.fillRect(targetX, targetY, targetW, targetH);
-    ctx.drawImage(sceneImg, drawX, drawY, drawW, drawH);
+    ctx.fillRect(20, 25, targetW, targetH);
+    ctx.drawImage(sceneImg, 20, 25 + (targetH - drawH) / 2, drawW, drawH);
     URL.revokeObjectURL(url);
 
-    // 3. TEXT DATA LOGIC
+    // 3. TEXT DATA
     const creature = selectedCreatureId 
       ? worldState.continents.flatMap(c => c.creatures).find(c => c.def.id === selectedCreatureId)
       : null;
 
-    if (creature) {
-      ctx.fillStyle = '#fff';
-      ctx.font = "bold 24px Syne, sans-serif";
-      ctx.fillText(creature.def.name.toUpperCase(), 25, 285);
+    ctx.fillStyle = '#fff';
+    ctx.font = "bold 24px Syne, sans-serif";
+    ctx.fillText(creature ? creature.def.name.toUpperCase() : "ECOSYSTEM OVERVIEW", 25, 285);
 
-      ctx.fillStyle = '#3a9fff';
-      ctx.font = "10px 'Space Mono', monospace";
-      ctx.fillText(`SPECIMEN ID: ${creature.def.id.toUpperCase()} // BIO-SCAN ACTIVE`, 25, 305);
+    ctx.fillStyle = '#3a9fff';
+    ctx.font = "10px 'Space Mono', monospace";
+    ctx.fillText(creature ? "SPECIMEN DATA ACTIVE" : "WIDE-BAND PLANETARY SCAN", 25, 305);
 
-      ctx.fillStyle = 'rgba(58, 159, 255, 0.1)';
-      ctx.fillRect(25, 325, w - 50, 140);
+    ctx.fillStyle = 'rgba(58, 159, 255, 0.08)';
+    ctx.fillRect(25, 325, w - 50, 140);
+    ctx.fillStyle = '#c8d8ee';
+    ctx.font = "13px 'Space Mono', monospace";
 
-      ctx.fillStyle = '#c8d8ee';
-      ctx.font = "13px 'Space Mono', monospace";
-      const stats = [
+    const stats = creature ? [
         `ROLE: ${creature.def.role.toUpperCase()}`,
         `POPULATION: ${creature.count} UNITS`,
         `LOCOMOTION: ${creature.def.speed.toFixed(1)}ly/s`,
         `STATUS: ${creature.def.fearful ? 'EVASIVE' : 'STABLE'}`,
         `ORIGIN: SECTOR ${worldState.cfg.name.toUpperCase()}`
-      ];
-      stats.forEach((text, i) => ctx.fillText(text, 40, 355 + (i * 25)));
-    } else {
-      ctx.fillStyle = '#fff';
-      ctx.font = "bold 24px Syne, sans-serif";
-      ctx.fillText("ECOSYSTEM OVERVIEW", 25, 285);
-
-      ctx.fillStyle = '#7b5fff';
-      ctx.font = "10px 'Space Mono', monospace";
-      ctx.fillText(`LOCATION: ${worldState.cfg.name.toUpperCase()} // WIDE BAND SCAN`, 25, 305);
-
-      ctx.fillStyle = 'rgba(123, 95, 255, 0.1)';
-      ctx.fillRect(25, 325, w - 50, 140);
-
-      ctx.fillStyle = '#c8d8ee';
-      ctx.font = "13px 'Space Mono', monospace";
-      const totalPop = worldState.continents.reduce((acc, cont) => acc + cont.creatures.reduce((a, c) => a + c.count, 0), 0);
-      const stats = [
-        `BIOME CLASS: ${worldState.cfg.biome.toUpperCase()}`,
-        `TOTAL BIOMASS: ${totalPop} UNITS`,
-        `CONTINENTS DETECTED: ${worldState.continents.length}`,
+      ] : [
+        `BIOME: ${worldState.cfg.biome.toUpperCase()}`,
+        `TOTAL BIOMASS: ${worldState.continents.reduce((acc, cont) => acc + cont.creatures.reduce((a, c) => a + c.count, 0), 0)} UNITS`,
+        `CONTINENTS: ${worldState.continents.length}`,
         `ATMOSPHERE: STABLE`,
-        `SCAN DATE: ${new Date().toLocaleDateString()}`
+        `PLANET: ${worldState.cfg.name.toUpperCase()}`
       ];
-      stats.forEach((text, i) => ctx.fillText(text, 40, 355 + (i * 25)));
-    }
+    stats.forEach((text, i) => ctx.fillText(text, 40, 355 + (i * 25)));
 
-    // 4. MISSION LOGS SECTION
+    // 4. MISSION LOGS
     const logStartY = 490;
     ctx.fillStyle = 'rgba(80, 160, 255, 0.2)';
-    ctx.fillRect(25, logStartY, w - 50, 1); // Header line
-
+    ctx.fillRect(25, logStartY, w - 50, 1);
     ctx.fillStyle = '#3a9fff';
     ctx.font = "bold 11px 'Space Mono', monospace";
-    ctx.fillText("MISSION LOGS // NEURAL FEED", 25, logStartY + 25);
+    ctx.fillText("MISSION LOGS // RECENT ACTIVITY", 25, logStartY + 25);
 
-    // Assuming interactionEntries is globally accessible
     if (typeof interactionEntries !== 'undefined' && interactionEntries.length > 0) {
-      const recentLogs = interactionEntries.slice(-8); // Get last 8 entries
-      ctx.font = "11px 'Space Mono', monospace";
-      
-      recentLogs.forEach((entry, i) => {
-        // Strip HTML tags (like <strong>) from log messages
+      interactionEntries.slice(-8).forEach((entry, i) => {
         const cleanMsg = entry.text.replace(/<[^>]*>?/gm, '');
         ctx.fillStyle = 'rgba(200, 216, 238, 0.6)';
-        const logLine = `> ${cleanMsg.substring(0, 65)}${cleanMsg.length > 65 ? '...' : ''}`;
-        ctx.fillText(logLine, 35, logStartY + 55 + (i * 22));
+        ctx.fillText(`> ${cleanMsg.substring(0, 65)}`, 35, logStartY + 55 + (i * 22));
       });
-    } else {
-      ctx.fillStyle = 'rgba(180, 210, 255, 0.3)';
-      ctx.fillText("> NO LOG DATA RECORDED", 35, logStartY + 55);
     }
 
-    // FOOTER
-    ctx.globalAlpha = 0.4;
-    ctx.fillStyle = '#c8d8ee';
-    ctx.font = "9px 'Space Mono', monospace";
-    ctx.fillText("GENWORLD ORBITAL UPLINK // ENCRYPTED DATA PACKET", 25, h - 35);
-    ctx.globalAlpha = 1.0;
+    // 5. FOOTER & WEBSITE UPLINK (The change is here)
+    ctx.fillStyle = 'rgba(123, 95, 255, 0.2)';
+    ctx.fillRect(10, h - 60, w - 20, 50); // Bottom bar
 
-    // 5. SAVE
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = '#7b5fff';
+    ctx.font = "bold 11px 'Space Mono', monospace";
+    ctx.fillText("SOURCE UPLINK:", 25, h - 30);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = "11px 'Space Mono', monospace";
+    // Your website URL
+    ctx.fillText("https://coyoteke.com/GameEngineForPlanets/genWorld.html", 130, h - 30);
+
+    // 6. SAVE
     canvas.toBlob(blob => {
       const fileName = creature ? `specimen_${creature.def.id}.png` : `ecosystem_${worldState.cfg.name}.png`;
       const link = document.createElement('a');
