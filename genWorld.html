@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planet Generator</title>
+<title>genWorld — Planet Generator</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap');
 
@@ -410,6 +410,150 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
 #tooltip p {
   font-size:0.62rem; color:var(--muted); line-height:1.6;
 }
+
+/* ── CREATURE INTERACTION PANEL ── */
+#creature-panel {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  z-index:500;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.3s ease;
+}
+#creature-panel.visible {
+  pointer-events:all;
+  opacity:1;
+}
+#creature-backdrop {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,0.65);
+  backdrop-filter:blur(3px);
+}
+#creature-card {
+  position:relative; z-index:1;
+  background:rgba(7,12,20,0.97);
+  border:1px solid var(--border);
+  border-radius:16px;
+  width:min(780px, 95vw);
+  max-height:85vh;
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  box-shadow:0 0 60px rgba(58,159,255,0.15), 0 20px 60px rgba(0,0,0,0.6);
+}
+#creature-card-header {
+  padding:18px 22px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:flex-start;
+  flex-shrink:0;
+}
+#creature-header-text h2 {
+  font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:800;
+  letter-spacing:3px; text-transform:uppercase; color:#fff;
+}
+#creature-header-text p {
+  font-size:0.62rem; color:var(--muted); margin-top:3px; letter-spacing:1px;
+}
+#close-creature-panel {
+  width:28px; height:28px; border-radius:7px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.12);
+  color:var(--muted); font-size:0.9rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s; flex-shrink:0;
+}
+#close-creature-panel:hover { background:rgba(255,80,80,0.2); color:#ff6060; border-color:rgba(255,80,80,0.3); }
+
+/* Creature scene canvas */
+#creature-scene {
+  height:190px; position:relative; flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+}
+#creature-scene-svg { width:100%; height:100%; display:block; }
+
+/* Creature interaction log */
+#creature-log {
+  padding:14px 22px;
+  overflow-y:auto;
+  flex:1;
+  min-height:100px;
+  max-height:180px;
+}
+.interaction-entry {
+  display:flex; gap:10px; align-items:flex-start;
+  padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  animation:fadeSlideIn 0.3s ease;
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:translateY(-5px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.interaction-entry:last-child { border-bottom:none; }
+.ie-emoji { font-size:1.2rem; flex-shrink:0; width:26px; text-align:center; margin-top:1px; }
+.ie-text  { font-size:0.65rem; color:var(--text); line-height:1.6; }
+.ie-text strong { color:#fff; }
+.ie-time  { color:var(--muted); font-size:0.57rem; margin-left:6px; }
+
+/* Creature roster strip */
+#creature-roster {
+  display:flex; gap:7px; padding:12px 22px;
+  border-top:1px solid var(--border);
+  flex-wrap:wrap;
+  background:rgba(0,0,0,0.2);
+  flex-shrink:0;
+}
+.creature-chip {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:8px;
+  padding:5px 10px;
+  cursor:pointer;
+  transition:all 0.18s;
+  user-select:none;
+  position:relative;
+}
+.creature-chip:hover { background:rgba(58,159,255,0.12); border-color:rgba(58,159,255,0.35); }
+.creature-chip.selected { background:rgba(58,159,255,0.2); border-color:var(--accent); box-shadow:0 0 8px rgba(58,159,255,0.2); }
+.creature-chip .cc-emoji { font-size:1rem; }
+.creature-chip .cc-name  { font-size:0.58rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+.creature-chip .cc-count {
+  position:absolute; top:-5px; right:-5px;
+  background:var(--accent2); color:#fff;
+  font-size:0.5rem; font-weight:700;
+  width:14px; height:14px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* Action buttons */
+#creature-actions {
+  display:flex; gap:7px; padding:12px 22px;
+  border-top:1px solid var(--border);
+  flex-shrink:0; flex-wrap:wrap;
+}
+.action-btn {
+  flex:1; min-width:80px; padding:7px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px; cursor:pointer;
+  font-family:'Space Mono',monospace;
+  font-size:0.58rem; letter-spacing:1px; text-transform:uppercase;
+  color:var(--muted);
+  transition:all 0.18s;
+  white-space:nowrap;
+}
+.action-btn:hover { background:rgba(58,159,255,0.12); border-color:rgba(58,159,255,0.35); color:var(--accent); }
+.action-btn.danger:hover { background:rgba(255,80,80,0.12); border-color:rgba(255,80,80,0.35); color:#ff8080; }
+.action-btn.golden:hover { background:rgba(255,209,102,0.12); border-color:rgba(255,209,102,0.35); color:#ffd166; }
+.action-btn.peace:hover  { background:rgba(63,255,138,0.12); border-color:rgba(63,255,138,0.35); color:#3fff8a; }
+
+/* Hint text on continents */
+.continent-click-hint {
+  font-size:7px; fill:rgba(255,255,255,0.3); text-anchor:middle;
+  font-family:'Space Mono',monospace; letter-spacing:1px;
+  pointer-events:none;
+}
 </style>
 </head>
 <body>
@@ -433,6 +577,13 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
         <label>Planet Name</label>
         <input type="text" id="planet-name" placeholder="e.g. Keth'ara" maxlength="24" value="">
       </div>
+      <div class="field">
+      <label>Ecosystem Mode</label>
+      <div class="chip-row" id="ecosystem-toggle">
+        <div class="chip" data-mode="earth">Earth-Like</div>
+        <div class="chip active" data-mode="cosmic">Cosmic</div>
+      </div>
+    </div>
       <div class="field">
         <label>Dominant Biome</label>
         <select id="biome-select">
@@ -539,6 +690,35 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
 
     <div id="tooltip"><h3 id="tt-name"></h3><p id="tt-body"></p></div>
     <button id="back-btn">← New Planet</button>
+
+    <!-- ── CREATURE INTERACTION PANEL ── -->
+    <div id="creature-panel">
+      <div id="creature-backdrop"></div>
+      <div id="creature-card">
+        <div id="creature-card-header">
+          <div id="creature-header-text">
+            <h2 id="cp-continent-name">Island Ecosystem</h2>
+            <p id="cp-subtitle">Click a creature to focus · Watch interactions unfold</p>
+          </div>
+          <button id="close-creature-panel">✕</button>
+        </div>
+        <div id="creature-scene">
+          <svg id="creature-scene-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div id="creature-log">
+          <div id="interaction-entries"></div>
+        </div>
+        <div id="creature-roster"></div>
+        <div id="creature-actions">
+          <button class="action-btn" id="btn-feed">↑ Feed All</button>
+          <button class="action-btn peace" id="btn-migrate">→ Trigger Migration</button>
+          <button class="action-btn golden" id="btn-breed">◎ Mating Season</button>
+          <button class="action-btn danger" id="btn-predator">✕ Apex Arrives</button>
+          <button class="action-btn" id="btn-disaster">~ Disaster</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -582,7 +762,11 @@ function addCiv(nameOverride, colorOverride, traitOverride) {
   if (civs.length >= 8) return;
   const id = nextCivId++;
   const preset = PRESET_CIV_NAMES[Math.floor(Math.random() * PRESET_CIV_NAMES.length)];
-  const name = nameOverride || preset[Math.floor(Math.random() * preset.length)];
+  
+  // Ensure name is string
+  let name = nameOverride || preset[Math.floor(Math.random() * preset.length)];
+  if (typeof name !== 'string') name = 'New Civ';
+
   const color = colorOverride || randomColor();
   const traitIdx = Math.floor(Math.random() * TRAITS_POOL.length);
   traitCycle[id] = traitOverride !== undefined ? traitOverride : traitIdx;
@@ -658,7 +842,7 @@ document.querySelectorAll('.chip').forEach(chip => {
   chip.addEventListener('click', () => chip.classList.toggle('active'));
 });
 
-document.getElementById('add-civ-btn').addEventListener('click', addCiv);
+document.getElementById('add-civ-btn').addEventListener('click', () => addCiv());
 
 // Planet name random suggestion
 const nameInput = document.getElementById('planet-name');
@@ -680,8 +864,14 @@ let worldConfig = null;
 let worldState  = null;
 
 document.getElementById('generate-btn').addEventListener('click', () => {
+  // Check the active ecosystem chip
+  const ecoChip = document.querySelector('#ecosystem-toggle .chip.active');
+  const ecoMode = ecoChip.dataset.mode || 'cosmic';
+
+  // Existing capture logic...
   const name = document.getElementById('planet-name').value.trim() || nameInput.placeholder;
   const biome = document.getElementById('biome-select').value;
+
   const landCoverage = Number(document.getElementById('land-slider').value) / 100;
   const startYear = Number(document.getElementById('year-slider').value);
   const simSpeed = Number(document.getElementById('speed-slider').value);
@@ -700,7 +890,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     trait: TRAITS_POOL[traitCycle[c.id] ?? 0],
   }));
 
-  worldConfig = { name, biome, landCoverage, startYear, simSpeed, traits, conditions, civData };
+  worldConfig = { name, biome, landCoverage, startYear, simSpeed, traits, conditions, civData, ecoMode };
 
   buildWorld(worldConfig);
   document.body.classList.add('playing');
@@ -956,6 +1146,15 @@ function buildWorld(cfg) {
   const baseInterval = 1200;
   const interval = Math.round(baseInterval / cfg.simSpeed);
   simInterval = setInterval(() => simTick(worldState), interval);
+
+  // ── CREATURE SYSTEM INIT ──────────
+  setTimeout(() => {
+    if (!worldState) return;
+    initContinentCreatures(worldState);
+    addContinentClickZones(worldState);
+    wireCreatureActions(worldState);
+    interactionEntries = [];
+  }, 150);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1042,9 +1241,13 @@ function generateRivers(W, H, continents, pal, layers) {
 function renderAll(ws) {
   renderTerritories(ws);
   renderBorders(ws);
-  renderTradeRoutes(ws);
+  if (ws.cfg.ecoMode === 'earth') {
+    renderEarthCreatures(ws); 
+  } else {
+    renderUnits(ws); 
+  }
+  
   renderCities(ws);
-  renderUnits(ws);
 }
 
 function renderTerritories(ws) {
@@ -1130,6 +1333,52 @@ function renderCities(ws) {
     g.addEventListener('mouseleave', () => {
       document.getElementById('tooltip').style.display = 'none';
     });
+  });
+}
+
+function renderEarthCreatures(ws, contIdx) {
+  const container = document.getElementById('creature-scene');
+  const creatures = continentCreatures[contIdx] || [];
+  
+  // Clear or update existing elements
+  creatures.forEach((c, i) => {
+    let el = document.getElementById(`creature-${i}`);
+    
+    if (!el) {
+      // Determine if we need an SVG shape or a Text Emoji
+      const isEmoji = !CREATURE_SHAPES[c.def.shape];
+      
+      if (isEmoji) {
+        // Create a <text> element for Earth creatures
+        el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        el.setAttribute('id', `creature-${i}`);
+        el.setAttribute('text-anchor', 'middle');
+        el.setAttribute('dominant-baseline', 'central');
+        el.style.fontSize = '24px'; // Adjust size as needed
+        el.textContent = c.def.shape;
+      } else {
+        // Create a <g> element for Alien/SVG creatures
+        el = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        el.setAttribute('id', `creature-${i}`);
+        const drawFn = CREATURE_SHAPES[c.def.shape] || CREATURE_SHAPES['zhaun'];
+        const color = getCreatureColor(c.def, ws.cfg.biome);
+        drawFn(el, 0, 0, 12, color);
+      }
+      container.appendChild(el);
+    }
+
+    // --- ANIMATION LOGIC ---
+    // Update position (same for both types)
+    c.x += c.vx;
+    // Add a little "bounce" or "phase" movement
+    const wobble = Math.sin(Date.now() * 0.002 + c.phase) * 2;
+    
+    // Use transform to move them so we don't care if it's <text> or <g>
+    el.setAttribute('transform', `translate(${c.x}, ${c.y + wobble})`);
+    
+    // Flip based on direction
+    const scaleX = c.vx > 0 ? 1 : -1;
+    el.setAttribute('transform', `translate(${c.x}, ${c.y + wobble}) scale(${scaleX}, 1)`);
   });
 }
 
@@ -1368,6 +1617,906 @@ const CITY_PREFIXES = ['Kel','Vor','Ash','Thal','Solz','Nex','Drak','Lum','Orr',
 const CITY_SUFFIXES = ['haven','gate','spire','keep','hold','watch','march','fall','bridge','ford','port','moor','vale','heim','mark'];
 function generateCityName() {
   return CITY_PREFIXES[randInt(0, CITY_PREFIXES.length-1)] + CITY_SUFFIXES[randInt(0, CITY_SUFFIXES.length-1)];
+}
+
+
+// ════════════════════════════════════════════════════════════════
+//  CREATURE INTERACTION SYSTEM
+// ════════════════════════════════════════════════════════════════
+
+// ── SVG CREATURE SHAPE DRAWERS ───────────────────────────────────
+// Each draws a unique alien silhouette as SVG path/shapes.
+// draw(parent, x, y, sz, color) — appends to parent <g>, returns root el.
+const CREATURE_SHAPES = {
+  // ── Lumbering tri-legged grazer
+  threll: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('ellipse',{cx:0,cy:0,rx:s*.55,ry:s*.35,fill:c,opacity:'0.9'},g);
+    svgEl('path',{d:`M${-s*.2},${s*.3} L${-s*.35},${s*.7} M0,${s*.35} L0,${s*.75} M${s*.2},${s*.3} L${s*.35},${s*.7}`,stroke:c,'stroke-width':s*.1,'stroke-linecap':'round',fill:'none'},g);
+    svgEl('ellipse',{cx:s*.45,cy:-s*.05,rx:s*.18,ry:s*.13,fill:c},g);
+    svgEl('circle',{cx:s*.58,cy:-s*.07,r:s*.05,fill:'rgba(255,255,255,0.7)'},g);
+    return g;
+  },
+  // ── Sinuous skimmer — long body, fin ridge
+  velkor: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('path',{d:`M${-s*.7},0 C${-s*.3},${-s*.2} ${s*.3},${-s*.2} ${s*.7},0 C${s*.3},${s*.15} ${-s*.3},${s*.15} ${-s*.7},0 Z`,fill:c,opacity:'0.95'},g);
+    svgEl('path',{d:`M${-s*.1},${-s*.2} L0,${-s*.5} L${s*.1},${-s*.2}`,fill:c,opacity:'0.7'},g);
+    svgEl('circle',{cx:s*.6,cy:-s*.03,r:s*.06,fill:'rgba(255,255,255,0.8)'},g);
+    svgEl('path',{d:`M${-s*.7},0 L${-s*.95},${-s*.12} M${-s*.7},0 L${-s*.95},${s*.12}`,stroke:c,'stroke-width':s*.08,fill:'none','stroke-linecap':'round'},g);
+    return g;
+  },
+  // ── Spiked radial — floats and pulses
+  zhaun: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('circle',{cx:0,cy:0,r:s*.38,fill:c,opacity:'0.85'},g);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;svgEl('line',{x1:Math.cos(a)*s*.38,y1:Math.sin(a)*s*.38,x2:Math.cos(a)*s*.7,y2:Math.sin(a)*s*.7,stroke:c,'stroke-width':s*.08,'stroke-linecap':'round'},g);}
+    svgEl('circle',{cx:0,cy:0,r:s*.15,fill:'rgba(255,255,255,0.4)'},g);
+    return g;
+  },
+  // ── Hulking quadruped — apex bruiser
+  orrath: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('rect',{x:-s*.5,y:-s*.3,width:s,height:s*.55,rx:s*.1,fill:c},g);
+    svgEl('rect',{x:s*.45,y:-s*.38,width:s*.35,height:s*.3,rx:s*.07,fill:c},g);
+    svgEl('line',{x1:-s*.5,y1:s*.25,x2:-s*.5,y2:s*.65,stroke:c,'stroke-width':s*.14,'stroke-linecap':'round'},g);
+    svgEl('line',{x1:-s*.2,y1:s*.25,x2:-s*.2,y2:s*.65,stroke:c,'stroke-width':s*.14,'stroke-linecap':'round'},g);
+    svgEl('line',{x1:s*.2,y1:s*.25,x2:s*.2,y2:s*.65,stroke:c,'stroke-width':s*.14,'stroke-linecap':'round'},g);
+    svgEl('line',{x1:s*.5,y1:s*.25,x2:s*.5,y2:s*.65,stroke:c,'stroke-width':s*.14,'stroke-linecap':'round'},g);
+    svgEl('circle',{cx:s*.72,cy:-s*.28,r:s*.08,fill:'rgba(255,100,50,0.9)'},g);
+    return g;
+  },
+  // ── Wispy floater — lightweight prey
+  sylph: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('ellipse',{cx:0,cy:0,rx:s*.25,ry:s*.4,fill:c,opacity:'0.8'},g);
+    svgEl('path',{d:`M${-s*.25},${s*.1} Q${-s*.55},${s*.4} ${-s*.35},${s*.65}`,stroke:c,'stroke-width':s*.07,fill:'none','stroke-linecap':'round'},g);
+    svgEl('path',{d:`M${s*.25},${s*.1} Q${s*.55},${s*.4} ${s*.35},${s*.65}`,stroke:c,'stroke-width':s*.07,fill:'none','stroke-linecap':'round'},g);
+    svgEl('circle',{cx:0,cy:-s*.3,r:s*.12,fill:c,opacity:'0.6'},g);
+    return g;
+  },
+  // ── Mantis-like ambush predator
+  kethis: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('path',{d:`M0,${-s*.5} L${s*.15},0 L0,${s*.5} L${-s*.15},0 Z`,fill:c,opacity:'0.9'},g);
+    svgEl('path',{d:`M${s*.15},${-s*.1} L${s*.6},${-s*.4} L${s*.5},${s*.1}`,stroke:c,'stroke-width':s*.09,fill:'none','stroke-linecap':'round'},g);
+    svgEl('path',{d:`M${-s*.15},${-s*.1} L${-s*.6},${-s*.4} L${-s*.5},${s*.1}`,stroke:c,'stroke-width':s*.09,fill:'none','stroke-linecap':'round'},g);
+    svgEl('circle',{cx:0,cy:-s*.55,r:s*.1,fill:c},g);
+    svgEl('circle',{cx:s*.05,cy:-s*.55,r:s*.04,fill:'rgba(255,255,100,0.9)'},g);
+    return g;
+  },
+  // ── Rolling shell creature
+  vorrn: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('circle',{cx:0,cy:0,r:s*.4,fill:c,opacity:'0.85'},g);
+    svgEl('path',{d:`M${-s*.2},${-s*.35} L0,${-s*.15} L${s*.2},${-s*.35}`,stroke:'rgba(0,0,0,0.3)','stroke-width':s*.06,fill:'none'},g);
+    svgEl('path',{d:`M${-s*.38},${s*.1} Q0,${-s*.1} ${s*.38},${s*.1}`,stroke:'rgba(0,0,0,0.2)','stroke-width':s*.05,fill:'none'},g);
+    svgEl('ellipse',{cx:s*.32,cy:-s*.2,rx:s*.08,ry:s*.06,fill:'rgba(255,255,255,0.5)'},g);
+    return g;
+  },
+  // ── Elongated burrower — ground-dweller
+  neth: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('ellipse',{cx:0,cy:0,rx:s*.7,ry:s*.22,fill:c,opacity:'0.9'},g);
+    svgEl('path',{d:`M${s*.55},${-s*.15} L${s*.85},${-s*.3} M${s*.55},0 L${s*.9},0 M${s*.55},${s*.15} L${s*.85},${s*.3}`,stroke:c,'stroke-width':s*.08,'stroke-linecap':'round',fill:'none'},g);
+    svgEl('circle',{cx:-s*.65,cy:0,r:s*.14,fill:c},g);
+    svgEl('circle',{cx:-s*.68,cy:-s*.05,r:s*.05,fill:'rgba(200,255,255,0.8)'},g);
+    return g;
+  },
+  // ── Aerial glider — membrane wings
+  skrave: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('ellipse',{cx:0,cy:0,rx:s*.2,ry:s*.35,fill:c},g);
+    svgEl('path',{d:`M${-s*.2},${-s*.05} Q${-s*.7},${-s*.3} ${-s*.8},${s*.1} Q${-s*.5},${s*.2} ${-s*.2},${s*.1}`,fill:c,opacity:'0.7'},g);
+    svgEl('path',{d:`M${s*.2},${-s*.05} Q${s*.7},${-s*.3} ${s*.8},${s*.1} Q${s*.5},${s*.2} ${s*.2},${s*.1}`,fill:c,opacity:'0.7'},g);
+    svgEl('circle',{cx:0,cy:-s*.3,r:s*.09,fill:c},g);
+    return g;
+  },
+  // ── Multi-arm scuttler — ambush
+  draxis: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('ellipse',{cx:0,cy:0,rx:s*.35,ry:s*.28,fill:c,opacity:'0.95'},g);
+    for(let i=0;i<8;i++){const a=-Math.PI/2+i/8*Math.PI*2;const r1=s*.35;const r2=s*.7;svgEl('line',{x1:Math.cos(a)*r1,y1:Math.sin(a)*r1,x2:Math.cos(a)*r2,y2:Math.sin(a)*r2,stroke:c,'stroke-width':s*.07,'stroke-linecap':'round'},g);}
+    svgEl('circle',{cx:0,cy:0,r:s*.12,fill:'rgba(255,80,80,0.7)'},g);
+    return g;
+  },
+  // ── Towering stalker — tall body
+  vexar: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    svgEl('rect',{x:-s*.12,y:-s*.65,width:s*.24,height:s*.9,rx:s*.06,fill:c,opacity:'0.9'},g);
+    svgEl('ellipse',{cx:0,cy:-s*.65,rx:s*.2,ry:s*.16,fill:c},g);
+    svgEl('line',{x1:-s*.12,y1:s*.15,x2:-s*.35,y2:s*.55,stroke:c,'stroke-width':s*.1,'stroke-linecap':'round'},g);
+    svgEl('line',{x1:s*.12,y1:s*.15,x2:s*.35,y2:s*.55,stroke:c,'stroke-width':s*.1,'stroke-linecap':'round'},g);
+    svgEl('circle',{cx:s*.08,cy:-s*.68,r:s*.06,fill:'rgba(255,200,50,0.9)'},g);
+    svgEl('circle',{cx:-s*.06,cy:-s*.68,r:s*.04,fill:'rgba(255,200,50,0.9)'},g);
+    return g;
+  },
+  // ── Crystalline floater — void creature
+  qythe: (p,x,y,s,c) => {
+    const g = svgEl('g',{transform:`translate(${x},${y})`},p);
+    const pts = [];for(let i=0;i<5;i++){const a=i/5*Math.PI*2-Math.PI/2;pts.push(Math.cos(a)*s*.45+','+Math.sin(a)*s*.45);}
+    svgEl('polygon',{points:pts.join(' '),fill:c,opacity:'0.7','stroke':'rgba(255,255,255,0.3)','stroke-width':s*.05},g);
+    svgEl('circle',{cx:0,cy:0,r:s*.15,fill:'rgba(255,255,255,0.5)'},g);
+    for(let i=0;i<5;i++){const a=i/5*Math.PI*2-Math.PI/2;svgEl('line',{x1:0,y1:0,x2:Math.cos(a)*s*.45,y2:Math.sin(a)*s*.45,stroke:'rgba(255,255,255,0.2)','stroke-width':s*.04},g);}
+    return g;
+  },
+};
+
+// Shared SVG element helper for creature drawings
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// ── CREATURE COLOR PALETTES PER BIOME ────────────────────────────
+const BIOME_CREATURE_COLORS = {
+  temperate: ['#6abf69','#a5d6a7','#81c784','#4caf50','#2e7d32','#c8e6c9'],
+  desert:    ['#ffb74d','#ffa726','#e65100','#d4a030','#bf8040','#f5c842'],
+  ocean:     ['#4dd0e1','#26c6da','#00acc1','#0097a7','#a5f3fc','#67e8f9'],
+  jungle:    ['#69f0ae','#1de9b6','#00e676','#76ff03','#b2ff59','#ccff90'],
+  arctic:    ['#b3e5fc','#e1f5fe','#81d4fa','#4fc3f7','#c5cae9','#dcedc8'],
+  volcanic:  ['#ff6e40','#ff3d00','#dd2c00','#bf360c','#e64a19','#ff7043'],
+  crystal:   ['#ce93d8','#ba68c8','#ab47bc','#9c27b0','#e1bee7','#f3e5f5'],
+  void:      ['#9575cd','#7e57c2','#673ab7','#512da8','#b39ddb','#ede7f6'],
+};
+
+// ── EARTH CREATURE DEFINITIONS PER BIOME ─────────────────────────
+const EARTH_CREATURES = {
+  temperate: [
+    { id:'deer',    shape:'🦌', name:'Red Deer',     role:'herbivore', count:[4,8], speed:1.2, fearful:true,  color:0 },
+    { id:'wolf',    shape:'🐕', name:'Grey Wolf',    role:'predator',  count:[2,4], speed:1.5, fearful:false, color:1 }, // '🐕' looks more like a moving body than '🐺'
+    { id:'bear',    shape:'🧸', name:'Grizzly Bear', role:'apex',      count:[1,2], speed:1.0, fearful:false, color:2 }, // '🧸' is often the only full bear, but '🐻' is usually preferred. Try '🦫' (Beaver) as a substitute for body shape?
+    { id:'rabbit',  shape:'🐇', name:'Wild Rabbit',  role:'prey',      count:[6,10],speed:1.8, fearful:true,  color:3 },
+    { id:'fox',     shape:'🦊', name:'Red Fox',      role:'predator',  count:[2,4], speed:1.4, fearful:false, color:4 }, // Note: Fox is head-only in many sets; '🐕' tinted orange is a common dev trick
+    { id:'owl',     shape:'🦉', name:'Forest Owl',   role:'predator',  count:[1,3], speed:1.1, fearful:false, color:5 },
+  ],
+  desert: [
+    { id:'coyote',  shape:'🐕', name:'Coyote',       role:'predator',  count:[2,5], speed:1.3, fearful:false, color:0 },
+    { id:'camel',   shape:'🐫', name:'Camel',        role:'herbivore', count:[2,4], speed:0.8, fearful:false, color:1 },
+    { id:'lion',    shape:'🦁', name:'Desert Lion',  role:'apex',      count:[1,2], speed:1.4, fearful:false, color:2 }, 
+    { id:'jerboa',  shape:'🐭', name:'Jerboa',       role:'prey',      count:[5,9], speed:1.6, fearful:true,  color:3 },
+    { id:'scorpion',shape:'🦂', name:'Scorpion',     role:'predator',  count:[3,6], speed:0.7, fearful:false, color:4 },
+    { id:'lizard',  shape:'🦎', name:'Sand Lizard',  role:'prey',      count:[4,8], speed:1.5, fearful:true,  color:5 },
+  ],
+  ocean: [
+    { id:'shark',   shape:'🦈', name:'Great White',  role:'apex',      count:[1,2], speed:1.8, fearful:false, color:0 },
+    { id:'whale',   shape:'🐋', name:'Blue Whale',   role:'herbivore', count:[1,2], speed:0.6, fearful:false, color:1 },
+    { id:'fish',    shape:'🐟', name:'Tuna School',  role:'prey',      count:[8,15],speed:1.6, fearful:true,  color:2 },
+    { id:'dolphin', shape:'🐬', name:'Dolphin',      role:'predator',  count:[3,6], speed:1.7, fearful:false, color:3 },
+    { id:'octopus', shape:'🐙', name:'Octopus',      role:'predator',  count:[2,4], speed:1.1, fearful:false, color:4 },
+    { id:'turtle',  shape:'🐢', name:'Sea Turtle',   role:'herbivore', count:[2,5], speed:0.5, fearful:false, color:5 },
+  ],
+  jungle: [
+    { id:'tiger',   shape:'🐅', name:'Bengal Tiger', role:'apex',      count:[1,2], speed:1.6, fearful:false, color:0 },
+    { id:'monkey',  shape:'🐒', name:'Macaque',      role:'herbivore', count:[5,10],speed:1.4, fearful:true,  color:1 },
+    { id:'snake',   shape:'🐍', name:'Python',       role:'predator',  count:[2,4], speed:0.8, fearful:false, color:2 },
+    { id:'parrot',  shape:'🦜', name:'Macaw',        role:'prey',      count:[4,8], speed:1.2, fearful:true,  color:3 },
+    { id:'panther', shape:'🐆', name:'Panther',      role:'predator',  count:[1,3], speed:1.7, fearful:false, color:4 },
+    { id:'frog',    shape:'🐸', name:'Tree Frog',    role:'prey',      count:[6,12],speed:0.9, fearful:true,  color:5 },
+  ],
+  arctic: [
+    { id:'pbear',   shape:'🐻', name:'Polar Bear',   role:'apex',      count:[1,2], speed:1.1, fearful:false, color:0 }, // Use Bear Head or '🦭'
+    { id:'penguin', shape:'🐧', name:'Penguin',      role:'prey',      count:[6,12],speed:0.8, fearful:true,  color:1 },
+    { id:'seal',    shape:'🦭', name:'Seal',         role:'prey',      count:[4,8], speed:1.2, fearful:true,  color:2 },
+    { id:'wolf_a',  shape:'🐕', name:'Arctic Wolf',  role:'predator',  count:[2,4], speed:1.5, fearful:false, color:3 },
+    { id:'owl_a',   shape:'🦉', name:'Snowy Owl',    role:'predator',  count:[1,2], speed:1.4, fearful:false, color:4 },
+    { id:'fox_a',   shape:'🦊', name:'Arctic Fox',   role:'prey',      count:[3,6], speed:1.3, fearful:true,  color:5 },
+  ],
+  volcanic: [
+    { id:'salamander', shape:'🦎', name:'Fire Newt',  role:'predator',  count:[3,6], speed:1.0, fearful:false, color:0 },
+    { id:'crab',       shape:'🦀', name:'Lava Crab',  role:'herbivore', count:[4,8], speed:0.8, fearful:false, color:1 },
+    { id:'bat',        shape:'🦇', name:'Cave Bat',   role:'prey',      count:[8,15],speed:1.6, fearful:true,  color:2 },
+  ],
+};
+
+// ── ALIEN CREATURE DEFINITIONS PER BIOME ─────────────────────────
+const BIOME_CREATURES = {
+  temperate: [
+    { id:'threll',  shape:'threll', name:'Threll',   role:'herbivore', count:[3,6], speed:1.2, fearful:true,  color:0 },
+    { id:'velkor',  shape:'velkor', name:'Vel-Kor',   role:'predator',  count:[1,3], speed:1.5, fearful:false, color:1 },
+    { id:'orrath',  shape:'orrath', name:'Orrath',    role:'apex',      count:[1,2], speed:1.0, fearful:false, color:2 },
+    { id:'sylph',   shape:'sylph',  name:'Sylph',     role:'prey',      count:[4,8], speed:1.8, fearful:true,  color:3 },
+    { id:'kethis',  shape:'kethis', name:'Keth-is',   role:'predator',  count:[2,4], speed:1.4, fearful:false, color:4 },
+    { id:'zhaun',   shape:'zhaun',  name:'Zhaun',     role:'predator',  count:[1,3], speed:1.1, fearful:false, color:5 },
+  ],
+  desert: [
+    { id:'kethis',  shape:'kethis', name:'Kel-Tharis', role:'predator',  count:[2,5], speed:0.9, fearful:false, color:0 },
+    { id:'threll',  shape:'threll', name:'Dura-Threll', role:'herbivore', count:[2,4], speed:0.8, fearful:false, color:1 },
+    { id:'draxis',  shape:'draxis', name:'Drax-is',    role:'apex',      count:[2,4], speed:0.7, fearful:false, color:2 },
+    { id:'neth',    shape:'neth',   name:'Nethara',    role:'prey',      count:[4,7], speed:1.5, fearful:true,  color:3 },
+    { id:'skrave',  shape:'skrave', name:'Skrave',     role:'predator',  count:[1,2], speed:1.6, fearful:false, color:4 },
+    { id:'sylph',   shape:'sylph',  name:'Dust-Sylph', role:'prey',      count:[3,6], speed:1.3, fearful:true,  color:5 },
+  ],
+  ocean: [
+    { id:'velkor',  shape:'velkor', name:'Vel-Naur',   role:'predator',  count:[2,5], speed:1.8, fearful:false, color:0 },
+    { id:'orrath',  shape:'orrath', name:'Rath-Oma',   role:'apex',      count:[1,2], speed:0.7, fearful:false, color:1 },
+    { id:'sylph',   shape:'sylph',  name:'Aqu-Sylph',  role:'prey',      count:[5,9], speed:1.4, fearful:true,  color:2 },
+    { id:'vorrn',   shape:'vorrn',  name:'Vorrn',      role:'herbivore', count:[3,6], speed:0.8, fearful:false, color:3 },
+    { id:'draxis',  shape:'draxis', name:'Drak-Naur',  role:'apex',      count:[1,3], speed:1.6, fearful:false, color:4 },
+    { id:'neth',    shape:'neth',   name:'Nethis',     role:'herbivore', count:[2,4], speed:0.5, fearful:false, color:5 },
+  ],
+  jungle: [
+    { id:'threll',  shape:'threll', name:'Grel-Thon',  role:'herbivore', count:[3,6], speed:1.5, fearful:true,  color:0 },
+    { id:'vexar',   shape:'vexar',  name:'Vex-Arrak',  role:'apex',      count:[1,2], speed:1.7, fearful:false, color:1 },
+    { id:'zhaun',   shape:'zhaun',  name:'Zhaunari',   role:'prey',      count:[4,7], speed:1.4, fearful:true,  color:2 },
+    { id:'kethis',  shape:'kethis', name:'Ker-Thiss',  role:'predator',  count:[2,4], speed:0.9, fearful:false, color:3 },
+    { id:'orrath',  shape:'orrath', name:'Gorrath',    role:'herbivore', count:[1,3], speed:0.9, fearful:false, color:4 },
+    { id:'sylph',   shape:'sylph',  name:'Lum-Sylph',  role:'prey',      count:[4,8], speed:1.1, fearful:true,  color:5 },
+  ],
+  arctic: [
+    { id:'orrath',  shape:'orrath', name:'Keld-Orra',  role:'apex',      count:[1,2], speed:1.0, fearful:false, color:0 },
+    { id:'vorrn',   shape:'vorrn',  name:'Vorn-Isk',   role:'prey',      count:[3,6], speed:1.0, fearful:true,  color:1 },
+    { id:'sylph',   shape:'sylph',  name:'Cryo-Sylph', role:'prey',      count:[4,8], speed:0.9, fearful:true,  color:2 },
+    { id:'velkor',  shape:'velkor', name:'Vel-Krath',  role:'predator',  count:[1,3], speed:1.4, fearful:false, color:3 },
+    { id:'neth',    shape:'neth',   name:'Ice-Neth',   role:'apex',      count:[1,2], speed:0.7, fearful:false, color:4 },
+    { id:'skrave',  shape:'skrave', name:'Skrave-Cyr', role:'predator',  count:[2,4], speed:1.4, fearful:false, color:5 },
+  ],
+  volcanic: [
+    { id:'draxis',  shape:'draxis', name:'Pyraxis',    role:'apex',      count:[1,2], speed:1.3, fearful:false, color:0 },
+    { id:'kethis',  shape:'kethis', name:'Mag-Keth',   role:'predator',  count:[2,5], speed:1.2, fearful:false, color:1 },
+    { id:'skrave',  shape:'skrave', name:'Cinder-Skrave',role:'prey',    count:[4,8], speed:1.6, fearful:true,  color:2 },
+    { id:'zhaun',   shape:'zhaun',  name:'Ember-Zhaun',role:'prey',      count:[5,9], speed:1.0, fearful:true,  color:3 },
+    { id:'threll',  shape:'threll', name:'Scorch-Threll',role:'herbivore',count:[2,5],speed:1.1, fearful:false, color:4 },
+    { id:'vexar',   shape:'vexar',  name:'Ash-Vexar',  role:'predator',  count:[2,4], speed:1.5, fearful:false, color:5 },
+  ],
+  crystal: [
+    { id:'threll',  shape:'threll', name:'Kry-Threll', role:'herbivore', count:[2,5], speed:1.1, fearful:true,  color:0 },
+    { id:'draxis',  shape:'draxis', name:'Shard-Drax', role:'predator',  count:[2,4], speed:1.3, fearful:false, color:1 },
+    { id:'qythe',   shape:'qythe',  name:'Qythe',      role:'prey',      count:[5,9], speed:1.4, fearful:true,  color:2 },
+    { id:'velkor',  shape:'velkor', name:'Prism-Vel',  role:'apex',      count:[1,3], speed:1.0, fearful:false, color:3 },
+    { id:'sylph',   shape:'sylph',  name:'Shardling',  role:'prey',      count:[4,7], speed:1.7, fearful:true,  color:4 },
+    { id:'zhaun',   shape:'zhaun',  name:'Lux-Zhaun',  role:'predator',  count:[1,3], speed:1.1, fearful:false, color:5 },
+  ],
+  void: [
+    { id:'sylph',   shape:'sylph',  name:'Veil-Sylph', role:'prey',      count:[4,8], speed:1.6, fearful:true,  color:0 },
+    { id:'skrave',  shape:'skrave', name:'Null-Skrave', role:'predator', count:[2,5], speed:1.4, fearful:false, color:1 },
+    { id:'qythe',   shape:'qythe',  name:'Qythe-Maw',  role:'apex',      count:[1,2], speed:1.2, fearful:false, color:2 },
+    { id:'zhaun',   shape:'zhaun',  name:'Rift-Zhaun', role:'prey',      count:[5,9], speed:2.0, fearful:true,  color:3 },
+    { id:'vexar',   shape:'vexar',  name:'Vex-Null',   role:'predator',  count:[2,4], speed:0.9, fearful:false, color:4 },
+    { id:'draxis',  shape:'draxis', name:'Void-Draxis', role:'herbivore',count:[2,4], speed:1.0, fearful:false, color:5 },
+  ],
+};
+
+// Fallback to temperate if biome unknown
+function getCreaturesForBiome(biome) {
+  return BIOME_CREATURES[biome] || BIOME_CREATURES.temperate;
+}
+
+// Get color for creature def given biome
+function getCreatureColor(def, biome) {
+  const palette = BIOME_CREATURE_COLORS[biome] || BIOME_CREATURE_COLORS.temperate;
+  return palette[def.color % palette.length];
+}
+
+// ── INTERACTION TEMPLATES — alien lore, no emojis ───────────────
+const INTERACTIONS = {
+  hunt: (pred, prey) => [
+    `<strong>${pred.name}</strong> enters low-resonance phase and converges on a <strong>${prey.name}</strong> cluster.`,
+    `<strong>${pred.name}</strong> breaks concealment — the <strong>${prey.name}</strong> scatter along divergent vectors!`,
+    `The pursuit ends. <strong>${pred.name}</strong> ${Math.random()<0.5 ? `absorbs the quarry's bio-signature` : `loses trace in the thermic layer`}.`
+  ],
+  graze: (h) => [
+    `A <strong>${h.name}</strong> formation drifts across the substrate, cycling nutrient intake.`,
+    `<strong>${h.name}</strong> cluster shifts toward the mineral seam — pressure-feeding in sequence.`,
+    `A lone <strong>${h.name}</strong> emits a low harmonic — the group pauses, then resumes drift.`,
+  ],
+  flee: (prey, pred) => [
+    `<strong>${prey.name}</strong> detect trace pheromones of a <strong>${pred.name}</strong> and disperse!`,
+    `The <strong>${prey.name}</strong> formation collapses outward — emergency dispersal protocol.`,
+    `A <strong>${prey.name}</strong> phase-burrows beneath the surface membrane to evade detection.`,
+  ],
+  social: (a, b) => [
+    `Two <strong>${a.name}</strong> exchange bio-luminescent pulses in a recognition display.`,
+    `A <strong>${a.name}</strong> and a <strong>${b.name}</strong> orbit each other — territorial boundary negotiation.`,
+    `<strong>${a.name}</strong> broadcasts a low-frequency signal — the surrounding group converges.`,
+  ],
+  breed: (a) => [
+    `A <strong>${a.name}</strong> begins a chromatic resonance display — mating cycle initiated.`,
+    `Two <strong>${a.name}</strong> fuse briefly into a shared membrane — spore dispersal complete.`,
+    `Juvenile <strong>${a.name}</strong> emerge from the substrate — the cycle continues.`,
+  ],
+  apex: (a) => [
+    `<strong>${a.name}</strong> broadcasts a territorial null-field. All nearby fauna clear the zone.`,
+    `The <strong>${a.name}</strong> ascends to the ridge and holds — its presence reshapes the local ecology.`,
+    `Nothing approaches the <strong>${a.name}</strong>. Its bio-signature blankets the entire area.`,
+  ],
+  migrate: (a) => [
+    `A vast column of <strong>${a.name}</strong> initiates the long-cycle traverse — migration has begun.`,
+    `<strong>${a.name}</strong> follow sub-surface magnetic gradients carved by millennia of movement.`,
+    `The migration of <strong>${a.name}</strong> reshapes the terrain beneath them as they pass.`,
+  ],
+  disaster: (a) => [
+    `Seismic resonance disrupts the substrate — <strong>${a.name}</strong> scatter in all directions.`,
+    `A pressure wave collapses the thermal layer. <strong>${a.name}</strong> emergency-phase upward.`,
+    `In the aftermath, a single <strong>${a.name}</strong> broadcasts a distress harmonic into the silence.`,
+  ],
+  feed: (a) => [
+    `<strong>${a.name}</strong> locates a dense nutrient bloom and initiates rapid cycling.`,
+    `Abundance event detected — <strong>${a.name}</strong> population density spikes across the zone.`,
+    `The <strong>${a.name}</strong> cluster compresses around the source, layering intake vectors.`,
+  ],
+};
+
+// ── PER-CONTINENT CREATURE STATE ──────────────────────────────────
+// We store creature populations per continent index
+const continentCreatures = {};  // contIdx -> [{ def, count, x, y, vx, phase, selected }]
+
+function initContinentCreatures(ws) {
+  const source = ws.cfg.ecoMode === 'earth' ? EARTH_CREATURES : BIOME_CREATURES;
+  const biomeType = ws.cfg.biome;
+  const pool = source[biomeType] || source['temperate'];
+
+  ws.continents.forEach((cont, i) => {
+    // 1. Map the pool data to actual creature instances
+    const creatures = pool.map(def => ({
+      def: def,
+      count: randInt(def.count[0], def.count[1]),
+      // 2. Position them relative to the CONTINENT'S coordinates (cx, cy)
+      // instead of hardcoded 30-570
+      x: cont.cx + (Math.random() - 0.5) * (cont.w * 0.7),
+      y: cont.cy + (Math.random() - 0.5) * (cont.h * 0.7),
+      vx: (Math.random() < 0.5 ? 1 : -1) * (def.speed || 1),
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    cont.creatures = creatures;
+    continentCreatures[i] = creatures; 
+  });
+}
+
+// ── CREATURE PANEL STATE ───────────────────────────────────────────
+let activeContinentIdx = null;
+let sceneAnimId = null;
+let interactionTimer = null;
+let selectedCreatureId = null;
+let interactionEntries = [];
+const MAX_LOG = 8;
+
+function openCreaturePanel(ws, contIdx) {
+  activeContinentIdx = contIdx;
+  const cont = ws.continents[contIdx];
+  // Header
+  document.getElementById('cp-continent-name').textContent =
+    `Island ${contIdx + 1} — ${ws.cfg.biome.charAt(0).toUpperCase() + ws.cfg.biome.slice(1)} Ecosystem`;
+  document.getElementById('cp-subtitle').textContent =
+    `Click a creature below to focus · ${cont.cx|0}°N ${cont.cy|0}°E`;
+
+  buildCreatureRoster(ws, contIdx);
+  startCreatureScene(ws, contIdx);
+  startInteractionTimer(ws, contIdx);
+
+  document.getElementById('creature-panel').classList.add('visible');
+  addInteraction('◉', `Orbital scan targeting landmass ${contIdx + 1}...`, `Yr.${ws.year}`);
+  addInteraction('◈', `${ws.cfg.name} ecosystem active — ${continentCreatures[contIdx].length} species catalogued.`);
+}
+
+function closeCreaturePanel() {
+  document.getElementById('creature-panel').classList.remove('visible');
+  if (sceneAnimId) cancelAnimationFrame(sceneAnimId);
+  if (interactionTimer) clearInterval(interactionTimer);
+  activeContinentIdx = null;
+  selectedCreatureId = null;
+  interactionEntries = [];
+}
+
+// ── ROSTER RENDERING — inline SVG preview ─────────────────────────
+function buildCreatureRoster(ws, contIdx) {
+  const roster = document.getElementById('creature-roster');
+  roster.innerHTML = '';
+  const creatures = continentCreatures[contIdx] || [];
+
+  creatures.forEach(c => {
+    const chip = document.createElement('div');
+    // Ensure the chip always gets the class and selected state
+    chip.className = 'creature-chip' + (c.def.id === selectedCreatureId ? ' selected' : '');
+    chip.dataset.id = c.def.id;
+
+    // --- ICON LOGIC ---
+    const isEmoji = !CREATURE_SHAPES[c.def.shape];
+    
+    if (isEmoji) {
+      // Create Emoji Span (styled to match SVG size)
+      const emojiSpan = document.createElement('span');
+      emojiSpan.style.fontSize = '20px';
+      emojiSpan.style.width = '28px';
+      emojiSpan.style.height = '28px';
+      emojiSpan.style.display = 'flex';
+      emojiSpan.style.alignItems = 'center';
+      emojiSpan.style.justifyContent = 'center';
+      emojiSpan.style.flexShrink = '0';
+      emojiSpan.textContent = c.def.shape;
+      chip.appendChild(emojiSpan);
+    } else {
+      // Create Inline SVG icon
+      const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      iconSvg.setAttribute('width', '28'); 
+      iconSvg.setAttribute('height', '28');
+      iconSvg.setAttribute('viewBox', '-16 -16 32 32');
+      iconSvg.style.flexShrink = '0';
+      
+      const color = getCreatureColor(c.def, ws.cfg.biome);
+      const drawFn = CREATURE_SHAPES[c.def.shape] || CREATURE_SHAPES['zhaun'];
+      drawFn(iconSvg, 0, 0, 10, color);
+      chip.appendChild(iconSvg);
+    }
+
+    // --- TEXT LOGIC ---
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'cc-name'; 
+    nameSpan.textContent = c.def.name;
+    chip.appendChild(nameSpan);
+
+    const countBadge = document.createElement('span');
+    countBadge.className = 'cc-count'; 
+    countBadge.textContent = `×${c.count}`; // Added × for better UI
+    chip.appendChild(countBadge);
+
+    // --- CLICK LOGIC ---
+    chip.addEventListener('click', () => {
+      selectedCreatureId = selectedCreatureId === c.def.id ? null : c.def.id;
+      buildCreatureRoster(ws, contIdx); // Refresh UI
+      
+      const msg = selectedCreatureId
+        ? `Locking bio-scan on <strong>${c.def.name}</strong> — ${c.def.role} class.`
+        : `Scanning full ecosystem — all species tracked.`;
+      addInteraction('◈', msg);
+    });
+    
+    roster.appendChild(chip);
+  });
+}
+// ── INTERACTION LOG ────────────────────────────────────────────────
+function addInteraction(emoji, text, time = '') {
+  interactionEntries.unshift({ emoji, text, time });
+  if (interactionEntries.length > MAX_LOG) interactionEntries.pop();
+  const container = document.getElementById('interaction-entries');
+  container.innerHTML = '';
+  interactionEntries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'interaction-entry';
+    div.innerHTML = `
+      <span class="ie-emoji">${e.emoji}</span>
+      <span class="ie-text">${e.text}${e.time ? `<span class="ie-time">${e.time}</span>` : ''}</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ── INTERACTION TIMER ──────────────────────────────────────────────
+function startInteractionTimer(ws, contIdx) {
+  if (interactionTimer) clearInterval(interactionTimer);
+  interactionTimer = setInterval(() => {
+    if (activeContinentIdx === null) return;
+    generateRandomInteraction(ws, contIdx);
+  }, 3500);
+}
+
+function generateRandomInteraction(ws, contIdx, forcedType = null) {
+  const creatures = continentCreatures[contIdx] || [];
+  if (!creatures.length) return;
+
+  const alive = creatures.filter(c => c.count > 0);
+  if (!alive.length) return;
+
+  // If a creature is selected, bias toward it
+  const focused = selectedCreatureId ? alive.find(c => c.def.id === selectedCreatureId) : null;
+  const actor = focused || alive[randInt(0, alive.length - 1)];
+  const type = forcedType || pickInteractionType(actor.def, alive);
+
+  let lines, emoji;
+
+  if (type === 'hunt') {
+    const prey = alive.find(c => c.def.role === 'prey' || c.def.role === 'herbivore');
+    if (!prey) { generateRandomInteraction(ws, contIdx, 'apex'); return; }
+    lines = INTERACTIONS.hunt(actor.def, prey.def);
+    emoji = '⚔️';
+    // Occasionally reduce prey count
+    if (Math.random() < 0.3 && prey.count > 1) {
+      prey.count--;
+      buildCreatureRoster(ws, contIdx);
+    }
+  } else if (type === 'flee') {
+    const pred = alive.find(c => c.def.role === 'predator' || c.def.role === 'apex');
+    if (!pred) { generateRandomInteraction(ws, contIdx, 'graze'); return; }
+    lines = INTERACTIONS.flee(actor.def, pred.def);
+    emoji = '💨';
+  } else if (type === 'breed') {
+    lines = INTERACTIONS.breed(actor.def);
+    emoji = '💕';
+    if (Math.random() < 0.4) {
+      actor.count = Math.min(actor.count + 1, actor.def.count[1] + 3);
+      buildCreatureRoster(ws, contIdx);
+    }
+  } else if (type === 'social') {
+    const partner = alive[randInt(0, alive.length - 1)];
+    lines = INTERACTIONS.social(actor.def, partner.def);
+    emoji = '🤝';
+  } else if (type === 'apex') {
+    lines = INTERACTIONS.apex(actor.def);
+    emoji = '👑';
+  } else if (type === 'graze') {
+    lines = INTERACTIONS.graze(actor.def);
+    emoji = '🌿';
+  } else {
+    lines = INTERACTIONS.graze(actor.def);
+    emoji = '🌿';
+  }
+
+  const line = lines[randInt(0, lines.length - 1)];
+  addInteraction(emoji, line, `Yr.${ws.year}`);
+  triggerSceneEvent(type, actor);
+}
+
+function pickInteractionType(def, alive) {
+  const hasPrey = alive.some(c => c.def.role === 'prey' || c.def.role === 'herbivore');
+  if (def.role === 'predator' && hasPrey && Math.random() < 0.45) return 'hunt';
+  if (def.role === 'apex' && Math.random() < 0.35) return 'apex';
+  if (def.role === 'prey' && Math.random() < 0.35) return 'flee';
+  if (Math.random() < 0.2) return 'breed';
+  if (Math.random() < 0.3) return 'social';
+  return 'graze';
+}
+
+// ── ANIMATED SCENE ─────────────────────────────────────────────────
+let sceneCreatureSprites = [];
+
+function startCreatureScene(ws, contIdx) {
+  if (sceneAnimId) cancelAnimationFrame(sceneAnimId);
+  const svg = document.getElementById('creature-scene-svg');
+  svg.innerHTML = '';
+  const SW = document.getElementById('creature-card')?.clientWidth || svg.clientWidth || 640;
+  const SH = 190;
+  svg.setAttribute('viewBox', `0 0 ${SW} ${SH}`);
+
+  const pal = BIOME_PALETTES[ws.cfg.biome] || BIOME_PALETTES.temperate;
+
+  // Background
+  const bgG = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  svg.appendChild(bgG);
+  const sceneGrad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+  sceneGrad.setAttribute('id', 'scene-sky'); sceneGrad.setAttribute('x1','0'); sceneGrad.setAttribute('y1','0');
+  sceneGrad.setAttribute('x2','0'); sceneGrad.setAttribute('y2','1');
+  const s1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+  s1.setAttribute('offset','0%'); s1.setAttribute('stop-color', pal.sky || '#0a1a0d');
+  const s2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+  s2.setAttribute('offset','100%'); s2.setAttribute('stop-color', pal.ocean[0]);
+  sceneGrad.appendChild(s1); sceneGrad.appendChild(s2); bgG.appendChild(sceneGrad);
+
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bg.setAttribute('x',0); bg.setAttribute('y',0); bg.setAttribute('width',SW); bg.setAttribute('height',SH);
+  bg.setAttribute('fill','url(#scene-sky)'); svg.appendChild(bg);
+
+  // Stars (small, subtle)
+  for (let i = 0; i < 30; i++) {
+    const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    star.setAttribute('cx', rand(0, SW)); star.setAttribute('cy', rand(0, SH * 0.6));
+    star.setAttribute('r', rand(0.4, 1.2)); star.setAttribute('fill', 'rgba(255,255,255,0.4)');
+    svg.appendChild(star);
+  }
+
+  // Ground strip
+  const groundColor = pal.land[0] || '#3d7a3a';
+  const groundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  groundRect.setAttribute('x',0); groundRect.setAttribute('y', SH - 45);
+  groundRect.setAttribute('width', SW); groundRect.setAttribute('height', 45);
+  groundRect.setAttribute('fill', groundColor); groundRect.setAttribute('opacity','0.8');
+  svg.appendChild(groundRect);
+
+  // Ground highlight line
+  const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  gLine.setAttribute('x1',0); gLine.setAttribute('y1', SH - 45);
+  gLine.setAttribute('x2', SW); gLine.setAttribute('y2', SH - 45);
+  gLine.setAttribute('stroke','rgba(255,255,255,0.12)'); gLine.setAttribute('stroke-width','1');
+  svg.appendChild(gLine);
+
+  // Background alien vegetation
+  const creatures = continentCreatures[contIdx] || [];
+  const groundColorDark = pal.land[1] || pal.land[0];
+  const vegCount = 10;
+  for (let i = 0; i < vegCount; i++) {
+    const vx = rand(15, SW - 15);
+    const vy = SH - 45;
+    const vegH = rand(18, 52);
+    const vtype = randInt(0, 4);
+    if (vtype === 0) {
+      svgEl('polygon', {points:`${vx},${vy-vegH} ${vx-vegH*0.18},${vy} ${vx+vegH*0.18},${vy}`, fill:groundColorDark, opacity:'0.5'}, svg);
+    } else if (vtype === 1) {
+      svgEl('line', {x1:vx,y1:vy,x2:vx,y2:vy-vegH*0.65,stroke:groundColorDark,'stroke-width':vegH*0.09,'stroke-linecap':'round',opacity:'0.45'}, svg);
+      svgEl('ellipse', {cx:vx,cy:vy-vegH,rx:vegH*0.22,ry:vegH*0.3,fill:groundColorDark,opacity:'0.4'}, svg);
+    } else if (vtype === 2) {
+      svgEl('path', {d:`M${vx},${vy} L${vx-vegH*0.4},${vy-vegH*0.85} M${vx},${vy} L${vx},${vy-vegH} M${vx},${vy} L${vx+vegH*0.4},${vy-vegH*0.85}`,stroke:groundColorDark,'stroke-width':vegH*0.1,fill:'none',opacity:'0.45','stroke-linecap':'round'}, svg);
+    } else if (vtype === 3) {
+      for (let b=0;b<3;b++) svgEl('circle',{cx:vx+rand(-vegH*0.2,vegH*0.2),cy:vy-vegH*rand(0.4,0.9),r:vegH*0.14,fill:groundColorDark,opacity:'0.38'},svg);
+    } else {
+      svgEl('ellipse',{cx:vx,cy:vy-vegH*0.15,rx:vegH*0.45,ry:vegH*0.22,fill:groundColorDark,opacity:'0.35'},svg);
+    }
+  }
+
+  const spriteGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  spriteGroup.setAttribute('id', 'creature-sprites');
+  svg.appendChild(spriteGroup);
+
+  const fxGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  fxGroup.setAttribute('id', 'creature-fx');
+  svg.appendChild(fxGroup);
+
+  // Spawn creature sprites (UPDATED FOR EMOJI SUPPORT)
+  sceneCreatureSprites = [];
+  creatures.forEach((c, ci) => {
+    const visible = Math.min(c.count, 3);
+    const color = getCreatureColor(c.def, ws.cfg.biome);
+    
+    // Check if the shape is a key in CREATURE_SHAPES; if not, treat as Emoji
+    const isEmoji = !CREATURE_SHAPES[c.def.shape];
+
+    for (let j = 0; j < visible; j++) {
+      const sz = c.def.role === 'apex' ? 14 : c.def.role === 'predator' ? 11 : 8;
+      const sprite = {
+        def: c.def, color,
+        x: rand(40, SW - 40),
+        y: SH - 48 - rand(0, 10),
+        vx: (Math.random() < 0.5 ? 1 : -1) * c.def.speed * 28,
+        phase: rand(0, Math.PI * 2),
+        size: sz,
+        el: null,
+        scaleX: 1,
+      };
+
+      let g;
+      if (isEmoji) {
+        // Create SVG text element for Emoji
+        g = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        g.textContent = c.def.shape;
+        g.setAttribute('font-size', (sz * 2.5) + 'px');
+        g.setAttribute('text-anchor', 'middle');
+        g.setAttribute('dominant-baseline', 'central');
+        spriteGroup.appendChild(g);
+      } else {
+        // Create G element for Procedural SVG
+        g = svgEl('g', {}, spriteGroup);
+        const drawFn = CREATURE_SHAPES[c.def.shape] || CREATURE_SHAPES['zhaun'];
+        drawFn(g, 0, 0, sz, color);
+      }
+
+      g.style.cursor = 'pointer';
+      g.style.userSelect = 'none';
+      g.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        selectedCreatureId = selectedCreatureId === c.def.id ? null : c.def.id;
+        buildCreatureRoster(ws, contIdx);
+        addInteraction('◈', `Locking scan on <strong>${c.def.name}</strong> — ${c.def.role} class.`);
+      });
+      
+      sprite.el = g;
+      sceneCreatureSprites.push(sprite);
+    }
+  });
+
+  // Run animation
+  let lastT = 0;
+  function animateScene(ts) {
+    const dt = Math.min((ts - lastT) / 1000, 0.05);
+    lastT = ts;
+    sceneCreatureSprites.forEach(s => {
+      s.phase += dt * 2.2;
+      const bob = Math.sin(s.phase) * 2.5;
+      s.x += s.vx * dt;
+      if (s.x < 30)      { s.x = 30;      s.vx =  Math.abs(s.vx); s.scaleX =  1; }
+      if (s.x > SW - 30) { s.x = SW - 30; s.vx = -Math.abs(s.vx); s.scaleX = -1; }
+      
+      if (Math.random() < 0.003)
+        s.vx = (Math.random() < 0.5 ? 1 : -1) * s.def.speed * (22 + rand(0,14));
+      
+      const isSelected = s.def.id === selectedCreatureId;
+      const scale = isSelected ? 1.4 : 1.0;
+      
+      s.el.setAttribute('transform',
+        `translate(${s.x},${s.y + bob}) scale(${s.scaleX * scale},${scale})`);
+      s.el.setAttribute('opacity', isSelected ? '1' : selectedCreatureId ? '0.45' : '1');
+    });
+    sceneAnimId = requestAnimationFrame(animateScene);
+  }
+  sceneAnimId = requestAnimationFrame(animateScene);
+}
+
+// ── SCENE PARTICLE FX — SVG geometry, no emojis ──────────────────
+const FX_COLORS = {
+  hunt:    ['#ff4444','#ff8800','#ffdd00'],
+  flee:    ['#88ddff','#aaeeff','#ffffff'],
+  breed:   ['#ff88cc','#ffaaee','#cc88ff'],
+  social:  ['#88ffcc','#aaffee','#88ddff'],
+  apex:    ['#ffdd00','#ff8800','#ffffff'],
+  graze:   ['#88ff99','#aaffbb','#ddffcc'],
+  migrate: ['#ffcc88','#ffaa66','#ff8844'],
+  disaster:['#ff4444','#ff7700','#88aaff'],
+  feed:    ['#aaffaa','#88ff88','#ffeeaa'],
+};
+
+function spawnSVGParticle(fxGroup, cx, cy, color, shape) {
+  let el;
+  if (shape === 'burst') {
+    el = svgEl('circle', { cx: cx + rand(-15,15), cy: cy - 8, r: rand(2,5), fill: color, opacity: '1' }, fxGroup);
+  } else if (shape === 'ring') {
+    el = svgEl('circle', { cx: cx, cy: cy - 8, r: 4, fill: 'none', stroke: color, 'stroke-width': '2', opacity: '1' }, fxGroup);
+  } else if (shape === 'shard') {
+    const sx = cx + rand(-12,12), sy = cy - rand(4,16);
+    el = svgEl('polygon', { points: `${sx},${sy-6} ${sx+4},${sy+4} ${sx-4},${sy+4}`, fill: color, opacity: '1' }, fxGroup);
+  } else {
+    el = svgEl('line', { x1: cx, y1: cy - 5, x2: cx + rand(-8,8), y2: cy - rand(10,20), stroke: color, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '1' }, fxGroup);
+  }
+  const dx = rand(-1.5, 1.5), startY = parseFloat(el.getAttribute('cy') || el.getAttribute('y1') || cy);
+  let op = 1, frame = 0;
+  const anim = setInterval(() => {
+    frame++;
+    op -= 0.045;
+    const yShift = -frame * 1.2;
+    if (shape === 'ring') { el.setAttribute('r', 4 + frame * 0.8); }
+    el.setAttribute('opacity', Math.max(0, op));
+    try {
+      if (shape === 'burst') { el.setAttribute('cy', parseFloat(el.getAttribute('cy')) + yShift * 0.1 - 0.8); el.setAttribute('cx', parseFloat(el.getAttribute('cx')) + dx); }
+      else if (shape === 'shard') { el.setAttribute('transform', `translate(${dx * frame * 0.3},${yShift * 0.08})`); }
+      else if (shape === 'line')  { el.setAttribute('y2', parseFloat(el.getAttribute('y2')) - 1); }
+    } catch(e) {}
+    if (op <= 0) { clearInterval(anim); el.remove(); }
+  }, 35);
+}
+
+function triggerSceneEvent(type, actorCreature) {
+  const fxGroup = document.getElementById('creature-fx');
+  if (!fxGroup) return;
+  const sprite = sceneCreatureSprites.find(s => s.def.id === actorCreature.def.id);
+  const cx = sprite ? sprite.x : rand(100, 540);
+  const cy = sprite ? sprite.y - 10 : 120;
+  const colors = FX_COLORS[type] || ['#ffffff'];
+  const shapes = {
+    hunt:    ['shard','shard','burst'],
+    flee:    ['line','line','line'],
+    breed:   ['ring','burst','burst'],
+    social:  ['ring','line','burst'],
+    apex:    ['shard','shard','ring'],
+    graze:   ['burst','line','burst'],
+    migrate: ['line','shard','line'],
+    disaster:['shard','shard','burst'],
+    feed:    ['burst','burst','ring'],
+  }[type] || ['burst'];
+  const count = type === 'hunt' || type === 'disaster' ? 6 : 3;
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const color = colors[i % colors.length];
+      const shape = shapes[i % shapes.length];
+      spawnSVGParticle(fxGroup, cx + rand(-10,10), cy + rand(-5,5), color, shape);
+    }, i * 60);
+  }
+}
+
+// ── ACTION BUTTONS ─────────────────────────────────────────────────
+function wireCreatureActions(ws) {
+  // Clone buttons to remove any previously attached listeners
+  ['btn-feed','btn-migrate','btn-breed','btn-predator','btn-disaster'].forEach(id => {
+    const old = document.getElementById(id);
+    const clone = old.cloneNode(true);
+    old.parentNode.replaceChild(clone, old);
+  });
+  document.getElementById('btn-feed').addEventListener('click', () => {
+    if (activeContinentIdx === null) return;
+    const creatures = continentCreatures[activeContinentIdx] || [];
+    creatures.forEach(c => { c.count = Math.min(c.count + randInt(1,2), c.def.count[1] + 5); });
+    buildCreatureRoster(ws, activeContinentIdx);
+    const c = creatures[randInt(0, creatures.length - 1)];
+    const lines = INTERACTIONS.feed(c.def);
+    addInteraction('↑', lines[randInt(0, lines.length - 1)], `Yr.${ws ? ws.year : ''}`);
+    triggerSceneEvent('feed', { def: c.def });
+    logEvent(ws, `A nutrient bloom event on Island ${activeContinentIdx + 1} boosts fauna populations!`, 'peace');
+  });
+
+  document.getElementById('btn-migrate').addEventListener('click', () => {
+    if (activeContinentIdx === null) return;
+    const creatures = continentCreatures[activeContinentIdx] || [];
+    const c = creatures[randInt(0, creatures.length - 1)];
+    const lines = INTERACTIONS.migrate(c.def);
+    addInteraction('→', lines[randInt(0, lines.length - 1)], `Yr.${ws ? ws.year : ''}`);
+    triggerSceneEvent('migrate', { def: c.def });
+    // Shake sprites briefly
+    sceneCreatureSprites.forEach(s => { s.vx = (Math.random() < 0.5 ? 1 : -1) * s.def.speed * 60; });
+    logEvent(ws, `Migration cycle on Island ${activeContinentIdx + 1}!`, 'culture');
+  });
+
+  document.getElementById('btn-breed').addEventListener('click', () => {
+    if (activeContinentIdx === null) return;
+    const creatures = continentCreatures[activeContinentIdx] || [];
+    creatures.forEach(c => { if (Math.random() < 0.6) c.count += randInt(0,2); });
+    buildCreatureRoster(ws, activeContinentIdx);
+    const c = creatures[randInt(0, creatures.length - 1)];
+    const lines = INTERACTIONS.breed(c.def);
+    addInteraction('◎', lines[randInt(0, lines.length - 1)], `Yr.${ws ? ws.year : ''}`);
+    triggerSceneEvent('breed', { def: c.def });
+    logEvent(ws, `Mating season on Island ${activeContinentIdx + 1}! Population increases.`, 'peace');
+  });
+
+  document.getElementById('btn-predator').addEventListener('click', () => {
+    if (activeContinentIdx === null) return;
+    const creatures = continentCreatures[activeContinentIdx] || [];
+    const prey = creatures.filter(c => c.def.role === 'prey' && c.count > 0);
+    prey.forEach(p => { if (Math.random() < 0.5) p.count = Math.max(1, p.count - randInt(1,3)); });
+    buildCreatureRoster(ws, activeContinentIdx);
+    addInteraction('✕', `An apex entity arrives on Island ${activeContinentIdx + 1}! Prey-class organisms scatter.`, `Yr.${ws ? ws.year : ''}`);
+    sceneCreatureSprites.filter(s => s.def.fearful).forEach(s => {
+      s.vx = (Math.random() < 0.5 ? 1 : -1) * s.def.speed * 80;
+    });
+    triggerSceneEvent('hunt', creatures[0] || { def: creatures[0]?.def });
+    logEvent(ws, `Apex entity detected on landmass ${activeContinentIdx + 1}!`, 'war');
+  });
+
+  document.getElementById('btn-disaster').addEventListener('click', () => {
+    if (activeContinentIdx === null) return;
+    const creatures = continentCreatures[activeContinentIdx] || [];
+    creatures.forEach(c => { if (Math.random() < 0.5) c.count = Math.max(1, c.count - randInt(1,2)); });
+    buildCreatureRoster(ws, activeContinentIdx);
+    const c = creatures[randInt(0, creatures.length - 1)];
+    const lines = INTERACTIONS.disaster(c.def);
+    addInteraction('~', lines[randInt(0, lines.length - 1)], `Yr.${ws ? ws.year : ''}`);
+    sceneCreatureSprites.forEach(s => { s.vx = (Math.random() < 0.5 ? 1 : -1) * s.def.speed * 100; });
+    triggerSceneEvent('disaster', { def: c.def });
+    logEvent(ws, `Natural disaster strikes Island ${activeContinentIdx + 1}! 🌊`, 'war');
+  });
+}
+
+// ── CLOSE BUTTON ──────────────────────────────────────────────────
+document.getElementById('close-creature-panel').addEventListener('click', closeCreaturePanel);
+document.getElementById('creature-backdrop').addEventListener('click', closeCreaturePanel);
+
+// ── MAKE CONTINENTS CLICKABLE ─────────────────────────────────────
+// initContinentCreatures, addContinentClickZones, wireCreatureActions
+// are called from inside buildWorld via setTimeout (see above).
+
+function addContinentClickZones(ws) {
+  const svg = ws.svg;
+  // Re-use the 'ui-svg' layer for click zones (sits on top)
+  const layer = ws.layers['ui-svg'];
+
+  ws.continents.forEach((cont, i) => {
+    const ptStr = cont.pts.map(p => p.join(',')).join(' ');
+
+    // Invisible hit area polygon
+    const hitZone = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    hitZone.setAttribute('points', ptStr);
+    hitZone.setAttribute('fill', 'transparent');
+    hitZone.setAttribute('stroke', 'transparent');
+    hitZone.setAttribute('stroke-width', '10');
+    hitZone.style.cursor = 'pointer';
+    hitZone.dataset.contIdx = i;
+
+    // Hover highlight
+    hitZone.addEventListener('mouseenter', () => {
+      hitZone.setAttribute('fill', 'rgba(58,159,255,0.08)');
+      hitZone.setAttribute('stroke', 'rgba(58,159,255,0.3)');
+      hitZone.setAttribute('stroke-width', '2');
+    });
+    hitZone.addEventListener('mouseleave', () => {
+      hitZone.setAttribute('fill', 'transparent');
+      hitZone.setAttribute('stroke', 'transparent');
+    });
+    hitZone.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      interactionEntries = [];
+      openCreaturePanel(ws, i);
+    });
+    layer.appendChild(hitZone);
+
+    // Small hint label at continent center
+    const hint = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    hint.setAttribute('x', cont.cx); hint.setAttribute('y', cont.cy + cont.h * 0.45);
+    hint.setAttribute('text-anchor', 'middle');
+    hint.setAttribute('font-size', '7');
+    hint.setAttribute('fill', 'rgba(255,255,255,0.22)');
+    hint.setAttribute('font-family', 'Space Mono,monospace');
+    hint.setAttribute('letter-spacing', '1.5');
+    hint.setAttribute('pointer-events', 'none');
+    hint.textContent = '[ click ]';
+    layer.appendChild(hint);
+  });
 }
 
 </script>
