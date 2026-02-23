@@ -53,24 +53,6 @@
             transform: rotate(-90deg);
         }
 
-        /* World builder link styled like a button */
-        .control-group-link {
-            display: inline-block;
-            text-decoration: none;
-            color: inherit;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 5px;
-            padding: 4px 10px;
-            font-size: inherit;
-            cursor: pointer;
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .control-group-link:hover {
-            background: rgba(255,255,255,0.15);
-            border-color: rgba(255,255,255,0.35);
-        }
-
         /* Visual cue that the panel is collapsed */
         #hud.panel-collapsed {
             /* Keep header visible, let body collapse */
@@ -303,7 +285,9 @@
             <!-- Generate World -->
             <div class="control-group">
                 <div class="control-group-label">World Builder</div>
-                <a href="genWorld.html" class="control-group-link" data-tip="Design and generate your own custom ocean world.">🌍 Generate your own world</a>
+                <a href="genWorld.html" class="control-group-link btn-world-builder" data-tip="Design and generate your own custom ocean world.">
+                    <span>Generate your own world</span>
+                </a>
             </div>
         </div>
 

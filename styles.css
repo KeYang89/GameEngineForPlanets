@@ -99,6 +99,61 @@ body.night #stars { opacity: 1; }
 }
 
 
+/* Special Styling for World Builder Link */
+.btn-world-builder {
+    display: inline-block;
+    text-decoration: none;
+    background: linear-gradient(135deg, #7b5fff, #3a9fff);
+    color: white !important; /* Override HUD link color */
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+    box-shadow: 0 4px 15px rgba(123, 95, 255, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    margin-top: 4px;
+    animation: ctaPulse 3s infinite;
+}
+
+.btn-world-builder:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(123, 95, 255, 0.5);
+    filter: brightness(1.1);
+}
+
+.btn-world-builder:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Shiny "swipe" effect on hover */
+.btn-world-builder::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(30deg);
+    transition: all 0.5s;
+}
+
+.btn-world-builder:hover::after {
+    left: 120%;
+}
+
+/* Subtle attention-grabbing pulse */
+@keyframes ctaPulse {
+    0% { box-shadow: 0 0 0 0 rgba(123, 95, 255, 0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(123, 95, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(123, 95, 255, 0); }
+}
+
 /* ── Game Container ────────────────────────────────────────────────────────── */
 #game-container {
     position: fixed;
