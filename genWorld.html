@@ -378,8 +378,18 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
 }
 .legend-pop { margin-left:auto; font-size:0.6rem; color:var(--accent); }
 
-#back-btn {
-  position:absolute; bottom:14px; right:14px;
+.btn-share {
+  padding:8px 18px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:7px; cursor:pointer;
+  font-family:'Space Mono',monospace;
+  font-size:0.65rem; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); pointer-events:all;
+}
+
+.btn-bottom {
+  position:absolute; bottom:14px; 
   padding:8px 18px;
   background:rgba(255,255,255,0.05);
   border:1px solid rgba(255,255,255,0.15);
@@ -389,8 +399,14 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
   color:var(--muted); pointer-events:all;
   transition:all 0.2s;
 }
-#back-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.btn-bottom:hover { background:rgba(255,255,255,0.1); color:#fff; }
 
+#share-btn {
+  right: 160px;
+}
+#back-btn {
+  right:14px;
+}
 #tooltip {
   position:absolute; display:none;
   background:rgba(7,10,15,0.95);
@@ -689,7 +705,10 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
     </div>
 
     <div id="tooltip"><h3 id="tt-name"></h3><p id="tt-body"></p></div>
-    <button id="back-btn">← New Planet</button>
+    <button class="btn-bottom" id="share-btn" onclick="captureAndShare()">
+          📸 Capture World
+    </button>
+    <button class="btn-bottom" id="back-btn">← New Planet</button>
 
     <!-- ── CREATURE INTERACTION PANEL ── -->
     <div id="creature-panel">
@@ -716,9 +735,11 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
           <button class="action-btn danger" id="btn-predator">✕ Apex Arrives</button>
           <button class="action-btn" id="btn-disaster">~ Disaster</button>
         </div>
+        <button class="btn-share" onclick="exportCreaturePNG()">
+          📸 Capture World
+        </button>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -2518,7 +2539,237 @@ function addContinentClickZones(ws) {
     layer.appendChild(hint);
   });
 }
+async function captureAndShare() {
+  const svg = document.getElementById('world-svg');
+  if (!svg) return;
 
+  addInteraction('◈', 'Initializing high-res orbital photography...');
+
+  // 1. Prepare Canvas
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const svgData = new XMLSerializer().serializeToString(svg);
+  
+  // Increase quality by multiplying dimensions
+  const dpr = 2; 
+  const bounds = svg.getBoundingClientRect();
+  canvas.width = bounds.width * dpr;
+  canvas.height = bounds.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  // 2. Load SVG into Image object
+  const img = new Image();
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  img.onload = async () => {
+    // Fill background (Black space)
+    ctx.fillStyle = '#070a0f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw the Planet
+    ctx.drawImage(img, 0, 0, bounds.width, bounds.height);
+    URL.revokeObjectURL(url);
+
+    // 3. Convert to File and Share
+    canvas.toBlob(async (blob) => {
+      const fileName = `${worldState.cfg.name.replace(/\s+/g, '_')}_planet.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      // Check if the browser supports native sharing of files (Mobile)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Check out my planet: ${worldState.cfg.name}`,
+            text: `I just generated this ${worldState.cfg.biome} world in genWorld!`,
+          });
+          addInteraction('◈', 'Transmission shared across the galactic net.');
+        } catch (e) {
+          console.log('Share cancelled');
+        }
+      } else {
+        // Fallback for Desktop: Direct Download
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        addInteraction('◈', 'Snapshot saved to local datastream (Downloads).');
+      }
+    }, 'image/png');
+  };
+
+  img.src = url;
+}
+
+async function exportCreaturePNG() {
+  const svg = document.getElementById('creature-scene-svg');
+  // Use event.currentTarget if called via listener, otherwise fallback to finding the button
+  const btn = (window.event && window.event.currentTarget) || document.querySelector('.btn-share');
+  
+  if (!svg) return;
+
+  // Visual feedback
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "<span>⏳</span> EXPORTING...";
+  btn.style.opacity = "0.5";
+  btn.style.pointerEvents = "none";
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = 2; 
+  const w = 560; // Standard card width
+  const h = 850; // Increased height to accommodate Logs section
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  const sceneImg = new Image();
+
+  sceneImg.onload = () => {
+    // 1. BACKGROUND & FRAME
+    ctx.fillStyle = '#0a0f16';
+    ctx.fillRect(0, 0, w, h);
+    
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#3a9fff');
+    grad.addColorStop(1, '#7b5fff');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(10, 10, w - 20, h - 20);
+
+    // 2. ASPECT RATIO FIX (Prevent Stretching)
+    const targetW = w - 40;
+    const targetH = 220;
+    const targetX = 20;
+    const targetY = 25;
+
+    const imgRatio = sceneImg.width / sceneImg.height;
+    const areaRatio = targetW / targetH;
+    
+    let drawW, drawH, drawX, drawY;
+
+    if (imgRatio > areaRatio) {
+      drawW = targetW;
+      drawH = targetW / imgRatio;
+      drawX = targetX;
+      drawY = targetY + (targetH - drawH) / 2;
+    } else {
+      drawH = targetH;
+      drawW = targetH * imgRatio;
+      drawX = targetX + (targetW - drawW) / 2;
+      drawY = targetY;
+    }
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(targetX, targetY, targetW, targetH);
+    ctx.drawImage(sceneImg, drawX, drawY, drawW, drawH);
+    URL.revokeObjectURL(url);
+
+    // 3. TEXT DATA LOGIC
+    const creature = selectedCreatureId 
+      ? worldState.continents.flatMap(c => c.creatures).find(c => c.def.id === selectedCreatureId)
+      : null;
+
+    if (creature) {
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 24px Syne, sans-serif";
+      ctx.fillText(creature.def.name.toUpperCase(), 25, 285);
+
+      ctx.fillStyle = '#3a9fff';
+      ctx.font = "10px 'Space Mono', monospace";
+      ctx.fillText(`SPECIMEN ID: ${creature.def.id.toUpperCase()} // BIO-SCAN ACTIVE`, 25, 305);
+
+      ctx.fillStyle = 'rgba(58, 159, 255, 0.1)';
+      ctx.fillRect(25, 325, w - 50, 140);
+
+      ctx.fillStyle = '#c8d8ee';
+      ctx.font = "13px 'Space Mono', monospace";
+      const stats = [
+        `ROLE: ${creature.def.role.toUpperCase()}`,
+        `POPULATION: ${creature.count} UNITS`,
+        `LOCOMOTION: ${creature.def.speed.toFixed(1)}ly/s`,
+        `STATUS: ${creature.def.fearful ? 'EVASIVE' : 'STABLE'}`,
+        `ORIGIN: SECTOR ${worldState.cfg.name.toUpperCase()}`
+      ];
+      stats.forEach((text, i) => ctx.fillText(text, 40, 355 + (i * 25)));
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 24px Syne, sans-serif";
+      ctx.fillText("ECOSYSTEM OVERVIEW", 25, 285);
+
+      ctx.fillStyle = '#7b5fff';
+      ctx.font = "10px 'Space Mono', monospace";
+      ctx.fillText(`LOCATION: ${worldState.cfg.name.toUpperCase()} // WIDE BAND SCAN`, 25, 305);
+
+      ctx.fillStyle = 'rgba(123, 95, 255, 0.1)';
+      ctx.fillRect(25, 325, w - 50, 140);
+
+      ctx.fillStyle = '#c8d8ee';
+      ctx.font = "13px 'Space Mono', monospace";
+      const totalPop = worldState.continents.reduce((acc, cont) => acc + cont.creatures.reduce((a, c) => a + c.count, 0), 0);
+      const stats = [
+        `BIOME CLASS: ${worldState.cfg.biome.toUpperCase()}`,
+        `TOTAL BIOMASS: ${totalPop} UNITS`,
+        `CONTINENTS DETECTED: ${worldState.continents.length}`,
+        `ATMOSPHERE: STABLE`,
+        `SCAN DATE: ${new Date().toLocaleDateString()}`
+      ];
+      stats.forEach((text, i) => ctx.fillText(text, 40, 355 + (i * 25)));
+    }
+
+    // 4. MISSION LOGS SECTION
+    const logStartY = 490;
+    ctx.fillStyle = 'rgba(80, 160, 255, 0.2)';
+    ctx.fillRect(25, logStartY, w - 50, 1); // Header line
+
+    ctx.fillStyle = '#3a9fff';
+    ctx.font = "bold 11px 'Space Mono', monospace";
+    ctx.fillText("MISSION LOGS // NEURAL FEED", 25, logStartY + 25);
+
+    // Assuming interactionEntries is globally accessible
+    if (typeof interactionEntries !== 'undefined' && interactionEntries.length > 0) {
+      const recentLogs = interactionEntries.slice(-8); // Get last 8 entries
+      ctx.font = "11px 'Space Mono', monospace";
+      
+      recentLogs.forEach((entry, i) => {
+        // Strip HTML tags (like <strong>) from log messages
+        const cleanMsg = entry.text.replace(/<[^>]*>?/gm, '');
+        ctx.fillStyle = 'rgba(200, 216, 238, 0.6)';
+        const logLine = `> ${cleanMsg.substring(0, 65)}${cleanMsg.length > 65 ? '...' : ''}`;
+        ctx.fillText(logLine, 35, logStartY + 55 + (i * 22));
+      });
+    } else {
+      ctx.fillStyle = 'rgba(180, 210, 255, 0.3)';
+      ctx.fillText("> NO LOG DATA RECORDED", 35, logStartY + 55);
+    }
+
+    // FOOTER
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#c8d8ee';
+    ctx.font = "9px 'Space Mono', monospace";
+    ctx.fillText("GENWORLD ORBITAL UPLINK // ENCRYPTED DATA PACKET", 25, h - 35);
+    ctx.globalAlpha = 1.0;
+
+    // 5. SAVE
+    canvas.toBlob(blob => {
+      const fileName = creature ? `specimen_${creature.def.id}.png` : `ecosystem_${worldState.cfg.name}.png`;
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      btn.innerHTML = originalText;
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    }, 'image/png');
+  };
+
+  sceneImg.src = url;
+}
 </script>
 </body>
 </html>
