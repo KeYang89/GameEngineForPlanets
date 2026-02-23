@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap');
+
+:root {
+  --bg: #070a0f;
+  --panel: rgba(10,15,22,0.92);
+  --border: rgba(80,160,255,0.18);
+  --accent: #3a9fff;
+  --accent2: #7b5fff;
+  --hot: #ff6b35;
+  --cold: #35d4ff;
+  --green: #3fff8a;
+  --text: #c8d8ee;
+  --muted: rgba(180,210,255,0.45);
+  --glow: 0 0 18px rgba(58,159,255,0.3);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:var(--bg); font-family:'Space Mono',monospace; color:var(--text); overflow:hidden; }
+
+/* ── SCREEN STATES ── */
+#setup-screen, #world-screen {
+  position:absolute; inset:0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#world-screen {
+  opacity:0; pointer-events:none; transform:scale(0.97);
+}
+body.playing #setup-screen {
+  opacity:0; pointer-events:none; transform:scale(1.03);
+}
+body.playing #world-screen {
+  opacity:1; pointer-events:all; transform:scale(1);
+}
+
+/* ── SETUP SCREEN ── */
+#setup-screen {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:0; overflow-y:auto;
+  background: radial-gradient(ellipse at 30% 40%, rgba(58,159,255,0.07) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, rgba(123,95,255,0.07) 0%, transparent 60%),
+              var(--bg);
+}
+
+/* Star field */
+#setup-screen::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 90%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  pointer-events:none;
+}
+
+.setup-inner {
+  width:min(820px, 96vw);
+  padding:40px 0 60px;
+  display:flex; flex-direction:column; gap:32px;
+}
+
+.logo {
+  text-align:center;
+}
+.logo h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.4rem,5vw,4rem);
+  font-weight:800;
+  letter-spacing:-0.02em;
+  background: linear-gradient(135deg, #fff 20%, var(--accent) 60%, var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  line-height:1;
+}
+.logo p {
+  font-size:0.72rem;
+  color:var(--muted);
+  letter-spacing:4px;
+  margin-top:8px;
+  text-transform:uppercase;
+}
+
+/* Config panels */
+.config-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.config-grid.full { grid-template-columns:1fr; }
+
+.panel {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:22px 24px;
+  display:flex; flex-direction:column; gap:16px;
+}
+.panel-title {
+  font-family:'Syne',sans-serif;
+  font-size:0.68rem;
+  font-weight:600;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--accent);
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+
+/* Form elements */
+.field {
+  display:flex; flex-direction:column; gap:6px;
+}
+.field label {
+  font-size:0.65rem;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.field input[type="text"], .field select {
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:7px;
+  padding:9px 13px;
+  font-family:'Space Mono',monospace;
+  font-size:0.8rem;
+  color:var(--text);
+  outline:none;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.field input:focus, .field select:focus {
+  border-color:rgba(58,159,255,0.6);
+  box-shadow:var(--glow);
+}
+.field select option { background:#0d1520; }
+
+/* Slider */
+.slider-field {
+  display:flex; flex-direction:column; gap:6px;
+}
+.slider-field label {
+  font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  display:flex; justify-content:space-between;
+}
+.slider-field label span { color:var(--accent); font-weight:700; }
+input[type="range"] {
+  -webkit-appearance:none; width:100%; height:4px;
+  background:rgba(58,159,255,0.2); border-radius:2px; outline:none; cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px;
+  background:var(--accent); border-radius:50%;
+  box-shadow:0 0 8px var(--accent);
+  transition:transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
+
+/* Civ rows */
+.civ-config {
+  display:flex; flex-direction:column; gap:10px;
+}
+.civ-row {
+  display:grid;
+  grid-template-columns:auto 1fr auto auto auto;
+  gap:8px; align-items:center;
+}
+.civ-number {
+  font-size:0.65rem; color:var(--muted);
+  width:16px; text-align:right;
+}
+.civ-row input[type="text"] {
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:6px 10px;
+  font-family:'Space Mono',monospace;
+  font-size:0.75rem;
+  color:var(--text);
+  outline:none;
+  min-width:0;
+  transition:border-color 0.2s;
+}
+.civ-row input[type="text"]:focus { border-color:rgba(58,159,255,0.6); }
+.civ-color {
+  width:30px; height:30px; border-radius:6px; cursor:pointer;
+  border:2px solid rgba(255,255,255,0.15);
+  padding:0;
+  background:none;
+  overflow:hidden;
+}
+.trait-badge {
+  font-size:0.6rem; letter-spacing:1px; text-transform:uppercase;
+  padding:3px 7px; border-radius:4px;
+  background:rgba(58,159,255,0.12);
+  color:var(--accent);
+  border:1px solid rgba(58,159,255,0.25);
+  cursor:pointer;
+  white-space:nowrap;
+  user-select:none;
+  transition:all 0.15s;
+}
+.trait-badge:hover { background:rgba(58,159,255,0.25); }
+.remove-civ {
+  width:20px; height:20px;
+  background:rgba(255,80,80,0.1);
+  border:1px solid rgba(255,80,80,0.25);
+  border-radius:4px; cursor:pointer;
+  color:rgba(255,100,100,0.7); font-size:0.7rem;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s;
+}
+.remove-civ:hover { background:rgba(255,80,80,0.25); color:#ff6060; }
+
+.add-civ-btn {
+  width:100%;
+  padding:8px;
+  background:rgba(58,159,255,0.06);
+  border:1px dashed rgba(58,159,255,0.25);
+  border-radius:7px;
+  cursor:pointer; color:var(--muted);
+  font-family:'Space Mono',monospace;
+  font-size:0.7rem; letter-spacing:2px; text-transform:uppercase;
+  transition:all 0.2s;
+}
+.add-civ-btn:hover { background:rgba(58,159,255,0.12); color:var(--accent); border-color:rgba(58,159,255,0.45); }
+
+/* Color chips for biome/atmo */
+.chip-row {
+  display:flex; flex-wrap:wrap; gap:8px;
+}
+.chip {
+  padding:5px 12px; border-radius:20px; cursor:pointer;
+  font-size:0.65rem; letter-spacing:1px; text-transform:uppercase;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);
+  color:var(--muted);
+  transition:all 0.18s; user-select:none;
+}
+.chip:hover { border-color:rgba(58,159,255,0.4); color:var(--text); }
+.chip.active {
+  background:rgba(58,159,255,0.18);
+  border-color:var(--accent);
+  color:#fff;
+  box-shadow:0 0 10px rgba(58,159,255,0.2);
+}
+
+/* Generate button */
+.generate-btn {
+  width:100%; padding:16px;
+  background:linear-gradient(135deg, var(--accent), var(--accent2));
+  border:none; border-radius:10px; cursor:pointer;
+  font-family:'Syne',sans-serif; font-size:1rem; font-weight:800;
+  letter-spacing:3px; text-transform:uppercase;
+  color:#fff;
+  box-shadow: 0 0 30px rgba(58,159,255,0.3), 0 4px 20px rgba(0,0,0,0.4);
+  transition:all 0.25s;
+  position:relative; overflow:hidden;
+}
+.generate-btn::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+}
+.generate-btn:hover { transform:translateY(-2px); box-shadow:0 0 40px rgba(58,159,255,0.5), 0 8px 30px rgba(0,0,0,0.4); }
+.generate-btn:active { transform:translateY(0); }
+
+/* ── WORLD SCREEN ── */
+#world-screen {
+  display:flex; flex-direction:column;
+}
+
+#world-canvas-wrap {
+  flex:1; position:relative; overflow:hidden;
+}
+
+#world-svg {
+  width:100%; height:100%; display:block;
+}
+
+/* HUD panels */
+.hud {
+  position:absolute; pointer-events:none;
+  background:rgba(7,10,15,0.88);
+  border:1px solid var(--border);
+  border-radius:10px;
+  backdrop-filter:blur(8px);
+  padding:14px 18px;
+}
+#hud-top-left {
+  top:14px; left:14px; min-width:200px;
+}
+#hud-top-right {
+  top:14px; right:14px; width:240px;
+}
+#hud-bottom {
+  bottom:14px; left:14px; right:14px;
+  display:flex; gap:10px; align-items:flex-end;
+  background:none; border:none; backdrop-filter:none; padding:0;
+  pointer-events:all;
+}
+
+.hud-title {
+  font-family:'Syne',sans-serif;
+  font-size:0.65rem; font-weight:800;
+  letter-spacing:4px; text-transform:uppercase;
+  color:var(--accent);
+  padding-bottom:9px;
+  margin-bottom:9px;
+  border-bottom:1px solid var(--border);
+}
+.stat-row {
+  display:flex; justify-content:space-between;
+  font-size:0.65rem; color:var(--muted);
+  margin:3px 0; letter-spacing:0.5px;
+}
+.stat-val { color:#fff; font-weight:700; }
+
+#event-log {
+  flex:1;
+  background:rgba(7,10,15,0.88);
+  border:1px solid var(--border);
+  border-radius:10px;
+  backdrop-filter:blur(8px);
+  padding:14px 18px;
+  max-height:130px; overflow:hidden;
+}
+.event-entry {
+  font-size:0.6rem; line-height:1.6;
+  color:var(--muted);
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  padding:3px 0;
+}
+.event-entry.war { color:#ff6b6b; }
+.event-entry.peace { color:var(--green); }
+.event-entry.culture { color:#c79fff; }
+.event-entry.wonder { color:#ffd166; }
+
+#year-display {
+  position:absolute; top:14px; left:50%;
+  transform:translateX(-50%);
+  font-family:'Syne',sans-serif;
+  font-size:0.7rem; font-weight:800;
+  letter-spacing:5px; text-transform:uppercase;
+  color:var(--muted);
+  pointer-events:none;
+}
+#year-display span { color:#fff; }
+
+.civ-legend {
+  background:rgba(7,10,15,0.88);
+  border:1px solid var(--border);
+  border-radius:10px;
+  backdrop-filter:blur(8px);
+  padding:14px 18px;
+  min-width:180px;
+}
+.civ-legend-title {
+  font-family:'Syne',sans-serif;
+  font-size:0.6rem; font-weight:800;
+  letter-spacing:3px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:9px;
+}
+.legend-row {
+  display:flex; align-items:center; gap:9px;
+  font-size:0.65rem; color:var(--muted);
+  margin:5px 0;
+}
+.legend-dot {
+  width:9px; height:9px; border-radius:50%; flex-shrink:0;
+}
+.legend-pop { margin-left:auto; font-size:0.6rem; color:var(--accent); }
+
+#back-btn {
+  position:absolute; bottom:14px; right:14px;
+  padding:8px 18px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:7px; cursor:pointer;
+  font-family:'Space Mono',monospace;
+  font-size:0.65rem; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); pointer-events:all;
+  transition:all 0.2s;
+}
+#back-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+
+#tooltip {
+  position:absolute; display:none;
+  background:rgba(7,10,15,0.95);
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:12px 16px;
+  pointer-events:none;
+  z-index:999;
+  max-width:220px;
+  backdrop-filter:blur(8px);
+}
+#tooltip h3 {
+  font-family:'Syne',sans-serif;
+  font-size:0.75rem; font-weight:800;
+  color:#fff; margin-bottom:7px;
+}
+#tooltip p {
+  font-size:0.62rem; color:var(--muted); line-height:1.6;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  SETUP SCREEN                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="setup-screen">
+<div class="setup-inner">
+
+  <div class="logo">
+    <h1>genWorld</h1>
+    <p>Procedural Civilization Generator</p>
+  </div>
+
+  <!-- Row 1: Planet basics -->
+  <div class="config-grid">
+    <div class="panel">
+      <div class="panel-title">Planet Identity</div>
+      <div class="field">
+        <label>Planet Name</label>
+        <input type="text" id="planet-name" placeholder="e.g. Keth'ara" maxlength="24" value="">
+      </div>
+      <div class="field">
+        <label>Dominant Biome</label>
+        <select id="biome-select">
+          <option value="temperate">Temperate — Forests & Plains</option>
+          <option value="desert">Desert — Arid Wastes</option>
+          <option value="ocean">Ocean World — Vast Seas</option>
+          <option value="jungle">Jungle — Dense Canopy</option>
+          <option value="arctic">Arctic — Ice & Tundra</option>
+          <option value="volcanic">Volcanic — Fire & Ash</option>
+          <option value="crystal">Crystal — Mineral Formations</option>
+          <option value="void">Void — Dark Matter Fields</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Atmosphere</div>
+      <div class="slider-field">
+        <label>Landmass Coverage <span id="land-val">55</span>%</label>
+        <input type="range" id="land-slider" min="10" max="90" value="55">
+      </div>
+      <div class="slider-field">
+        <label>Starting Year <span id="year-val">1</span></label>
+        <input type="range" id="year-slider" min="1" max="500" value="1">
+      </div>
+      <div class="slider-field">
+        <label>Sim Speed <span id="speed-val">1×</span></label>
+        <input type="range" id="speed-slider" min="1" max="5" value="2">
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Civilization editor -->
+  <div class="panel">
+    <div class="panel-title">Civilizations</div>
+    <div class="civ-config" id="civ-list"></div>
+    <button class="add-civ-btn" id="add-civ-btn">+ Add Civilization</button>
+  </div>
+
+  <!-- Row 3: World traits -->
+  <div class="config-grid">
+    <div class="panel">
+      <div class="panel-title">World Traits</div>
+      <div class="chip-row" id="world-traits">
+        <div class="chip active" data-trait="rivers">Rivers</div>
+        <div class="chip active" data-trait="trade">Trade Routes</div>
+        <div class="chip" data-trait="wonders">Wonders</div>
+        <div class="chip" data-trait="plagues">Plagues</div>
+        <div class="chip active" data-trait="wars">Wars</div>
+        <div class="chip" data-trait="alliances">Alliances</div>
+        <div class="chip" data-trait="golden-age">Golden Ages</div>
+        <div class="chip" data-trait="cataclysm">Cataclysms</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Starting Conditions</div>
+      <div class="chip-row" id="start-conditions">
+        <div class="chip active" data-cond="cities">Major Cities</div>
+        <div class="chip" data-cond="neutral">Neutral Start</div>
+        <div class="chip" data-cond="hostile">Hostile World</div>
+        <div class="chip" data-cond="advanced">Advanced Tech</div>
+        <div class="chip" data-cond="sparse">Sparse Pop.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <button class="generate-btn" id="generate-btn">⟳ Generate Planet</button>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  WORLD SCREEN                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="world-screen">
+  <div id="world-canvas-wrap">
+    <svg id="world-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <div class="hud" id="hud-top-left">
+      <div class="hud-title" id="hud-planet-name">PLANET</div>
+      <div class="stat-row"><span>Age</span><span class="stat-val" id="s-age">—</span></div>
+      <div class="stat-row"><span>Year</span><span class="stat-val" id="s-year">—</span></div>
+      <div class="stat-row"><span>World Pop.</span><span class="stat-val" id="s-pop">—</span></div>
+      <div class="stat-row"><span>Active Wars</span><span class="stat-val" id="s-wars">—</span></div>
+      <div class="stat-row"><span>Trade Routes</span><span class="stat-val" id="s-trade">—</span></div>
+      <div class="stat-row"><span>Cities</span><span class="stat-val" id="s-cities">—</span></div>
+    </div>
+
+    <div id="year-display">YEAR <span id="year-counter">1</span></div>
+
+    <div class="hud" id="hud-top-right">
+      <div class="hud-title">Civilizations</div>
+      <div id="civ-legend-rows"></div>
+    </div>
+
+    <div id="hud-bottom">
+      <div id="event-log">
+        <div class="hud-title" style="border:none;padding:0;margin-bottom:8px;">World Chronicle</div>
+        <div id="events-container"></div>
+      </div>
+    </div>
+
+    <div id="tooltip"><h3 id="tt-name"></h3><p id="tt-body"></p></div>
+    <button id="back-btn">← New Planet</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  SETUP LOGIC
+// ════════════════════════════════════════════════════════════════
+
+const TRAITS_POOL = [
+  { name:'Aggressive', emoji:'⚔', color:'#ff6b6b' },
+  { name:'Maritime', emoji:'⚓', color:'#35d4ff' },
+  { name:'Arcane', emoji:'✦', color:'#c79fff' },
+  { name:'Naturalist', emoji:'🌿', color:'#3fff8a' },
+  { name:'Nomadic', emoji:'🏇', color:'#ffb347' },
+  { name:'Merchant', emoji:'💰', color:'#ffd166' },
+  { name:'Scholar', emoji:'📜', color:'#a8d8ea' },
+  { name:'Theocratic', emoji:'🕍', color:'#e8a0bf' },
+];
+
+const PRESET_NAMES = [
+  'Kelthara','Vornex','Aethis','Zura','Nexvald','Sythe','Orrath','Lumineth','Drakonis','Quelaris'
+];
+
+const PRESET_CIV_NAMES = [
+  ['Sunborn Empire','Tideclaw League','Verdant Clans','Obsidian Dominion','Ashborn Horde'],
+  ['Iron Hegemony','Azure Republic','Forest Conclave','Shadow Court','Wanderers of Dust'],
+  ['Solari Pact','Stormwave Union','Deep Rooters','Void Syndicate','Flame Nomads'],
+  ['Aurumite Order','Sea Marauders','Green Council','Night Cabal','Sand Riders'],
+];
+
+let civs = [];
+let nextCivId = 1;
+const traitCycle = {};  // civId -> traitIndex
+
+function randomColor() {
+  const palette = ['#e74c3c','#2e86c1','#27ae60','#8e44ad','#d35400','#16a085','#f39c12','#c0392b','#1abc9c','#9b59b6'];
+  return palette[Math.floor(Math.random() * palette.length)];
+}
+
+function addCiv(nameOverride, colorOverride, traitOverride) {
+  if (civs.length >= 8) return;
+  const id = nextCivId++;
+  const preset = PRESET_CIV_NAMES[Math.floor(Math.random() * PRESET_CIV_NAMES.length)];
+  const name = nameOverride || preset[Math.floor(Math.random() * preset.length)];
+  const color = colorOverride || randomColor();
+  const traitIdx = Math.floor(Math.random() * TRAITS_POOL.length);
+  traitCycle[id] = traitOverride !== undefined ? traitOverride : traitIdx;
+  civs.push({ id, name, color });
+  renderCivList();
+}
+
+function removeCiv(id) {
+  if (civs.length <= 2) return;
+  civs = civs.filter(c => c.id !== id);
+  renderCivList();
+}
+
+function cycleTrait(id) {
+  traitCycle[id] = (traitCycle[id] + 1) % TRAITS_POOL.length;
+  renderCivList();
+}
+
+function renderCivList() {
+  const container = document.getElementById('civ-list');
+  container.innerHTML = '';
+  civs.forEach((c, i) => {
+    const trait = TRAITS_POOL[traitCycle[c.id] ?? 0];
+    const row = document.createElement('div');
+    row.className = 'civ-row';
+    row.innerHTML = `
+      <span class="civ-number">${i+1}</span>
+      <input type="text" value="${c.name}" data-id="${c.id}" class="civ-name-input" placeholder="Civilization name">
+      <input type="color" class="civ-color" value="${c.color}" data-id="${c.id}">
+      <div class="trait-badge" data-id="${c.id}" style="color:${trait.color};border-color:${trait.color}30;background:${trait.color}18">${trait.emoji} ${trait.name}</div>
+      <div class="remove-civ" data-id="${c.id}">✕</div>
+    `;
+    container.appendChild(row);
+  });
+
+  // Wire events
+  container.querySelectorAll('.civ-name-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const civ = civs.find(c => c.id == inp.dataset.id);
+      if (civ) civ.name = inp.value;
+    });
+  });
+  container.querySelectorAll('.civ-color').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const civ = civs.find(c => c.id == inp.dataset.id);
+      if (civ) civ.color = inp.value;
+    });
+  });
+  container.querySelectorAll('.trait-badge').forEach(el => {
+    el.addEventListener('click', () => cycleTrait(Number(el.dataset.id)));
+  });
+  container.querySelectorAll('.remove-civ').forEach(el => {
+    el.addEventListener('click', () => removeCiv(Number(el.dataset.id)));
+  });
+
+  document.getElementById('add-civ-btn').style.opacity = civs.length >= 8 ? '0.3' : '1';
+}
+
+// Slider readouts
+const sliders = [
+  { id:'land-slider', out:'land-val', fmt: v => v + '%' },
+  { id:'year-slider', out:'year-val', fmt: v => v },
+  { id:'speed-slider', out:'speed-val', fmt: v => v + '×' },
+];
+sliders.forEach(({ id, out, fmt }) => {
+  const el = document.getElementById(id);
+  const o = document.getElementById(out);
+  el.addEventListener('input', () => { o.textContent = fmt(el.value); });
+});
+
+// Chips
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => chip.classList.toggle('active'));
+});
+
+document.getElementById('add-civ-btn').addEventListener('click', addCiv);
+
+// Planet name random suggestion
+const nameInput = document.getElementById('planet-name');
+nameInput.placeholder = PRESET_NAMES[Math.floor(Math.random() * PRESET_NAMES.length)];
+
+// Init with default civs
+addCiv('Solari Empire', '#e85d4a');
+addCiv('Thalassian League', '#2e86c1');
+addCiv('Verdant Clans', '#3aaf6a');
+addCiv('Obsidian Dominion', '#8e44ad');
+
+
+// ════════════════════════════════════════════════════════════════
+//  WORLD GENERATION
+// ════════════════════════════════════════════════════════════════
+
+let simInterval = null;
+let worldConfig = null;
+let worldState  = null;
+
+document.getElementById('generate-btn').addEventListener('click', () => {
+  const name = document.getElementById('planet-name').value.trim() || nameInput.placeholder;
+  const biome = document.getElementById('biome-select').value;
+  const landCoverage = Number(document.getElementById('land-slider').value) / 100;
+  const startYear = Number(document.getElementById('year-slider').value);
+  const simSpeed = Number(document.getElementById('speed-slider').value);
+
+  const traits = {};
+  document.querySelectorAll('#world-traits .chip').forEach(c => {
+    traits[c.dataset.trait] = c.classList.contains('active');
+  });
+  const conditions = {};
+  document.querySelectorAll('#start-conditions .chip').forEach(c => {
+    conditions[c.dataset.cond] = c.classList.contains('active');
+  });
+
+  const civData = civs.map(c => ({
+    ...c,
+    trait: TRAITS_POOL[traitCycle[c.id] ?? 0],
+  }));
+
+  worldConfig = { name, biome, landCoverage, startYear, simSpeed, traits, conditions, civData };
+
+  buildWorld(worldConfig);
+  document.body.classList.add('playing');
+});
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  if (simInterval) clearInterval(simInterval);
+  document.body.classList.remove('playing');
+});
+
+// ── BIOME PALETTES ──────────────────────────────────────────
+const BIOME_PALETTES = {
+  temperate: { space:'#030a04', ocean:['#0a2e1c','#0f4526','#05180c'],
+    land:['#3d7a3a','#5a9a50','#2d5a2a'], mountain:'#6a7060',
+    river:'rgba(40,120,80,0.6)', sky:'#0a1a0d' },
+  desert:    { space:'#0f0805', ocean:['#1a1a0a','#2a2a0e','#0a0a05'],
+    land:['#c8a55a','#b8923e','#e8c070'], mountain:'#a06030',
+    river:'rgba(180,140,60,0.5)', sky:'#1a0e05' },
+  ocean:     { space:'#020510', ocean:['#062242','#0a3060','#041530'],
+    land:['#2a5a3a','#3a7a4a','#1a4a2a'], mountain:'#3a5060',
+    river:'rgba(30,100,180,0.7)', sky:'#030d1a' },
+  jungle:    { space:'#020805', ocean:['#0a2015','#122a1a','#060f0a'],
+    land:['#1a6030','#2a8040','#0a4020'], mountain:'#2a5030',
+    river:'rgba(20,80,40,0.6)', sky:'#030d05' },
+  arctic:    { space:'#020810', ocean:['#0a1530','#121a3a','#060c20'],
+    land:['#cce8f4','#a0c8e0','#e8f4fc'], mountain:'#8a9ab0',
+    river:'rgba(150,200,240,0.5)', sky:'#080f1a' },
+  volcanic:  { space:'#0a0302', ocean:['#0a0500','#150800','#050200'],
+    land:['#2a1010','#3d2020','#1a0808'], mountain:'#6a3020',
+    river:'rgba(180,60,20,0.7)', sky:'#100502' },
+  crystal:   { space:'#050510', ocean:['#0a0a20','#15153a','#050510'],
+    land:['#4a3a8a','#6a5ab0','#2a2060'], mountain:'#7a6aa0',
+    river:'rgba(100,80,200,0.6)', sky:'#08080f' },
+  void:      { space:'#000000', ocean:['#030306','#06060d','#010103'],
+    land:['#1a0a2a','#2a1040','#0d0520'], mountain:'#2a2040',
+    river:'rgba(80,20,120,0.6)', sky:'#030105' },
+};
+
+const AGES = ['Dawn Age','Stone Age','Bronze Age','Iron Age','Classical Age',
+              'Medieval Age','Renaissance','Industrial Age','Enlightened Age'];
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+function randInt(a, b) { return Math.floor(rand(a, b + 1)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function dist(x1,y1,x2,y2) { return Math.hypot(x2-x1,y2-y1); }
+
+function el(tag, attrs = {}, parent = null) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function buildWorld(cfg) {
+  if (simInterval) clearInterval(simInterval);
+
+  const svg = document.getElementById('world-svg');
+  svg.innerHTML = '';
+  const W = svg.clientWidth || window.innerWidth;
+  const H = svg.clientHeight || window.innerHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const pal = BIOME_PALETTES[cfg.biome] || BIOME_PALETTES.temperate;
+
+  // ── DEFS ──────────────────────────
+  const defs = el('defs'); svg.appendChild(defs);
+
+  function mkGlow(id, blur) {
+    const f = el('filter', { id, x:'-60%', y:'-60%', width:'220%', height:'220%' }, defs);
+    el('feGaussianBlur', { stdDeviation:blur, result:'b' }, f);
+    const m = el('feMerge', {}, f);
+    el('feMergeNode', { in:'b' }, m);
+    el('feMergeNode', { in:'SourceGraphic' }, m);
+  }
+  mkGlow('g2', 2); mkGlow('g4', 4); mkGlow('g8', 8); mkGlow('g12', 12);
+
+  const softF = el('filter', { id:'soft', x:'-50%', y:'-50%', width:'200%', height:'200%' }, defs);
+  el('feGaussianBlur', { stdDeviation:'14' }, softF);
+
+  // ── LAYERS ────────────────────────
+  const layers = {};
+  ['bg','ocean','terrain','rivers','territory','borders','trade','structures','units','fx','ui-svg'].forEach(n => {
+    const g = el('g', { id: n }); svg.appendChild(g); layers[n] = g;
+  });
+
+  // ── SPACE BACKGROUND ──────────────
+  const bgG = el('radialGradient', { id:'space-bg', cx:'50%', cy:'50%', r:'70%' }, defs);
+  el('stop', { offset:'0%', 'stop-color': pal.sky || '#050510' }, bgG);
+  el('stop', { offset:'100%', 'stop-color': pal.space }, bgG);
+  el('rect', { x:0, y:0, width:W, height:H, fill:'url(#space-bg)' }, layers['bg']);
+
+  // Stars
+  const starCount = cfg.biome === 'void' ? 300 : 120;
+  for (let i = 0; i < starCount; i++) {
+    el('circle', {
+      cx: rand(0, W), cy: rand(0, H), r: rand(0.3, 1.4),
+      fill: `hsl(${rand(200,260)},${rand(20,60)}%,${rand(70,95)}%)`,
+      opacity: rand(0.15, 0.6)
+    }, layers['bg']);
+  }
+
+  // ── OCEAN ─────────────────────────
+  const oceanG = el('radialGradient', { id:'ocean-base', cx:'45%', cy:'40%', r:'65%' }, defs);
+  el('stop', { offset:'0%', 'stop-color': pal.ocean[1] }, oceanG);
+  el('stop', { offset:'60%', 'stop-color': pal.ocean[0] }, oceanG);
+  el('stop', { offset:'100%', 'stop-color': pal.ocean[2] }, oceanG);
+  el('rect', { x:0, y:0, width:W, height:H, fill:'url(#ocean-base)' }, layers['ocean']);
+
+  // Ocean shimmer
+  for (let i = 0; i < 20; i++) {
+    el('ellipse', {
+      cx: rand(0, W), cy: rand(0, H),
+      rx: rand(40, 200), ry: rand(15, 50),
+      fill: `rgba(80,180,255,0.04)`,
+      transform: `rotate(${rand(0,180)},${rand(0,W)},${rand(0,H)})`
+    }, layers['ocean']);
+  }
+
+  // ── PROCEDURAL CONTINENTS ──────────
+  const numContinents = Math.max(cfg.civData.length, Math.round(2 + cfg.landCoverage * 6));
+  const continents = generateContinents(W, H, numContinents, cfg.landCoverage, pal, defs, layers);
+
+  // ── RIVERS ────────────────────────
+  if (cfg.traits.rivers) {
+    generateRivers(W, H, continents, pal, layers);
+  }
+
+  // ── CIVILIZATION DATA ──────────────
+  const civGameData = cfg.civData.map((c, i) => {
+    const cont = continents[i % continents.length];
+    const capitalX = cont.cx + rand(-80, 80);
+    const capitalY = cont.cy + rand(-60, 60);
+    const startPop = cfg.conditions.sparse ? randInt(20, 60)
+                   : cfg.conditions.advanced ? randInt(200, 500)
+                   : randInt(80, 180);
+    const mil = c.trait.name === 'Aggressive' ? 85 : c.trait.name === 'Nomadic' ? 75 : randInt(40, 70);
+    const sci = c.trait.name === 'Scholar' ? 95 : c.trait.name === 'Arcane' ? 90 : randInt(40, 70);
+    const cult = c.trait.name === 'Merchant' ? 85 : c.trait.name === 'Maritime' ? 75 : randInt(40, 70);
+    return {
+      id: c.id, name: c.name, color: c.color, trait: c.trait,
+      capital: { x: capitalX, y: capitalY, name: c.name.split(' ')[0] + ' Prime' },
+      population: startPop, growth: rand(0.8, 1.8),
+      military: mil, science: sci, culture: cult,
+      age: 0, territory: 1, expansion: rand(0.3, 0.9),
+      desc: `${c.trait.emoji} ${c.trait.name} civilization.`,
+      wonder: null,
+      relations: {}
+    };
+  });
+
+  // ── CITIES ────────────────────────
+  const cities = [];
+  civGameData.forEach((civ, ci) => {
+    cities.push({
+      civIdx: ci, x: civ.capital.x, y: civ.capital.y,
+      name: civ.capital.name, size: 'capital',
+      pop: civ.population * 500, active: true, founded: cfg.startYear
+    });
+    const cityCount = cfg.conditions.cities ? randInt(2, 4) : randInt(1, 2);
+    for (let j = 0; j < cityCount; j++) {
+      const cont = continents[ci % continents.length];
+      cities.push({
+        civIdx: ci,
+        x: cont.cx + rand(-cont.w * 0.4, cont.w * 0.4),
+        y: cont.cy + rand(-cont.h * 0.4, cont.h * 0.4),
+        name: generateCityName(),
+        size: j === 0 ? 'major' : 'town',
+        pop: civ.population * (j === 0 ? 200 : 80),
+        active: true, founded: cfg.startYear
+      });
+    }
+  });
+
+  // ── RELATIONS MATRIX ──────────────
+  const n = civGameData.length;
+  const relations = Array.from({ length: n }, () => Array(n).fill(0));
+  if (cfg.conditions.hostile) {
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        const v = -1 - (Math.random() < 0.4 ? 1 : 0);
+        relations[i][j] = relations[j][i] = v;
+      }
+  } else if (cfg.conditions.neutral) {
+    // all 0
+  } else {
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        const v = randInt(-2, 2);
+        relations[i][j] = relations[j][i] = v;
+      }
+  }
+
+  // ── TRADE ROUTES ──────────────────
+  const tradeRoutes = [];
+  if (cfg.traits.trade) {
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      if (relations[i][j] >= 0) {
+        const cA = cities.find(c => c.civIdx === i && c.size === 'capital');
+        const cB = cities.find(c => c.civIdx === j && c.size === 'capital');
+        if (cA && cB) tradeRoutes.push({ from: cA, to: cB, civA: i, civB: j, active: true, age: 0 });
+      }
+    }
+  }
+
+  // ── MILITARY UNITS ────────────────
+  const units = [];
+  civGameData.forEach((civ, ci) => {
+    const capital = cities.find(c => c.civIdx === ci && c.size === 'capital');
+    if (!capital) return;
+    const unitType = civ.trait.name === 'Maritime' ? 'fleet' : civ.trait.name === 'Arcane' ? 'mage' : 'army';
+    units.push({
+      civIdx: ci, x: capital.x + rand(-40, 40), y: capital.y + rand(-30, 30),
+      type: unitType, size: randInt(2, 5),
+      vx:0, vy:0, targetX: capital.x, targetY: capital.y,
+      phase: rand(0, Math.PI * 2), fighting: false, fightTimer: 0
+    });
+  });
+
+  // ── WORLD STATE ───────────────────
+  worldState = {
+    W, H, cfg, pal, layers, defs, svg,
+    civs: civGameData, cities, relations, tradeRoutes, units,
+    continents,
+    year: cfg.startYear,
+    totalWonders: 0, totalCitiesCount: cities.length,
+    events: [],
+    tradeElems: [],
+  };
+
+  // ── INITIAL RENDER ────────────────
+  renderAll(worldState);
+  updateHUD(worldState);
+
+  // ── HUD: Civ Legend ───────────────
+  const legendRows = document.getElementById('civ-legend-rows');
+  legendRows.innerHTML = '';
+  civGameData.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.innerHTML = `<div class="legend-dot" style="background:${c.color};box-shadow:0 0 5px ${c.color}"></div>
+      <span>${c.name}</span><span class="legend-pop" id="lpop-${c.id}">—</span>`;
+    legendRows.appendChild(row);
+  });
+
+  document.getElementById('hud-planet-name').textContent = cfg.name.toUpperCase();
+
+  // ── LOG initial events ────────────
+  logEvent(worldState, `${cfg.name} emerges from the void.`, 'culture');
+  civGameData.forEach(c => logEvent(worldState, `${c.name} rise to prominence. ${c.trait.emoji}`, 'peace'));
+
+  // ── SIM LOOP ──────────────────────
+  const baseInterval = 1200;
+  const interval = Math.round(baseInterval / cfg.simSpeed);
+  simInterval = setInterval(() => simTick(worldState), interval);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONTINENT GENERATION
+// ════════════════════════════════════════════════════════════════
+
+function generateContinents(W, H, count, landFrac, pal, defs, layers) {
+  const continents = [];
+  const margin = 80;
+  const placed = [];
+
+  for (let i = 0; i < count; i++) {
+    let cx, cy, attempts = 0;
+    do {
+      cx = rand(margin + W * 0.05, W - margin - W * 0.05);
+      cy = rand(margin + H * 0.08, H - margin - H * 0.08);
+      attempts++;
+    } while (attempts < 30 && placed.some(p => dist(cx, cy, p.cx, p.cy) < 130));
+
+    const w = rand(100, Math.min(W * 0.25, 220)) * (0.5 + landFrac);
+    const h = rand(70, Math.min(H * 0.25, 160)) * (0.5 + landFrac);
+    const pts = generateBlobPoints(cx, cy, w * 0.5, h * 0.5, 10);
+    const fill = pal.land[i % pal.land.length];
+    const fill2 = pal.land[(i + 1) % pal.land.length];
+
+    // Gradient
+    const gid = `cont-g-${i}`;
+    const cg = el('linearGradient', { id: gid, x1:'0', y1:'0', x2:'0.3', y2:'1', gradientUnits:'objectBoundingBox' }, defs);
+    el('stop', { offset:'0%', 'stop-color': fill }, cg);
+    el('stop', { offset:'100%', 'stop-color': fill2 }, cg);
+
+    const ptStr = pts.map(p => p.join(',')).join(' ');
+    el('polygon', { points: ptStr, fill: `url(#${gid})`, stroke:'rgba(0,0,0,0.3)', 'stroke-width':'1.5' }, layers['terrain']);
+    el('polygon', { points: ptStr, fill:'none', stroke:'rgba(255,255,255,0.07)', 'stroke-width':'2' }, layers['terrain']);
+
+    // Texture bumps
+    for (let j = 0; j < 6; j++) {
+      const bx = cx + rand(-w * 0.35, w * 0.35);
+      const by = cy + rand(-h * 0.35, h * 0.35);
+      el('ellipse', { cx: bx, cy: by, rx: rand(8, 28), ry: rand(4, 14),
+        fill: `rgba(0,0,0,0.12)`,
+        transform: `rotate(${rand(0,180)},${bx},${by})` }, layers['terrain']);
+    }
+
+    placed.push({ cx, cy });
+    continents.push({ cx, cy, w, h, pts, fill, i });
+  }
+
+  return continents;
+}
+
+function generateBlobPoints(cx, cy, rx, ry, numPts) {
+  const pts = [];
+  for (let i = 0; i < numPts; i++) {
+    const angle = (i / numPts) * Math.PI * 2;
+    const jitter = rand(0.6, 1.4);
+    const x = cx + Math.cos(angle) * rx * jitter;
+    const y = cy + Math.sin(angle) * ry * jitter;
+    pts.push([Math.round(x), Math.round(y)]);
+  }
+  return pts;
+}
+
+function generateRivers(W, H, continents, pal, layers) {
+  continents.forEach(c => {
+    if (Math.random() < 0.6) {
+      const startX = c.cx + rand(-c.w * 0.2, c.w * 0.2);
+      const startY = c.cy - c.h * 0.3;
+      const endX = c.cx + rand(-c.w * 0.3, c.w * 0.3);
+      const endY = c.cy + c.h * 0.5;
+      const mx = startX + rand(-40, 40);
+      const my = (startY + endY) / 2;
+      const d = `M${startX},${startY} Q${mx},${my} ${endX},${endY}`;
+      el('path', { d, fill:'none', stroke: pal.river, 'stroke-width':'2', 'stroke-linecap':'round' }, layers['rivers']);
+      el('path', { d, fill:'none', stroke:'rgba(100,200,255,0.12)', 'stroke-width':'5', 'stroke-linecap':'round', filter:'url(#soft)' }, layers['rivers']);
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDERING
+// ════════════════════════════════════════════════════════════════
+
+function renderAll(ws) {
+  renderTerritories(ws);
+  renderBorders(ws);
+  renderTradeRoutes(ws);
+  renderCities(ws);
+  renderUnits(ws);
+}
+
+function renderTerritories(ws) {
+  ws.layers['territory'].innerHTML = '';
+  ws.cities.filter(c => c.active).forEach(c => {
+    const civ = ws.civs[c.civIdx];
+    if (!civ) return;
+    const r = c.size === 'capital' ? 95 : c.size === 'major' ? 65 : 38;
+    const tid = `tg-${Math.round(c.x)}-${Math.round(c.y)}`;
+    const tg = el('radialGradient', { id: tid, cx:'50%', cy:'50%', r:'50%' }, ws.defs);
+    el('stop', { offset:'0%', 'stop-color': civ.color, 'stop-opacity':'0.20' }, tg);
+    el('stop', { offset:'100%', 'stop-color': civ.color, 'stop-opacity':'0' }, tg);
+    el('ellipse', { cx: c.x, cy: c.y, rx: r, ry: r * 0.75, fill: `url(#${tid})` }, ws.layers['territory']);
+  });
+}
+
+function renderBorders(ws) {
+  ws.layers['borders'].innerHTML = '';
+  ws.civs.forEach((civ, ci) => {
+    const cvCities = ws.cities.filter(c => c.civIdx === ci && c.active);
+    cvCities.forEach(c => {
+      const r = c.size === 'capital' ? 80 : c.size === 'major' ? 55 : 32;
+      el('ellipse', { cx: c.x, cy: c.y, rx: r, ry: r * 0.7,
+        fill:'none', stroke: civ.color, 'stroke-width':'1.2',
+        'stroke-dasharray':'4 7', opacity:'0.35' }, ws.layers['borders']);
+    });
+  });
+}
+
+function renderTradeRoutes(ws) {
+  ws.layers['trade'].innerHTML = '';
+  ws.tradeElems = [];
+  ws.tradeRoutes.filter(r => r.active).forEach(r => {
+    const civA = ws.civs[r.civA];
+    const civB = ws.civs[r.civB];
+    if (!civA || !civB) return;
+    const midX = (r.from.x + r.to.x) / 2 + rand(-20, 20);
+    const midY = (r.from.y + r.to.y) / 2 + rand(-20, 20);
+    const d = `M${r.from.x},${r.from.y} Q${midX},${midY} ${r.to.x},${r.to.y}`;
+    el('path', { d, fill:'none', stroke: civA.color, 'stroke-width':'1.5',
+      'stroke-dasharray':'6 10', opacity:'0.4' }, ws.layers['trade']);
+    // Ship dot
+    const shipDot = el('circle', { cx: r.from.x, cy: r.from.y, r: 3,
+      fill: civA.color, filter:'url(#g4)' }, ws.layers['trade']);
+    ws.tradeElems.push({ el: shipDot, path: d, t: Math.random(), speed: rand(0.003, 0.007) });
+  });
+}
+
+function renderCities(ws) {
+  ws.layers['structures'].innerHTML = '';
+  ws.cities.filter(c => c.active).forEach(c => {
+    const civ = ws.civs[c.civIdx];
+    if (!civ) return;
+    const sz = c.size === 'capital' ? 7 : c.size === 'major' ? 5 : 3.5;
+    const g = el('g', { cursor:'pointer' }, ws.layers['structures']);
+    // glow
+    el('circle', { cx: c.x, cy: c.y, r: sz + 5, fill: civ.color, opacity:'0.15', filter:'url(#g8)' }, g);
+    // dot
+    el('circle', { cx: c.x, cy: c.y, r: sz, fill: civ.color, filter:`url(#g${c.size==='capital'?4:2})` }, g);
+    // ring for capitals
+    if (c.size === 'capital') {
+      el('circle', { cx: c.x, cy: c.y, r: sz + 5, fill:'none', stroke: civ.color, 'stroke-width':'1', opacity:'0.5' }, g);
+    }
+    // label
+    el('text', { x: c.x, y: c.y - 10, fill: civ.color, 'font-size': c.size==='capital'?'8':'6.5',
+      'text-anchor':'middle', 'font-family':'Space Mono,monospace', 'letter-spacing':'1' }, g).textContent = c.name;
+
+    // Tooltip
+    g.addEventListener('mouseenter', ev => {
+      document.getElementById('tt-name').textContent = c.name;
+      document.getElementById('tt-body').textContent =
+        `${civ.name} ${c.size} | Pop. ${Math.round(c.pop).toLocaleString()} | Founded ${c.founded}`;
+      const t = document.getElementById('tooltip');
+      t.style.display = 'block';
+      t.style.left = (ev.clientX + 15) + 'px';
+      t.style.top  = (ev.clientY - 40) + 'px';
+    });
+    g.addEventListener('mousemove', ev => {
+      const t = document.getElementById('tooltip');
+      t.style.left = (ev.clientX + 15) + 'px';
+      t.style.top  = (ev.clientY - 40) + 'px';
+    });
+    g.addEventListener('mouseleave', () => {
+      document.getElementById('tooltip').style.display = 'none';
+    });
+  });
+}
+
+function renderUnits(ws) {
+  ws.layers['units'].innerHTML = '';
+  ws.units.forEach(u => {
+    const civ = ws.civs[u.civIdx];
+    if (!civ) return;
+    const sym = u.type === 'fleet' ? '⛵' : u.type === 'mage' ? '✦' : u.type === 'cavalry' ? '🐎' : '⚔';
+    const g = el('g', {}, ws.layers['units']);
+    el('text', { x: u.x, y: u.y + 4, fill:'white', 'font-size':'8', 'text-anchor':'middle',
+      filter:'url(#g2)' }, g).textContent = sym;
+    // size indicator
+    el('text', { x: u.x + 7, y: u.y - 1, fill: civ.color, 'font-size':'5.5', 'text-anchor':'middle' }, g)
+      .textContent = u.size;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SIMULATION TICK
+// ════════════════════════════════════════════════════════════════
+
+function simTick(ws) {
+  ws.year++;
+  const { civs, relations, cities, tradeRoutes, units, cfg, W, H } = ws;
+
+  // Advance ages
+  const ageThresholds = [1, 50, 150, 300, 500, 700, 900, 1100, 1400];
+  civs.forEach(c => {
+    const ageIdx = ageThresholds.findIndex(t => ws.year < t);
+    const newAge = ageIdx < 0 ? AGES.length - 1 : Math.max(0, ageIdx - 1);
+    if (newAge > c.age) {
+      c.age = newAge;
+      logEvent(ws, `${c.name} enters the ${AGES[c.age]}!`, 'culture');
+    }
+  });
+
+  // Population growth
+  civs.forEach(c => {
+    const pollutionFactor = cfg.traits.plagues && Math.random() < 0.02 ? 0.7 : 1;
+    c.population = c.population * (1 + (c.growth - 1) * 0.05) * pollutionFactor;
+    if (cfg.traits.plagues && Math.random() < 0.005) {
+      c.population *= 0.75;
+      logEvent(ws, `Plague ravages ${c.name}! Population falls.`, 'war');
+    }
+  });
+
+  // Civ population into cities
+  cities.forEach(c => {
+    if (!c.active) return;
+    const civ = civs[c.civIdx];
+    if (!civ) return;
+    c.pop = civ.population * (c.size === 'capital' ? 500 : c.size === 'major' ? 200 : 80);
+  });
+
+  // Diplomacy events
+  if (cfg.traits.wars && Math.random() < 0.08) {
+    const i = randInt(0, civs.length - 1);
+    const j = randInt(0, civs.length - 1);
+    if (i !== j && relations[i]?.[j] !== undefined) {
+      const prev = relations[i][j];
+      if (relations[i][j] > -2) relations[i][j]--;
+      if (relations[j][i] > -2) relations[j][i]--;
+      if (prev === -1 && relations[i][j] === -2) {
+        logEvent(ws, `${civs[i].name} declares WAR on ${civs[j].name}! ⚔`, 'war');
+      }
+    }
+  }
+  if (cfg.traits.alliances && Math.random() < 0.05) {
+    const i = randInt(0, civs.length - 1);
+    const j = randInt(0, civs.length - 1);
+    if (i !== j && relations[i]?.[j] !== undefined) {
+      if (relations[i][j] < 2) { relations[i][j]++; relations[j][i]++; }
+      if (relations[i][j] === 2) {
+        logEvent(ws, `${civs[i].name} & ${civs[j].name} form an alliance! 🤝`, 'peace');
+      }
+    }
+  }
+
+  // Trade route changes
+  if (cfg.traits.trade) {
+    tradeRoutes.forEach(r => {
+      r.age++;
+      const goodRelations = relations[r.civA]?.[r.civB] >= 0;
+      if (r.active && !goodRelations && Math.random() < 0.1) {
+        r.active = false;
+        logEvent(ws, `Trade route between ${civs[r.civA]?.name} & ${civs[r.civB]?.name} severed.`, 'neutral');
+      } else if (!r.active && goodRelations && Math.random() < 0.05) {
+        r.active = true;
+        logEvent(ws, `Trade resumes between ${civs[r.civA]?.name} & ${civs[r.civB]?.name}.`, 'peace');
+      }
+    });
+  }
+
+  // New city founded
+  if (Math.random() < 0.04) {
+    const civIdx = randInt(0, civs.length - 1);
+    const civ = civs[civIdx];
+    const cont = ws.continents[civIdx % ws.continents.length];
+    if (civ && cont) {
+      const newCity = {
+        civIdx, x: cont.cx + rand(-cont.w * 0.5, cont.w * 0.5),
+        y: cont.cy + rand(-cont.h * 0.5, cont.h * 0.5),
+        name: generateCityName(), size: 'town',
+        pop: civ.population * 40, active: true, founded: ws.year
+      };
+      ws.cities.push(newCity);
+      ws.totalCitiesCount++;
+      logEvent(ws, `${civ.name} founds ${newCity.name}! 🏙`, 'culture');
+    }
+  }
+
+  // Wonder
+  if (cfg.traits.wonders && Math.random() < 0.015) {
+    const civIdx = randInt(0, civs.length - 1);
+    const civ = civs[civIdx];
+    if (civ) {
+      ws.totalWonders++;
+      logEvent(ws, `${civ.name} completes a World Wonder! ✨`, 'wonder');
+    }
+  }
+
+  // Golden age
+  if (cfg.traits['golden-age'] && Math.random() < 0.012) {
+    const civ = civs[randInt(0, civs.length - 1)];
+    if (civ) {
+      civ.growth = Math.min(2.5, civ.growth + 0.2);
+      logEvent(ws, `${civ.name} enters a Golden Age! 🌟`, 'wonder');
+    }
+  }
+
+  // Cataclysm
+  if (cfg.traits.cataclysm && Math.random() < 0.008) {
+    const civ = civs[randInt(0, civs.length - 1)];
+    if (civ) {
+      civ.population *= 0.6;
+      logEvent(ws, `CATACLYSM strikes ${civ.name}! 💥`, 'war');
+    }
+  }
+
+  // Move units
+  units.forEach(u => {
+    u.phase += 0.1;
+    const civ = civs[u.civIdx];
+    if (!civ) return;
+    const tx = u.targetX + Math.sin(u.phase * 0.3) * 30;
+    const ty = u.targetY + Math.cos(u.phase * 0.4) * 20;
+    u.x += (tx - u.x) * 0.06;
+    u.y += (ty - u.y) * 0.06;
+    // Occasionally move unit toward enemy territory
+    if (Math.random() < 0.01) {
+      const rival = civs.find((c, j) => c !== civ && relations[u.civIdx]?.[j] <= -1);
+      if (rival) {
+        const rCity = cities.find(c => c.civIdx === civs.indexOf(rival) && c.active);
+        if (rCity) { u.targetX = rCity.x + rand(-50, 50); u.targetY = rCity.y + rand(-40, 40); }
+      } else {
+        const home = cities.find(c => c.civIdx === u.civIdx && c.size === 'capital');
+        if (home) { u.targetX = home.x + rand(-60, 60); u.targetY = home.y + rand(-50, 50); }
+      }
+    }
+  });
+
+  // Animate trade ships
+  ws.tradeElems.forEach(te => {
+    te.t = (te.t + te.speed) % 1;
+    const pt = getPointOnQuadratic(te.path, te.t);
+    if (pt) {
+      te.el.setAttribute('cx', pt.x);
+      te.el.setAttribute('cy', pt.y);
+    }
+  });
+
+  // Re-render
+  renderAll(ws);
+  updateHUD(ws);
+}
+
+// ── Quadratic bezier interpolation ──────────────────────────
+function getPointOnQuadratic(pathStr, t) {
+  try {
+    const m = pathStr.match(/M([\d.]+),([\d.]+) Q([\d.]+),([\d.]+) ([\d.]+),([\d.]+)/);
+    if (!m) return null;
+    const [, x0, y0, cx, cy, x1, y1] = m.map(Number);
+    const x = (1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1;
+    const y = (1-t)*(1-t)*y0 + 2*(1-t)*t*cy + t*t*y1;
+    return { x, y };
+  } catch { return null; }
+}
+
+// ── HUD UPDATE ───────────────────────────────────────────────
+function updateHUD(ws) {
+  const totalPop = ws.civs.reduce((s, c) => s + c.population, 0);
+  const wars = countWars(ws);
+  const activeTrade = ws.tradeRoutes.filter(r => r.active).length;
+  const age = ws.civs[0] ? AGES[ws.civs[0].age] : '—';
+
+  document.getElementById('s-age').textContent = age;
+  document.getElementById('s-year').textContent = ws.year;
+  document.getElementById('year-counter').textContent = ws.year;
+  document.getElementById('s-pop').textContent = Math.round(totalPop).toLocaleString();
+  document.getElementById('s-wars').textContent = wars;
+  document.getElementById('s-trade').textContent = activeTrade;
+  document.getElementById('s-cities').textContent = ws.totalCitiesCount;
+
+  ws.civs.forEach(c => {
+    const el = document.getElementById(`lpop-${c.id}`);
+    if (el) el.textContent = Math.round(c.population).toLocaleString();
+  });
+}
+
+function countWars(ws) {
+  let n = 0;
+  const nc = ws.civs.length;
+  for (let i = 0; i < nc; i++)
+    for (let j = i + 1; j < nc; j++)
+      if (ws.relations[i]?.[j] === -2) n++;
+  return n;
+}
+
+// ── LOG ──────────────────────────────────────────────────────
+function logEvent(ws, text, type = 'neutral') {
+  ws.events.unshift({ text, type, year: ws.year });
+  if (ws.events.length > 15) ws.events.pop();
+  const container = document.getElementById('events-container');
+  container.innerHTML = '';
+  ws.events.slice(0, 6).forEach(e => {
+    const div = document.createElement('div');
+    div.className = `event-entry ${e.type}`;
+    div.textContent = `Yr.${e.year} — ${e.text}`;
+    container.appendChild(div);
+  });
+}
+
+// ── CITY NAME GENERATOR ──────────────────────────────────────
+const CITY_PREFIXES = ['Kel','Vor','Ash','Thal','Solz','Nex','Drak','Lum','Orr','Quel','Aur','Syx','Neth','Vel','Krath'];
+const CITY_SUFFIXES = ['haven','gate','spire','keep','hold','watch','march','fall','bridge','ford','port','moor','vale','heim','mark'];
+function generateCityName() {
+  return CITY_PREFIXES[randInt(0, CITY_PREFIXES.length-1)] + CITY_SUFFIXES[randInt(0, CITY_SUFFIXES.length-1)];
+}
+
+</script>
+</body>
+</html>

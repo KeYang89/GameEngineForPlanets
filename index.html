@@ -5,6 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🦆 Sea of Ducks</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── Collapsible Panel Styles ── */
+
+        /* HUD body collapse */
+        .hud-body {
+            overflow: hidden;
+            max-height: 2000px;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.3s ease,
+                        padding 0.3s ease;
+            opacity: 1;
+        }
+        .hud-body.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        /* Log content collapse */
+        #log-content {
+            overflow: hidden;
+            max-height: 600px;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.3s ease;
+            opacity: 1;
+        }
+        #log-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+        }
+
+        /* Toggle button chevron animation */
+        .hud-toggle-btn {
+            transition: transform 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .hud-toggle-btn .chevron {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        .hud-toggle-btn.collapsed .chevron {
+            transform: rotate(-90deg);
+        }
+
+        /* World builder link styled like a button */
+        .control-group-link {
+            display: inline-block;
+            text-decoration: none;
+            color: inherit;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 5px;
+            padding: 4px 10px;
+            font-size: inherit;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .control-group-link:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.35);
+        }
+
+        /* Visual cue that the panel is collapsed */
+        #hud.panel-collapsed {
+            /* Keep header visible, let body collapse */
+        }
+        #ecosystem-log.panel-collapsed .log-header {
+            border-bottom: none;
+            border-radius: inherit;
+        }
+    </style>
 </head>
 <body>
 
@@ -132,10 +207,12 @@
             &nbsp;|&nbsp;
             ⏱ <span id="time-elapsed">0s</span>
         </div>
-        <button class="hud-toggle-btn" onclick="window.gameActions.toggleHUD()">▾ HUD</button>
+        <button class="hud-toggle-btn" id="hud-toggle-btn" onclick="window.gameActions.toggleHUD()">
+            <span class="chevron">▾</span> HUD
+        </button>
     </div>
 
-    <div class="hud-body">
+    <div class="hud-body" id="hud-body">
 
         <!-- Counters -->
         <div class="hud-counters">
@@ -222,6 +299,12 @@
                 <button onclick="window.gameActions.togglePause(this)">⏸️ Pause</button>
                 <button onclick="window.gameActions.triggerUFO()" data-tip="We don't talk about this.">🛸 UFO</button>
             </div>
+
+            <!-- Generate World -->
+            <div class="control-group">
+                <div class="control-group-label">World Builder</div>
+                <a href="genWorld.html" class="control-group-link" data-tip="Design and generate your own custom ocean world.">🌍 Generate your own world</a>
+            </div>
         </div>
 
         <!-- Performance -->
@@ -237,7 +320,9 @@
 <div id="ecosystem-log">
     <div class="log-header">
         📋 Event Log
-        <button class="hud-toggle-btn" onclick="window.gameActions.toggleLog()">▾</button>
+        <button class="hud-toggle-btn" id="log-toggle-btn" onclick="window.gameActions.toggleLog()">
+            <span class="chevron">▾</span>
+        </button>
     </div>
     <div id="log-content"></div>
 </div>
@@ -259,6 +344,7 @@
 "></div>
 
 <script>
+/* ── Tooltip ── */
 (function(){
     const tip = document.getElementById('tooltip');
     let hideTimer;
@@ -281,25 +367,64 @@
         const tw = tip.offsetWidth, th = tip.offsetHeight;
         let x = e.clientX - tw / 2;
         let y = e.clientY - th - pad;
-        // Keep inside viewport
         x = Math.max(pad, Math.min(x, window.innerWidth  - tw - pad));
         y = Math.max(pad, Math.min(y, window.innerHeight - th - pad));
-        // If would go off top, show below cursor instead
         if (y < pad) y = e.clientY + pad;
         tip.style.left = x + 'px';
         tip.style.top  = y + 'px';
     }
 })();
-</script>
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFREM81DZ4"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+/* ── Collapsible Panels ── */
+(function () {
+    // --- HUD ---
+    const hudBody   = document.getElementById('hud-body');
+    const hudBtn    = document.getElementById('hud-toggle-btn');
+    let hudOpen = true;
 
-  gtag('config', 'G-QFREM81DZ4');
+    function toggleHUD() {
+        hudOpen = !hudOpen;
+        hudBody.classList.toggle('collapsed', !hudOpen);
+        hudBtn.classList.toggle('collapsed',  !hudOpen);
+    }
+
+    // --- Event Log ---
+    const logContent = document.getElementById('log-content');
+    const logBtn     = document.getElementById('log-toggle-btn');
+    let logOpen = true;
+
+    function toggleLog() {
+        logOpen = !logOpen;
+        logContent.classList.toggle('collapsed', !logOpen);
+        logBtn.classList.toggle('collapsed',     !logOpen);
+    }
+
+    // Expose on gameActions (merge safely once the module may have set it)
+    function patchGameActions() {
+        if (!window.gameActions) {
+            window.gameActions = {};
+        }
+        const existing = window.gameActions;
+
+        // Wrap: if the game module later defines its own toggleHUD/toggleLog,
+        // we override with our visual logic (which can also call the original).
+        const origHUD = existing.toggleHUD;
+        const origLog = existing.toggleLog;
+
+        existing.toggleHUD = function () {
+            toggleHUD();
+            if (typeof origHUD === 'function') origHUD();
+        };
+        existing.toggleLog = function () {
+            toggleLog();
+            if (typeof origLog === 'function') origLog();
+        };
+    }
+
+    // Patch immediately, and again after the module likely runs
+    patchGameActions();
+    window.addEventListener('load', patchGameActions);
+})();
 </script>
 </body>
 </html>

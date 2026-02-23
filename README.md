@@ -36,6 +36,51 @@ A distant world with a violet sky, twin moons, and a bioluminescent teal ocean. 
 
 ---
 
+## 🌍 Generate Your Own World
+
+Sea of Ducks ships with **genWorld** — a standalone planet generator that lets you design a custom world from scratch and watch its civilizations evolve in real time.
+
+Open `genWorld.html` in any browser (no server required — it's fully self-contained).
+
+### What you configure
+
+| Setting | Options |
+|---|---|
+| **Planet name** | Free text — name it anything |
+| **Dominant biome** | Temperate · Desert · Ocean · Jungle · Arctic · Volcanic · Crystal · Void |
+| **Landmass coverage** | 10–90% — controls how much land vs ocean is generated |
+| **Civilizations** | Up to 8 — name each one, pick a color, assign a trait |
+| **Civ traits** | Aggressive · Maritime · Arcane · Naturalist · Nomadic · Merchant · Scholar · Theocratic |
+| **World traits** | Rivers · Trade Routes · Wonders · Plagues · Wars · Alliances · Golden Ages · Cataclysms |
+| **Starting conditions** | Major Cities · Neutral Start · Hostile World · Advanced Tech · Sparse Population |
+| **Simulation speed** | 1× – 5× |
+
+### What gets generated
+
+- Procedural blob-shaped continents with biome-specific textures and color palettes
+- Rivers, coastline highlights, and ocean shimmer
+- City network per civilization (capitals, major cities, towns)
+- Diplomatic relations matrix — alliances, rivalries, and open wars
+- Animated trade ships traveling bezier routes between friendly capitals
+- Military units that patrol home territory and advance during conflicts
+- Historical age progression: Dawn Age → Stone → Bronze → Iron → Classical → Medieval → Renaissance → Industrial → Enlightened
+- A live **World Chronicle** event log tracking wars declared, cities founded, wonders completed, plagues, golden ages, and cataclysms
+
+### How to use it
+
+```bash
+# No server needed — just open directly
+open genWorld.html
+
+# Or serve alongside the main game
+npx serve .
+# then navigate to http://localhost:8080/genWorld.html
+```
+
+> *Every biome has its own palette. A Void world generates 300 stars and near-black terrain. A Crystal world glows in purple and indigo. Each generated planet is unique.*
+
+---
+
 ## 🏗️ Architecture
 
 The codebase is split into two clean layers: a **reusable engine** and a **game layer** specific to Sea of Ducks.
