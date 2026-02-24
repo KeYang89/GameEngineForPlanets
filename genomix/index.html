@@ -42,7 +42,10 @@
     pointer-events: none;
     z-index: 0;
   }
-
+  a {
+    text-decoration: none;
+    color: var(--accent3);
+  }
   .container { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 40px 20px; }
 
   header { text-align: center; margin-bottom: 48px; }
@@ -181,7 +184,7 @@
   <header>
     <div class="logo">GENO<span>MIX</span></div>
     <div class="subtitle">Genome · Encoding · Engine · v1.0</div>
-    <div class="lib-badge">powered by genomix.sol</div>
+    <div class="lib-badge"><a href="genomixLib.html">powered by genomix.sol</div></a>
   </header>
 
   <div class="section-title">01 · Planet Parameters <span class="fn-tag">deriveFromPlanet()</span></div>
