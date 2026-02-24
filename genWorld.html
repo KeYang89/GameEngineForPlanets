@@ -570,6 +570,104 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
   font-family:'Space Mono',monospace; letter-spacing:1px;
   pointer-events:none;
 }
+
+/* ── GENOME PANEL ── */
+#genome-panel {
+  padding:10px 22px 14px;
+  border-top:1px solid var(--border);
+  background:rgba(0,0,0,0.25);
+  flex-shrink:0;
+}
+.genome-panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px; cursor:pointer; user-select:none;
+}
+.genome-panel-title {
+  font-size:0.6rem; letter-spacing:3px; text-transform:uppercase;
+  color:var(--accent2); font-family:'Space Mono',monospace;
+  display:flex; align-items:center; gap:8px;
+}
+.genome-panel-title::before { content:'🧬'; font-size:0.75rem; }
+.genome-toggle-hint {
+  font-size:0.55rem; color:var(--muted); letter-spacing:1px;
+}
+#genome-body { display:none; }
+#genome-body.open { display:block; }
+
+.genome-hash-display {
+  font-size:0.58rem; color:var(--accent); font-family:'Space Mono',monospace;
+  word-break:break-all; line-height:1.7; letter-spacing:0.5px;
+  background:rgba(58,159,255,0.05); padding:8px 10px; border-radius:6px;
+  border:1px solid rgba(58,159,255,0.12); margin-bottom:10px;
+}
+.genome-hash-display .ghunk { cursor:default; transition:color 0.15s; }
+.genome-hash-display .ghunk:hover { color:var(--hot); }
+
+.genome-bit-map {
+  display:flex; flex-wrap:wrap; gap:1.5px;
+  margin-bottom:10px;
+}
+.gbit {
+  width:5px; height:14px; border-radius:1px;
+}
+
+.genome-traits-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+  gap:6px; margin-bottom:10px;
+}
+.genome-trait-card {
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:6px; padding:7px 9px;
+  border-left:2px solid var(--gtc, var(--accent));
+}
+.gtc-label {
+  font-size:0.5rem; letter-spacing:2px; color:var(--muted);
+  text-transform:uppercase; margin-bottom:3px;
+}
+.gtc-value {
+  font-size:0.7rem; font-weight:700; color:var(--gtc, var(--accent));
+  font-family:'Space Mono',monospace;
+}
+.gtc-raw { font-size:0.48rem; color:rgba(180,210,255,0.3); margin-top:2px; }
+
+.genome-fitness-row {
+  display:flex; align-items:center; gap:10px; margin-bottom:8px;
+}
+.genome-fitness-label {
+  font-size:0.55rem; letter-spacing:2px; color:var(--muted);
+  text-transform:uppercase; min-width:80px;
+}
+.genome-fitness-score {
+  font-family:'Space Mono',monospace; font-size:1rem;
+  font-weight:700; min-width:52px;
+}
+.genome-fitness-bar-wrap {
+  flex:1; height:4px; background:rgba(255,255,255,0.08);
+  border-radius:2px; overflow:hidden;
+}
+.genome-fitness-bar {
+  height:100%; border-radius:2px;
+  transition:width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+
+.genome-mutation-row {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.genome-mutate-btn {
+  padding:5px 12px;
+  background:rgba(123,95,255,0.1);
+  border:1px solid rgba(123,95,255,0.3);
+  border-radius:5px; cursor:pointer;
+  font-family:'Space Mono',monospace;
+  font-size:0.55rem; letter-spacing:2px; text-transform:uppercase;
+  color:var(--accent2); transition:all 0.18s;
+}
+.genome-mutate-btn:hover { background:rgba(123,95,255,0.2); border-color:var(--accent2); }
+.genome-lineage-info {
+  font-size:0.52rem; color:var(--muted); letter-spacing:1px;
+}
 </style>
 </head>
 <body>
@@ -735,6 +833,32 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
           <button class="action-btn danger" id="btn-predator">✕ Apex Arrives</button>
           <button class="action-btn" id="btn-disaster">~ Disaster</button>
         </div>
+        <!-- ── GENOME PANEL ── -->
+        <div id="genome-panel">
+          <div class="genome-panel-header" onclick="toggleGenomePanel()">
+            <div class="genome-panel-title">Genome · 256-bit DNA</div>
+            <span class="genome-toggle-hint" id="genome-toggle-hint">▾ expand</span>
+          </div>
+          <div id="genome-body">
+            <div class="genome-hash-display" id="genome-hash-display">—</div>
+            <div class="genome-bit-map" id="genome-bit-map"></div>
+            <div class="genome-fitness-row">
+              <span class="genome-fitness-label">Fitness Score</span>
+              <span class="genome-fitness-score" id="genome-fitness-score">—</span>
+              <span style="font-size:0.48rem;color:var(--muted)">/10000</span>
+              <div class="genome-fitness-bar-wrap">
+                <div class="genome-fitness-bar" id="genome-fitness-bar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="genome-traits-grid" id="genome-traits-grid"></div>
+            <div class="genome-mutation-row">
+              <button class="genome-mutate-btn" id="genome-mutate-btn" onclick="mutateCurrentGenome()">⚡ Mutate</button>
+              <button class="genome-mutate-btn" onclick="mutateCurrentGenomeEntropy()">🔒 Entropy Only</button>
+              <span class="genome-lineage-info" id="genome-lineage-info"></span>
+            </div>
+          </div>
+        </div>
+
         <button class="btn-share" onclick="exportCreaturePNG()">
           📸 Capture World
         </button>
@@ -745,7 +869,326 @@ input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.3); }
 
 <script>
 // ════════════════════════════════════════════════════════════════
-//  SETUP LOGIC
+//  GenomeLib.js — faithful BigInt port of GenomeLib.sol
+//  Exact masks, deriveFromPlanet(), mutate(), mutateEntropy(),
+//  fitnesScore(), decode(), hammingDistance() from Solidity source.
+// ════════════════════════════════════════════════════════════════
+const GenomeLib = (() => {
+  const UINT256_MAX = (1n << 256n) - 1n;
+  const MASK16 = 0xFFFFn;
+  const u256   = v => ((v % (UINT256_MAX + 1n)) + (UINT256_MAX + 1n)) % (UINT256_MAX + 1n);
+  const notU   = v => u256(UINT256_MAX ^ v);
+
+  // Exact constants from GenomeLib.sol
+  const SPECIES_MASK    = 0xFFFFn;
+  const PLANET_MASK     = 0xFFFFn << 16n;
+  const ATMOS_MASK      = 0xFFFFn << 32n;
+  const METABOLISM_MASK = 0xFFFFn << 48n;
+  const GRAVITY_MASK    = 0xFFFFn << 64n;
+  const TEMP_MASK       = 0xFFFFn << 80n;
+  const RADIATION_MASK  = 0xFFFFn << 96n;
+  const SENSORY_MASK    = 0xFFFFn << 112n;
+  const ENTROPY_MASK    = 0xFFFFFFFFFFFFFFFFn << 128n;
+  const RESERVED_MASK   = 0xFFFFFFFFFFFFFFFFn << 192n;
+
+  // Deterministic hash — mirrors keccak256(abi.encodePacked(...))
+  function keccak256Sim(vals) {
+    const M32 = 0xFFFFFFFFn;
+    let s = [0x6a09e667n,0xbb67ae85n,0x3c6ef372n,0xa54ff53an,
+             0x510e527fn,0x9b05688cn,0x1f83d9abn,0x5be0cd19n];
+    const mix = (a,b) => {
+      const m = BigInt(Math.imul(Number(a&M32), Number((b^a)&M32)));
+      return (m+((a<<6n)&M32)+((a>>2n)&M32))&M32;
+    };
+    for (let i=0;i<vals.length;i++) {
+      const v = BigInt(vals[i]) & 0xFFFFFFFFFFFFFFFFn;
+      for (let j=0;j<8;j++) {
+        s[j]=mix(s[j]^v,s[(j+3)%8]);
+        s[j]=(s[j]^(s[(j+1)%8]>>13n)^((s[(j+5)%8]<<7n)&M32))&M32;
+      }
+      for (let r=0;r<4;r++)
+        for (let j=0;j<8;j++)
+          s[j]=mix(s[j],s[(j+7)%8]^BigInt(i*8+j+r*100));
+    }
+    let result=0n;
+    for (let i=0;i<8;i++) result=(result<<32n)|(s[i]&M32);
+    return u256(result);
+  }
+
+  // deriveFromPlanet — GenomeLib.sol exact formulas
+  function deriveFromPlanet(carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane,entropy) {
+    const timestamp = BigInt(Date.now()&0xFFFFFFFF);
+    const sender    = BigInt(Math.floor(Math.random()*0xFFFFFFFF));
+    const raw = keccak256Sim([carbon,silicon,oxygen,gravity,temperature,radiation,
+                               tidal,methane,Number(timestamp),Number(sender),entropy]);
+    let genome = raw;
+    // uint16 atmosVal  = uint16(oxygen * 655 + methane * 10)
+    // uint16 metabVal  = uint16(carbon * 400 + silicon * 255)
+    // uint16 gravVal   = uint16(gravity * 13)
+    const atmosVal = Number((BigInt(oxygen)*655n+BigInt(methane)*10n)&MASK16);
+    const metabVal = Number((BigInt(carbon)*400n+BigInt(silicon)*255n)&MASK16);
+    const gravVal  = Number((BigInt(gravity)*13n)&MASK16);
+    genome = setSpeciesId   (genome, Number(raw&MASK16));
+    genome = setPlanetId    (genome, Number((raw>>16n)&MASK16));
+    genome = setAtmosphere  (genome, atmosVal);
+    genome = setMetabolism  (genome, metabVal);
+    genome = setGravity     (genome, gravVal);
+    genome = setTemperature (genome, Number(BigInt(temperature)&MASK16));
+    genome = setRadiation   (genome, Number(BigInt(radiation)&MASK16));
+    genome = setSensory     (genome, Number((raw>>112n)&MASK16));
+    return genome;
+  }
+
+  // Getters
+  const getSpeciesId   = g => Number(g & SPECIES_MASK);
+  const getPlanetId    = g => Number((g & PLANET_MASK)     >> 16n);
+  const getAtmosphere  = g => Number((g & ATMOS_MASK)      >> 32n);
+  const getMetabolism  = g => Number((g & METABOLISM_MASK) >> 48n);
+  const getGravity     = g => Number((g & GRAVITY_MASK)    >> 64n);
+  const getTemperature = g => Number((g & TEMP_MASK)       >> 80n);
+  const getRadiation   = g => Number((g & RADIATION_MASK)  >> 96n);
+  const getSensory     = g => Number((g & SENSORY_MASK)    >> 112n);
+  const getEntropySeed = g =>        (g & ENTROPY_MASK)    >> 128n;
+
+  // Setters (immutable pattern)
+  const setSpeciesId   = (g,v) => u256((g&notU(SPECIES_MASK))    | BigInt(v));
+  const setPlanetId    = (g,v) => u256((g&notU(PLANET_MASK))     | (BigInt(v)<<16n));
+  const setAtmosphere  = (g,v) => u256((g&notU(ATMOS_MASK))      | (BigInt(v)<<32n));
+  const setMetabolism  = (g,v) => u256((g&notU(METABOLISM_MASK)) | (BigInt(v)<<48n));
+  const setGravity     = (g,v) => u256((g&notU(GRAVITY_MASK))    | (BigInt(v)<<64n));
+  const setTemperature = (g,v) => u256((g&notU(TEMP_MASK))       | (BigInt(v)<<80n));
+  const setRadiation   = (g,v) => u256((g&notU(RADIATION_MASK))  | (BigInt(v)<<96n));
+  const setSensory     = (g,v) => u256((g&notU(SENSORY_MASK))    | (BigInt(v)<<112n));
+
+  // mutate() — exact Solidity XOR logic, reserved bits protected
+  function mutate(parentGenome, intensity, randomSeed) {
+    let mask = u256(randomSeed);
+    const intensityFactor = u256((BigInt(intensity)*UINT256_MAX)/64n);
+    mask = mask & intensityFactor & notU(RESERVED_MASK);
+    return u256(parentGenome ^ mask);
+  }
+
+  // mutateEntropy() — targeted safe mutation, only bits [128–191]
+  function mutateEntropy(parentGenome, randomSeed) {
+    const mask = (u256(randomSeed) << 128n) & ENTROPY_MASK;
+    return u256(parentGenome ^ mask);
+  }
+
+  // _delta16 helper
+  function _delta16(a,b) { const d=Math.abs(a-b); return d>2500?2500:d; }
+
+  // fitnesScore() — 4 components × 2500 = 10000 max
+  function fitnesScore(genome, planetOxygen, planetGravity, planetTemp, planetRadiation) {
+    const atmos=getAtmosphere(genome), atmosE=Number((BigInt(planetOxygen)*655n)&MASK16);
+    const grav=getGravity(genome),     gravE=Number((BigInt(planetGravity)*13n)&MASK16);
+    const temp=getTemperature(genome), rad=getRadiation(genome);
+    const aS=2500-_delta16(atmos,atmosE), gS=2500-_delta16(grav,gravE);
+    const tS=2500-_delta16(temp,planetTemp), rS=2500-_delta16(rad,planetRadiation);
+    return {
+      score: Math.max(0,Math.min(10000,aS+gS+tS+rS)),
+      components:{atmos:Math.max(0,aS),grav:Math.max(0,gS),temp:Math.max(0,tS),rad:Math.max(0,rS)}
+    };
+  }
+
+  // decode() — DecodedGenome struct
+  function decode(g) {
+    return { speciesId:getSpeciesId(g), planetId:getPlanetId(g),
+             atmosphere:getAtmosphere(g), metabolism:getMetabolism(g),
+             gravity:getGravity(g), temperature:getTemperature(g),
+             radiation:getRadiation(g), sensory:getSensory(g),
+             entropySeed:getEntropySeed(g) };
+  }
+
+  // hammingDistance() — popcount(a XOR b)
+  function hammingDistance(a,b) {
+    let x=a^b, count=0; while(x>0n){x&=x-1n;count++;} return count;
+  }
+
+  const sameSpecies      = (a,b) => getSpeciesId(a)===getSpeciesId(b);
+  const samePlanetOrigin = (a,b) => getPlanetId(a)===getPlanetId(b);
+
+  const toHex   = g => '0x'+g.toString(16).padStart(64,'0').toUpperCase();
+  const toBytes = g => {
+    const hex=g.toString(16).padStart(64,'0');
+    const arr=new Uint8Array(32);
+    for(let i=0;i<32;i++) arr[i]=parseInt(hex.substring(i*2,i*2+2),16);
+    return arr;
+  };
+  const randBig = () =>
+    (BigInt(Math.floor(Math.random()*0xFFFFFFFF))) |
+    (BigInt(Math.floor(Math.random()*0xFFFFFFFF))<<32n) |
+    (BigInt(Math.floor(Math.random()*0xFFFFFFFF))<<64n) |
+    (BigInt(Math.floor(Math.random()*0xFFFFFFFF))<<96n);
+
+  return { deriveFromPlanet,decode,mutate,mutateEntropy,fitnesScore,
+           hammingDistance,sameSpecies,samePlanetOrigin,toHex,toBytes,randBig,
+           getSpeciesId,getPlanetId,getAtmosphere,getMetabolism,
+           getGravity,getTemperature,getRadiation,getSensory,getEntropySeed };
+})();
+
+// ── Genome state ───────────────────────────────────────────────────────────
+let planetGenome     = null;   // BigInt — derived when world generates
+let parentGenomeSnap = null;   // for lineage tracking
+let genomeMutations  = 0;
+let genomeBodyOpen   = false;
+
+const GENOME_FIELDS = [
+  { name:'Species ID',    bits:'[0–15]',    color:'#2a9d8f', key:'speciesId',   fmt: v=>'0x'+v.toString(16).padStart(4,'0').toUpperCase(), max:65535 },
+  { name:'Planet ID',     bits:'[16–31]',   color:'#457b9d', key:'planetId',    fmt: v=>'P-'+v.toString(16).padStart(4,'0').toUpperCase(), max:65535 },
+  { name:'Atmosphere',    bits:'[32–47]',   color:'#1d8a4e', key:'atmosphere',  fmt: v=>v+' (O₂+CH₄)', max:65535 },
+  { name:'Metabolism',    bits:'[48–63]',   color:'#7b2d8b', key:'metabolism',  fmt: v=>['Carbon','Silicon','Hybrid','Photonic','Plasma','Crystal'][v%6], max:65535 },
+  { name:'Gravity Adapt', bits:'[64–79]',   color:'#c0392b', key:'gravity',     fmt: v=>(v/13).toFixed(1)+'m/s²', max:65535 },
+  { name:'Temp Resist',   bits:'[80–95]',   color:'#e07b39', key:'temperature', fmt: v=>v+'K', max:1000 },
+  { name:'Radiation',     bits:'[96–111]',  color:'#9a3b3b', key:'radiation',   fmt: v=>v+' mSv', max:1000 },
+  { name:'Sensory',       bits:'[112–127]', color:'#2c5f8a', key:'sensory',     fmt: v=>['Visual','Echo','EM','Thermal','Quantum','Chemo'][v%6], max:65535 },
+  { name:'Entropy Seed',  bits:'[128–191]', color:'#5a6a7a', key:'entropySeed', fmt: v=>'0x'+(typeof v==='bigint'?v:BigInt(v)).toString(16).substring(0,8).toUpperCase()+'…', max:65535 },
+];
+
+const FIELD_BIT_RANGES = [
+  { start:0,   end:15,  color:'#2a9d8f' },
+  { start:16,  end:31,  color:'#457b9d' },
+  { start:32,  end:47,  color:'#1d8a4e' },
+  { start:48,  end:63,  color:'#7b2d8b' },
+  { start:64,  end:79,  color:'#c0392b' },
+  { start:80,  end:95,  color:'#e07b39' },
+  { start:96,  end:111, color:'#9a3b3b' },
+  { start:112, end:127, color:'#2c5f8a' },
+  { start:128, end:191, color:'#5a6a7a' },
+  { start:192, end:255, color:'#222233' },
+];
+
+// ── Derive genome from worldConfig (called in buildWorld) ──────────────────
+function deriveWorldGenome(cfg) {
+  // Map biome → physics params for GenomeLib.deriveFromPlanet()
+  const BIOME_PHYSICS = {
+    temperate: { carbon:40, silicon:15, oxygen:21, gravity:9,   temperature:295, radiation:50,  tidal:10, methane:2  },
+    desert:    { carbon:20, silicon:40, oxygen:12, gravity:10,  temperature:350, radiation:120, tidal:5,  methane:1  },
+    ocean:     { carbon:30, silicon:10, oxygen:35, gravity:9,   temperature:285, radiation:30,  tidal:25, methane:3  },
+    jungle:    { carbon:55, silicon:8,  oxygen:28, gravity:9,   temperature:310, radiation:45,  tidal:8,  methane:5  },
+    arctic:    { carbon:15, silicon:20, oxygen:19, gravity:9,   temperature:233, radiation:80,  tidal:15, methane:1  },
+    volcanic:  { carbon:25, silicon:35, oxygen:8,  gravity:11,  temperature:420, radiation:200, tidal:30, methane:8  },
+    crystal:   { carbon:10, silicon:60, oxygen:15, gravity:7,   temperature:270, radiation:150, tidal:12, methane:2  },
+    void:      { carbon:5,  silicon:5,  oxygen:2,  gravity:3,   temperature:50,  radiation:500, tidal:50, methane:1  },
+  };
+  const p = BIOME_PHYSICS[cfg.biome] || BIOME_PHYSICS.temperate;
+  // Modulate by landCoverage and civData length
+  const civBonus = cfg.civData.length * 3;
+  const entropy  = Math.floor(Math.random() * 0xFFFFFFFF);
+
+  planetGenome     = GenomeLib.deriveFromPlanet(
+    p.carbon + civBonus, p.silicon, p.oxygen,
+    p.gravity, p.temperature, p.radiation,
+    p.tidal, p.methane, entropy
+  );
+  parentGenomeSnap = planetGenome;
+  genomeMutations  = 0;
+  return planetGenome;
+}
+
+// ── Toggle genome panel ────────────────────────────────────────────────────
+function toggleGenomePanel() {
+  genomeBodyOpen = !genomeBodyOpen;
+  document.getElementById('genome-body').classList.toggle('open', genomeBodyOpen);
+  document.getElementById('genome-toggle-hint').textContent = genomeBodyOpen ? '▴ collapse' : '▾ expand';
+  if (genomeBodyOpen && planetGenome) renderGenomePanel();
+}
+
+// ── Render genome panel content ────────────────────────────────────────────
+function renderGenomePanel() {
+  if (!planetGenome) return;
+
+  // Hash display
+  const hex = GenomeLib.toHex(planetGenome).replace('0x','');
+  const chunks = hex.match(/.{8}/g);
+  document.getElementById('genome-hash-display').innerHTML =
+    '0x ' + chunks.map((c,i) => `<span class="ghunk" title="bytes ${i*4}–${i*4+3}">${c}</span>`).join(' ');
+
+  // Bit map
+  const bm    = document.getElementById('genome-bit-map');
+  bm.innerHTML = '';
+  const bytes = GenomeLib.toBytes(planetGenome);
+  for (let i = 0; i < 256; i++) {
+    const byteIdx = Math.floor(i/8);
+    const bitIdx  = 7 - (i%8);
+    const bit     = (bytes[byteIdx] >> bitIdx) & 1;
+    const field   = FIELD_BIT_RANGES.find(f => i >= f.start && i <= f.end);
+    const div     = document.createElement('div');
+    div.className = 'gbit';
+    div.style.background = bit===1 ? (field?field.color:'#3a9fff') : 'rgba(255,255,255,0.06)';
+    bm.appendChild(div);
+  }
+
+  // Fitness score (using worldConfig biome params)
+  const cfg = worldState?.cfg;
+  if (cfg) {
+    const BIOME_PHYSICS = {
+      temperate:{oxygen:21,gravity:9,temperature:295,radiation:50},
+      desert:{oxygen:12,gravity:10,temperature:350,radiation:120},
+      ocean:{oxygen:35,gravity:9,temperature:285,radiation:30},
+      jungle:{oxygen:28,gravity:9,temperature:310,radiation:45},
+      arctic:{oxygen:19,gravity:9,temperature:233,radiation:80},
+      volcanic:{oxygen:8,gravity:11,temperature:420,radiation:200},
+      crystal:{oxygen:15,gravity:7,temperature:270,radiation:150},
+      void:{oxygen:2,gravity:3,temperature:50,radiation:500},
+    };
+    const p = BIOME_PHYSICS[cfg.biome] || BIOME_PHYSICS.temperate;
+    const { score } = GenomeLib.fitnesScore(planetGenome, p.oxygen, p.gravity, p.temperature, p.radiation);
+    const scoreEl = document.getElementById('genome-fitness-score');
+    const barEl   = document.getElementById('genome-fitness-bar');
+    const color   = score>7500?'#3fff8a':score>4000?'#ffb347':'#ff6b35';
+    scoreEl.textContent  = score;
+    scoreEl.style.color  = color;
+    barEl.style.width    = (score/100)+'%';
+    barEl.style.background = `linear-gradient(to right,#ff6b35,${color})`;
+    barEl.style.boxShadow  = `0 0 8px ${color}`;
+  }
+
+  // Trait cards
+  const d    = GenomeLib.decode(planetGenome);
+  const tgrid= document.getElementById('genome-traits-grid');
+  tgrid.innerHTML = '';
+  GENOME_FIELDS.forEach(f => {
+    const rawVal = d[f.key];
+    const display= f.fmt(rawVal);
+    const pct    = Math.min(100, (Number(typeof rawVal==='bigint'?rawVal&0xFFFFn:rawVal) / f.max * 100)).toFixed(0);
+    const card   = document.createElement('div');
+    card.className = 'genome-trait-card';
+    card.style.setProperty('--gtc', f.color);
+    card.innerHTML = `
+      <div class="gtc-label">${f.name} <span style="color:rgba(180,210,255,0.3)">${f.bits}</span></div>
+      <div class="gtc-value">${display}</div>
+      <div class="gtc-raw">${typeof rawVal==='bigint'?'uint64':'uint16'}: ${typeof rawVal==='bigint'?rawVal.toString(16).substring(0,12).toUpperCase()+'…':rawVal}</div>
+    `;
+    tgrid.appendChild(card);
+  });
+
+  // Lineage
+  const hamming = GenomeLib.hammingDistance(parentGenomeSnap||planetGenome, planetGenome);
+  const sameSpecies = GenomeLib.sameSpecies(parentGenomeSnap||planetGenome, planetGenome);
+  document.getElementById('genome-lineage-info').textContent =
+    `mutations: ${genomeMutations} · Hamming: ${hamming} · ${sameSpecies?'same species ✓':'diverged ✗'}`;
+}
+
+// ── Mutate planet genome ───────────────────────────────────────────────────
+function mutateCurrentGenome() {
+  if (!planetGenome) return;
+  const intensity  = 8;
+  planetGenome     = GenomeLib.mutate(planetGenome, intensity, GenomeLib.randBig());
+  genomeMutations++;
+  renderGenomePanel();
+  if (typeof addInteraction === 'function')
+    addInteraction('🧬', `Genome mutated — ${intensity} bits XOR'd. Lineage diverging.`);
+}
+
+function mutateCurrentGenomeEntropy() {
+  if (!planetGenome) return;
+  planetGenome = GenomeLib.mutateEntropy(planetGenome, GenomeLib.randBig());
+  genomeMutations++;
+  renderGenomePanel();
+  if (typeof addInteraction === 'function')
+    addInteraction('🔒', `Entropy-only mutation — species identity preserved.`);
+}
+
 // ════════════════════════════════════════════════════════════════
 
 const TRAITS_POOL = [
@@ -1141,6 +1584,13 @@ function buildWorld(cfg) {
     events: [],
     tradeElems: [],
   };
+
+  // ── GENOME DERIVATION ─────────────
+  // Derive a deterministic 256-bit genome from planet physics via GenomeLib.deriveFromPlanet()
+  deriveWorldGenome(cfg);
+  genomeBodyOpen = false;
+  document.getElementById('genome-body').classList.remove('open');
+  document.getElementById('genome-toggle-hint').textContent = '▾ expand';
 
   // ── INITIAL RENDER ────────────────
   renderAll(worldState);
@@ -2011,6 +2461,15 @@ function openCreaturePanel(ws, contIdx) {
   document.getElementById('creature-panel').classList.add('visible');
   addInteraction('◉', `Orbital scan targeting landmass ${contIdx + 1}...`, `Yr.${ws.year}`);
   addInteraction('◈', `${ws.cfg.name} ecosystem active — ${continentCreatures[contIdx].length} species catalogued.`);
+
+  // Refresh genome panel if open
+  if (genomeBodyOpen) renderGenomePanel();
+  const d = planetGenome ? GenomeLib.decode(planetGenome) : null;
+  if (d) {
+    const METABOLISM_TYPES = ['Carbon-Based','Silicon-Based','Hybrid','Photonic','Plasma','Crystalline'];
+    const SENSORY_TYPES    = ['Visual','Echolocation','Electromagnetic','Thermal','Quantum','Chemosensory'];
+    addInteraction('🧬', `Genome 0x${GenomeLib.toHex(planetGenome).substring(2,10)}… · Metabolism: ${METABOLISM_TYPES[d.metabolism%6]} · Sensory: ${SENSORY_TYPES[d.sensory%6]}`);
+  }
 }
 
 function closeCreaturePanel() {

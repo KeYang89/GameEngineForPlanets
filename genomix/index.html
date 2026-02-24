@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenWorld Genomix</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #030a0f;
+    --surface: #06141e;
+    --panel: #0a1f2e;
+    --border: #0d3d5a;
+    --accent: #00ffe7;
+    --accent2: #ff6b35;
+    --accent3: #a855f7;
+    --text: #c8e6f0;
+    --dim: #4a7a8a;
+    --green: #10b981;
+    --glow: 0 0 20px rgba(0,255,231,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,231,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,231,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 40px 20px; }
+
+  header { text-align: center; margin-bottom: 48px; }
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900; letter-spacing: 4px;
+    color: var(--accent); text-shadow: var(--glow);
+    animation: pulse 4s ease-in-out infinite;
+  }
+  .logo span { color: var(--accent2); }
+  .subtitle { font-size: 11px; letter-spacing: 6px; color: var(--dim); margin-top: 8px; text-transform: uppercase; }
+  .lib-badge {
+    display: inline-block; margin-top: 10px; padding: 3px 12px;
+    border: 1px solid var(--accent3); color: var(--accent3);
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  @keyframes pulse {
+    0%, 100% { text-shadow: 0 0 20px rgba(0,255,231,0.3); }
+    50% { text-shadow: 0 0 40px rgba(0,255,231,0.7), 0 0 80px rgba(0,255,231,0.2); }
+  }
+
+  .section-title {
+    font-family: 'Orbitron', monospace; font-size: 11px;
+    letter-spacing: 4px; color: var(--accent); text-transform: uppercase;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .fn-tag {
+    font-size: 8px; letter-spacing: 2px; color: var(--accent3);
+    border: 1px solid var(--accent3); padding: 2px 7px; border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--border), transparent); }
+
+  .planet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .param-card { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 14px; transition: border-color 0.2s; }
+  .param-card:hover { border-color: var(--accent); }
+  .param-label { font-size: 9px; letter-spacing: 3px; color: var(--dim); text-transform: uppercase; margin-bottom: 8px; }
+  .param-value { font-size: 22px; font-weight: 700; }
+  .param-unit { font-size: 10px; color: var(--dim); margin-left: 4px; }
+  input[type="range"] { width: 100%; margin-top: 8px; -webkit-appearance: none; height: 2px; background: var(--border); outline: none; border-radius: 1px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; box-shadow: 0 0 8px var(--accent); }
+
+  .generate-btn {
+    display: block; width: 100%; padding: 16px; background: transparent;
+    border: 1px solid var(--accent); color: var(--accent);
+    font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+    letter-spacing: 4px; text-transform: uppercase; cursor: pointer;
+    margin-bottom: 32px; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .generate-btn::before { content: ''; position: absolute; inset: 0; background: var(--accent); transform: translateX(-100%); transition: transform 0.3s ease; opacity: 0.1; }
+  .generate-btn:hover::before { transform: translateX(0); }
+  .generate-btn:hover { box-shadow: var(--glow); }
+  .generate-btn:active { transform: scale(0.99); }
+
+  .genome-display { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .genome-display::before { content: 'uint256 · 1 EVM slot'; position: absolute; top: 12px; right: 16px; font-size: 9px; letter-spacing: 3px; color: var(--border); }
+  .genome-hash { font-family: 'Space Mono', monospace; font-size: clamp(9px, 1.4vw, 11px); color: var(--accent); word-break: break-all; line-height: 1.9; letter-spacing: 1px; }
+  .genome-hash .chunk { display: inline; transition: color 0.2s; cursor: default; }
+  .genome-hash .chunk:hover { color: var(--accent2); }
+
+  .bit-map { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 16px; }
+  .bit { width: 6px; height: 20px; border-radius: 1px; }
+
+  .field-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 8px; letter-spacing: 1px; color: var(--dim); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 1px; }
+
+  .traits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .trait-card { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 18px; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; }
+  .trait-card:hover { transform: translateY(-2px); border-color: var(--accent3); }
+  .trait-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--trait-color, var(--accent)); opacity: 0.6; }
+  .trait-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .trait-name { font-size: 9px; letter-spacing: 3px; color: var(--dim); text-transform: uppercase; }
+  .trait-bits { font-size: 8px; color: var(--border); }
+  .trait-value { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--trait-color, var(--accent)); margin-bottom: 4px; }
+  .trait-desc { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .trait-raw { font-size: 8px; color: var(--border); margin-top: 4px; }
+  .trait-bar { margin-top: 10px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .trait-bar-fill { height: 100%; background: var(--trait-color, var(--accent)); border-radius: 2px; transition: width 0.8s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 0 8px var(--trait-color, var(--accent)); }
+
+  .fitness-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px; margin-bottom: 32px; }
+  .fitness-score { font-family: 'Orbitron', monospace; font-size: 48px; font-weight: 900; text-align: center; margin: 12px 0; }
+  .fitness-bar-wrap { background: var(--border); height: 6px; border-radius: 3px; margin-top: 12px; }
+  .fitness-bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+  .fitness-breakdown { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+  .fit-component { background: var(--panel); padding: 8px 10px; border-radius: 3px; text-align: center; }
+  .fit-comp-label { font-size: 8px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 4px; }
+  .fit-comp-val { font-size: 16px; font-weight: 700; font-family: 'Orbitron', monospace; }
+
+  .creature-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin-bottom: 32px; text-align: center; }
+  canvas { display: block; margin: 0 auto; border: 1px solid var(--border); }
+
+  .mutation-panel { background: var(--panel); border: 1px solid var(--accent2); border-radius: 4px; padding: 20px; margin-bottom: 32px; }
+  .mutation-title { font-family: 'Orbitron', monospace; font-size: 11px; letter-spacing: 3px; color: var(--accent2); margin-bottom: 4px; text-transform: uppercase; }
+  .mutation-subtitle { font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-bottom: 16px; line-height: 1.6; }
+  .mutate-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .intensity-label { font-size: 10px; color: var(--dim); min-width: 100px; letter-spacing: 2px; }
+  .mutate-btn { padding: 10px 24px; background: transparent; border: 1px solid var(--accent2); color: var(--accent2); font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .mutate-btn:hover { background: rgba(255,107,53,0.1); box-shadow: 0 0 15px rgba(255,107,53,0.3); }
+  .mutate-btn.entropy-btn { border-color: var(--accent3); color: var(--accent3); }
+  .mutate-btn.entropy-btn:hover { background: rgba(168,85,247,0.1); box-shadow: 0 0 15px rgba(168,85,247,0.3); }
+  .obameow { font-size: 9px; color: var(--dim); }
+  .obameow span { color: var(--accent2); font-weight: 700; }
+
+  .lineage-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px; margin-bottom: 32px; }
+  .lineage-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .lineage-genome { flex: 1; min-width: 200px; background: var(--panel); border: 1px solid var(--border); padding: 12px; border-radius: 3px; }
+  .lg-label { font-size: 8px; letter-spacing: 3px; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; }
+  .lg-hash { font-size: 9px; color: var(--accent); word-break: break-all; line-height: 1.6; }
+  .lineage-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .lstat { background: var(--panel); padding: 10px 14px; border-radius: 3px; }
+  .lstat-label { font-size: 8px; letter-spacing: 2px; color: var(--dim); margin-bottom: 4px; text-transform: uppercase; }
+  .lstat-val { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; }
+
+  .derivation-log { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px; font-size: 10px; line-height: 1.9; color: var(--dim); max-height: 340px; overflow-y: auto; }
+  .derivation-log::-webkit-scrollbar { width: 4px; }
+  .derivation-log::-webkit-scrollbar-thumb { background: var(--border); }
+  .log-line { display: flex; gap: 12px; border-bottom: 1px solid rgba(13,61,90,0.3); padding: 3px 0; }
+  .log-key { color: var(--accent3); min-width: 180px; flex-shrink: 0; font-size: 9px; }
+  .log-val { color: var(--text); word-break: break-all; }
+  .log-arrow { color: var(--accent2); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .animated { animation: fadeIn 0.4s ease forwards; }
+
+  .scanline { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, rgba(0,255,231,0.08), transparent); animation: scan 8s linear infinite; pointer-events: none; z-index: 100; }
+  @keyframes scan { from { transform: translateY(-2px); } to { transform: translateY(100vh); } }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="container">
+
+  <header>
+    <div class="logo">GEN<span>WORLD</span></div>
+    <div class="subtitle">Genome · Encoding · Engine · v1.0</div>
+    <div class="lib-badge">powered by GenomeLib.sol</div>
+  </header>
+
+  <div class="section-title">01 · Planet Parameters <span class="fn-tag">deriveFromPlanet()</span></div>
+  <div class="planet-grid" id="planetGrid"></div>
+  <button class="generate-btn" onclick="generateGenome()">⬡ DERIVE GENOME FROM PLANET PHYSICS</button>
+
+  <div class="section-title">02 · Genome Hash (uint256) <span class="fn-tag">keccak256 · abi.encodePacked</span></div>
+  <div class="genome-display">
+    <div class="genome-hash" id="genomeHash" style="color:var(--dim)">— awaiting derivation —</div>
+    <div class="bit-map" id="bitMap"></div>
+    <div class="field-legend" id="fieldLegend"></div>
+  </div>
+
+  <div class="section-title">03 · Decoded Traits <span class="fn-tag">GenomeLib.decode()</span></div>
+  <div class="traits-grid" id="traitsGrid"></div>
+
+  <div class="section-title">04 · Environmental Fitness <span class="fn-tag">GenomeLib.fitnesScore()</span></div>
+  <div class="fitness-panel">
+    <div style="font-size:9px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-bottom:4px">Survival Probability vs Current Planet · [0–10000]</div>
+    <div class="fitness-score" id="fitnessScore" style="color:var(--dim)">—</div>
+    <div style="font-size:9px; color:var(--dim); text-align:center; margin-top:-8px" id="fitnessLabel">/ 10000</div>
+    <div class="fitness-bar-wrap"><div class="fitness-bar-fill" id="fitnessBar" style="width:0%"></div></div>
+    <div class="fitness-breakdown" id="fitnessBreakdown"></div>
+  </div>
+
+  <div class="section-title">05 · Creature Render <span class="fn-tag">off-chain expansion · decode()</span></div>
+  <div class="creature-panel">
+    <canvas id="creatureCanvas" width="340" height="340"></canvas>
+  </div>
+
+  <div class="section-title">06 · Mutation Engine <span class="fn-tag">mutate() · mutateEntropy()</span></div>
+  <div class="mutation-panel">
+    <div class="mutation-title">🧬 Bitwise Mutation (XOR)</div>
+    <div class="mutation-subtitle">
+      mutate: newGenome = parentGenome XOR (randomSeed &amp; intensityFactor) · reserved[192–255] protected<br>
+      mutateEntropy: mask = (randomSeed &lt;&lt; 128) &amp; ENTROPY_MASK · preserves species identity
+    </div>
+    <div class="mutate-row">
+      <span class="intensity-label">INTENSITY [1–64]</span>
+      <input type="range" id="mutationIntensity" min="1" max="64" value="8" style="flex:1; max-width:260px">
+      <span id="mutationVal" style="font-size:16px; color:var(--accent2); min-width:28px; font-weight:700">8</span>
+    </div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+      <button class="mutate-btn" onclick="mutateGenome(false)">⚡ FULL MUTATE</button>
+      <button class="mutate-btn entropy-btn" onclick="mutateGenome(true)">🔒 ENTROPY ONLY</button>
+      <span class="obameow">cost: <span id="obameowCost">8</span> OBAMEOW · flipped last: <span id="bitsFlipped">—</span> bits</span>
+    </div>
+  </div>
+
+  <div class="section-title">07 · Lineage Tracker <span class="fn-tag">hammingDistance() · sameSpecies() · samePlanetOrigin()</span></div>
+  <div class="lineage-panel">
+    <div class="lineage-row">
+      <div class="lineage-genome"><div class="lg-label">Generation 0 · Origin</div><div class="lg-hash" id="parentHash" style="color:var(--dim)">—</div></div>
+      <div style="color:var(--accent2); font-size:22px; padding: 0 4px">→</div>
+      <div class="lineage-genome"><div class="lg-label">Current Genome</div><div class="lg-hash" id="currentHashDisplay" style="color:var(--accent)">—</div></div>
+    </div>
+    <div class="lineage-stats" id="lineageStats"></div>
+  </div>
+
+  <div class="section-title">08 · Derivation Log <span class="fn-tag">abi.encodePacked · bit ops</span></div>
+  <div class="derivation-log" id="derivationLog">
+    <div class="log-line"><span class="log-key">status</span><span class="log-arrow">→</span><span class="log-val" style="color:var(--dim)">no genome derived yet</span></div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  GenomeLib.js
+//  Faithful BigInt port of GenomeLib.sol
+//  Every mask, formula, getter, setter, mutate(), fitnesScore(), decode(),
+//  hammingDistance() matches the Solidity source exactly.
+// ════════════════════════════════════════════════════════════════════════════
+const GenomeLib = (() => {
+
+  const UINT256_MAX = (1n << 256n) - 1n;
+  const MASK16 = 0xFFFFn;
+  const MASK64 = 0xFFFFFFFFFFFFFFFFn;
+  const u256   = v => ((v % (UINT256_MAX + 1n)) + (UINT256_MAX + 1n)) % (UINT256_MAX + 1n);
+  const notU   = v => u256(UINT256_MAX ^ v);  // bitwise NOT within uint256
+
+  // ── Constants matching GenomeLib.sol exactly ───────────────────────────────
+  const SPECIES_MASK    = 0xFFFFn;
+  const PLANET_MASK     = 0xFFFFn                    << 16n;
+  const ATMOS_MASK      = 0xFFFFn                    << 32n;
+  const METABOLISM_MASK = 0xFFFFn                    << 48n;
+  const GRAVITY_MASK    = 0xFFFFn                    << 64n;
+  const TEMP_MASK       = 0xFFFFn                    << 80n;
+  const RADIATION_MASK  = 0xFFFFn                    << 96n;
+  const SENSORY_MASK    = 0xFFFFn                    << 112n;
+  const ENTROPY_MASK    = 0xFFFFFFFFFFFFFFFFn        << 128n;
+  const RESERVED_MASK   = 0xFFFFFFFFFFFFFFFFn        << 192n;
+
+  // ── keccak256 simulation ──────────────────────────────────────────────────
+  // Mirrors keccak256(abi.encodePacked(...)) deterministically.
+  function keccak256Sim(vals) {
+    const M32 = 0xFFFFFFFFn;
+    let s = [0x6a09e667n,0xbb67ae85n,0x3c6ef372n,0xa54ff53an,0x510e527fn,0x9b05688cn,0x1f83d9abn,0x5be0cd19n];
+
+    const mix = (a, b) => {
+      const m = BigInt(Math.imul(Number(a & M32), Number((b ^ a) & M32)));
+      return (m + ((a << 6n) & M32) + ((a >> 2n) & M32)) & M32;
+    };
+
+    for (let i = 0; i < vals.length; i++) {
+      const v = BigInt(vals[i]) & 0xFFFFFFFFFFFFFFFFn;
+      for (let j = 0; j < 8; j++) {
+        s[j] = mix(s[j] ^ v, s[(j + 3) % 8]);
+        s[j] = (s[j] ^ (s[(j+1)%8] >> 13n) ^ ((s[(j+5)%8] << 7n) & M32)) & M32;
+      }
+      for (let r = 0; r < 4; r++)
+        for (let j = 0; j < 8; j++)
+          s[j] = mix(s[j], s[(j+7)%8] ^ BigInt(i * 8 + j + r * 100));
+    }
+
+    let result = 0n;
+    for (let i = 0; i < 8; i++) result = (result << 32n) | (s[i] & M32);
+    return u256(result);
+  }
+
+  // ── deriveFromPlanet — mirrors GenomeLib.deriveFromPlanet() ──────────────
+  //   genome = keccak256(abi.encodePacked(carbon,silicon,oxygen,gravity,
+  //            temperature,radiation,tidal,methane,block.timestamp,
+  //            msg.sender,entropy))
+  //   Then physics-weighted field overrides.
+  function deriveFromPlanet(carbon, silicon, oxygen, gravity, temperature, radiation, tidal, methane, entropy) {
+    const timestamp = BigInt(Date.now() & 0xFFFFFFFF);
+    const sender    = BigInt(Math.floor(Math.random() * 0xFFFFFFFF));
+
+    const raw = keccak256Sim([
+      carbon, silicon, oxygen,
+      gravity, temperature, radiation,
+      tidal, methane,
+      Number(timestamp), Number(sender), entropy
+    ]);
+
+    let genome = raw;
+
+    // Physics-weighted overrides — exact Solidity uint16 arithmetic:
+    //   atmosVal  = uint16(oxygen  * 655 + methane * 10)
+    //   metabVal  = uint16(carbon  * 400 + silicon * 255)
+    //   gravVal   = uint16(gravity * 13)
+    //   tempVal   = temperature (direct)
+    //   radVal    = radiation   (direct)
+    const atmosVal = Number((BigInt(oxygen)      * 655n + BigInt(methane)  * 10n)  & MASK16);
+    const metabVal = Number((BigInt(carbon)       * 400n + BigInt(silicon)  * 255n) & MASK16);
+    const gravVal  = Number((BigInt(gravity)      * 13n)                            & MASK16);
+    const tempVal  = Number( BigInt(temperature)  & MASK16);
+    const radVal   = Number( BigInt(radiation)    & MASK16);
+
+    genome = setSpeciesId   (genome, Number(raw & MASK16));
+    genome = setPlanetId    (genome, Number((raw >> 16n) & MASK16));
+    genome = setAtmosphere  (genome, atmosVal);
+    genome = setMetabolism  (genome, metabVal);
+    genome = setGravity     (genome, gravVal);
+    genome = setTemperature (genome, tempVal);
+    genome = setRadiation   (genome, radVal);
+    genome = setSensory     (genome, Number((raw >> 112n) & MASK16));
+    // Entropy seed: raw bits [128–191] preserved from keccak output (no override)
+
+    return genome;
+  }
+
+  // ── Getters — direct port of Solidity bit-shift + mask ───────────────────
+  const getSpeciesId   = g => Number(g & SPECIES_MASK);
+  const getPlanetId    = g => Number((g & PLANET_MASK)     >> 16n);
+  const getAtmosphere  = g => Number((g & ATMOS_MASK)      >> 32n);
+  const getMetabolism  = g => Number((g & METABOLISM_MASK) >> 48n);
+  const getGravity     = g => Number((g & GRAVITY_MASK)    >> 64n);
+  const getTemperature = g => Number((g & TEMP_MASK)       >> 80n);
+  const getRadiation   = g => Number((g & RADIATION_MASK)  >> 96n);
+  const getSensory     = g => Number((g & SENSORY_MASK)    >> 112n);
+  const getEntropySeed = g =>        (g & ENTROPY_MASK)    >> 128n;  // BigInt uint64
+  const getReserved    = g =>         g >> 192n;
+
+  // ── Setters — immutable pattern, returns new uint256 ─────────────────────
+  const setSpeciesId   = (g, v) => u256((g & notU(SPECIES_MASK))    | BigInt(v));
+  const setPlanetId    = (g, v) => u256((g & notU(PLANET_MASK))     | (BigInt(v) << 16n));
+  const setAtmosphere  = (g, v) => u256((g & notU(ATMOS_MASK))      | (BigInt(v) << 32n));
+  const setMetabolism  = (g, v) => u256((g & notU(METABOLISM_MASK)) | (BigInt(v) << 48n));
+  const setGravity     = (g, v) => u256((g & notU(GRAVITY_MASK))    | (BigInt(v) << 64n));
+  const setTemperature = (g, v) => u256((g & notU(TEMP_MASK))       | (BigInt(v) << 80n));
+  const setRadiation   = (g, v) => u256((g & notU(RADIATION_MASK))  | (BigInt(v) << 96n));
+  const setSensory     = (g, v) => u256((g & notU(SENSORY_MASK))    | (BigInt(v) << 112n));
+  const setEntropySeed = (g, v) => u256((g & notU(ENTROPY_MASK))    | (BigInt(v) << 128n));
+
+  // ── mutate() — exact Solidity logic ──────────────────────────────────────
+  //   mask = uint256(randomSeed)
+  //   intensityFactor = (intensity * UINT256_MAX) / 64
+  //   mask = mask & intensityFactor
+  //   mask = mask & ~RESERVED_MASK      ← protect reserved [192–255]
+  //   newGenome = parentGenome ^ mask
+  function mutate(parentGenome, intensity, randomSeed) {
+    if (intensity < 1 || intensity > 64) throw new Error('GenomeLib: intensity out of range');
+    let mask = u256(randomSeed);
+    const intensityFactor = u256((BigInt(intensity) * UINT256_MAX) / 64n);
+    mask = mask & intensityFactor;
+    mask = mask & notU(RESERVED_MASK);
+    return u256(parentGenome ^ mask);
+  }
+
+  // ── mutateEntropy() — targeted safe mutation ──────────────────────────────
+  //   mask = (uint256(randomSeed) << 128) & ENTROPY_MASK
+  //   newGenome = parentGenome ^ mask
+  function mutateEntropy(parentGenome, randomSeed) {
+    const mask = (u256(randomSeed) << 128n) & ENTROPY_MASK;
+    return u256(parentGenome ^ mask);
+  }
+
+  // ── _delta16 — Solidity private helper ────────────────────────────────────
+  //   uint256 delta = abs(a - b)
+  //   return delta > 2500 ? 2500 : delta
+  function _delta16(a, b) {
+    const d = Math.abs(a - b);
+    return d > 2500 ? 2500 : d;
+  }
+
+  // ── fitnesScore() — exact formula ─────────────────────────────────────────
+  //   4 components × 2500 max = 10000 total
+  //   Atmosphere: getAtmosphere(g) vs uint16(planetOxygen * 655)
+  //   Gravity:    getGravity(g)    vs uint16(planetGravity * 13)
+  //   Temperature:getTemperature(g) vs planetTemp  (direct)
+  //   Radiation:  getRadiation(g)   vs planetRad   (direct)
+  function fitnesScore(genome, planetOxygen, planetGravity, planetTemp, planetRadiation) {
+    const atmos        = getAtmosphere(genome);
+    const atmosExpected= Number((BigInt(planetOxygen) * 655n) & MASK16);
+    const atmosScore   = 2500 - _delta16(atmos, atmosExpected);
+
+    const grav         = getGravity(genome);
+    const gravExpected = Number((BigInt(planetGravity) * 13n) & MASK16);
+    const gravScore    = 2500 - _delta16(grav, gravExpected);
+
+    const temp         = getTemperature(genome);
+    const tempScore    = 2500 - _delta16(temp, planetTemp);
+
+    const rad          = getRadiation(genome);
+    const radScore     = 2500 - _delta16(rad, planetRadiation);
+
+    const total = atmosScore + gravScore + tempScore + radScore;
+    return {
+      score: Math.max(0, Math.min(10000, total)),
+      components: {
+        atmos: Math.max(0, atmosScore),
+        grav:  Math.max(0, gravScore),
+        temp:  Math.max(0, tempScore),
+        rad:   Math.max(0, radScore)
+      }
+    };
+  }
+
+  // ── decode() — DecodedGenome struct ──────────────────────────────────────
+  function decode(g) {
+    return {
+      speciesId:   getSpeciesId(g),
+      planetId:    getPlanetId(g),
+      atmosphere:  getAtmosphere(g),
+      metabolism:  getMetabolism(g),
+      gravity:     getGravity(g),
+      temperature: getTemperature(g),
+      radiation:   getRadiation(g),
+      sensory:     getSensory(g),
+      entropySeed: getEntropySeed(g),
+      reserved:    getReserved(g)
+    };
+  }
+
+  // ── hammingDistance() — popcount(a XOR b) ────────────────────────────────
+  function hammingDistance(a, b) {
+    let x = a ^ b; let count = 0;
+    while (x > 0n) { x &= x - 1n; count++; }
+    return count;
+  }
+
+  // ── sameSpecies / samePlanetOrigin ────────────────────────────────────────
+  const sameSpecies      = (a, b) => getSpeciesId(a) === getSpeciesId(b);
+  const samePlanetOrigin = (a, b) => getPlanetId(a)  === getPlanetId(b);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const toHex   = g => '0x' + g.toString(16).padStart(64, '0').toUpperCase();
+  const toBytes = g => {
+    const hex = g.toString(16).padStart(64, '0');
+    const arr = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) arr[i] = parseInt(hex.substring(i*2, i*2+2), 16);
+    return arr;
+  };
+  const randBig = () =>
+    (BigInt(Math.floor(Math.random() * 0xFFFFFFFF))) |
+    (BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) << 32n) |
+    (BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) << 64n) |
+    (BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) << 96n);
+
+  return {
+    SPECIES_MASK, PLANET_MASK, ATMOS_MASK, METABOLISM_MASK,
+    GRAVITY_MASK, TEMP_MASK, RADIATION_MASK, SENSORY_MASK,
+    ENTROPY_MASK, RESERVED_MASK,
+    deriveFromPlanet, decode, mutate, mutateEntropy,
+    fitnesScore, hammingDistance, sameSpecies, samePlanetOrigin,
+    getSpeciesId, getPlanetId, getAtmosphere, getMetabolism,
+    getGravity, getTemperature, getRadiation, getSensory,
+    getEntropySeed, getReserved,
+    toHex, toBytes, randBig
+  };
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+//  App
+// ════════════════════════════════════════════════════════════════════════════
+
+const PLANET_PARAMS = [
+  { id:'carbon',      label:'Carbon %',     min:0,   max:100,  def:35,  unit:'%',    color:'#a855f7' },
+  { id:'silicon',     label:'Silicon %',    min:0,   max:100,  def:20,  unit:'%',    color:'#6366f1' },
+  { id:'oxygen',      label:'Oxygen %',     min:0,   max:100,  def:21,  unit:'%',    color:'#00ffe7' },
+  { id:'gravity',     label:'Gravity',      min:1,   max:500,  def:9,   unit:'m/s²', color:'#ff6b35' },
+  { id:'temperature', label:'Temperature',  min:0,   max:1000, def:295, unit:'K',    color:'#f59e0b' },
+  { id:'radiation',   label:'Radiation',    min:0,   max:1000, def:50,  unit:'mSv',  color:'#10b981' },
+  { id:'tidal',       label:'Tidal Forces', min:0,   max:100,  def:15,  unit:'kN',   color:'#ec4899' },
+  { id:'methane',     label:'Methane %',    min:0,   max:100,  def:5,   unit:'%',    color:'#84cc16' },
+];
+
+const BIT_FIELDS = [
+  { name:'Species ID',             bits:[0,15],    color:'#2a9d8f' },
+  { name:'Planet Origin ID',       bits:[16,31],   color:'#457b9d' },
+  { name:'Atmosphere Adaptation',  bits:[32,47],   color:'#1d8a4e' },
+  { name:'Metabolism Type',        bits:[48,63],   color:'#7b2d8b' },
+  { name:'Gravity Adaptation',     bits:[64,79],   color:'#c0392b' },
+  { name:'Temperature Resistance', bits:[80,95],   color:'#e07b39' },
+  { name:'Radiation Tolerance',    bits:[96,111],  color:'#9a3b3b' },
+  { name:'Sensory Complexity',     bits:[112,127], color:'#2c5f8a' },
+  { name:'Mutation Entropy Seed',  bits:[128,191], color:'#5a6a7a' },
+  { name:'Reserved',               bits:[192,255], color:'#222'    },
+];
+
+const METABOLISM_TYPES = ['Carbon-Based','Silicon-Based','Hybrid','Photonic','Plasma','Crystalline'];
+const SENSORY_TYPES    = ['Visual','Echolocation','Electromagnetic','Thermal','Quantum','Chemosensory'];
+const ATMO_TYPES       = ['O₂ Breather','Methane Adapted','Nitrogen Rich','H₂S Tolerant','CO₂ Tolerant','Vacuum Resistant'];
+
+let currentGenome = null;
+let parentGenome  = null;
+let mutationCount = 0;
+let totalBitsFlipped = 0;
+
+// ── Build planet sliders ──────────────────────────────────────────────────────
+const pgrid = document.getElementById('planetGrid');
+PLANET_PARAMS.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'param-card';
+  card.innerHTML = `
+    <div class="param-label">${p.label}</div>
+    <div><span class="param-value" id="val_${p.id}" style="color:${p.color}">${p.def}</span><span class="param-unit">${p.unit}</span></div>
+    <input type="range" id="slider_${p.id}" min="${p.min}" max="${p.max}" value="${p.def}">
+  `;
+  pgrid.appendChild(card);
+  card.querySelector('input').addEventListener('input', e =>
+    document.getElementById(`val_${p.id}`).textContent = e.target.value
+  );
+});
+
+// Build field legend
+const leg = document.getElementById('fieldLegend');
+BIT_FIELDS.forEach(f => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<div class="legend-dot" style="background:${f.color}"></div>${f.name}`;
+  leg.appendChild(item);
+});
+
+// Mutation intensity sync
+document.getElementById('mutationIntensity').addEventListener('input', e => {
+  document.getElementById('mutationVal').textContent    = e.target.value;
+  document.getElementById('obameowCost').textContent    = e.target.value;
+});
+
+function getParams() {
+  return PLANET_PARAMS.map(p => parseInt(document.getElementById(`slider_${p.id}`).value));
+}
+
+// ── generateGenome ────────────────────────────────────────────────────────────
+function generateGenome() {
+  const [carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane] = getParams();
+  const entropy = Math.floor(Math.random() * 0xFFFFFFFF);
+
+  currentGenome = GenomeLib.deriveFromPlanet(
+    carbon, silicon, oxygen, gravity, temperature, radiation, tidal, methane, entropy
+  );
+  parentGenome     = currentGenome;
+  mutationCount    = 0;
+  totalBitsFlipped = 0;
+
+  renderAll();
+  appendLog('GenomeLib.deriveFromPlanet()', GenomeLib.toHex(currentGenome), 'generation');
+  renderFullLog(getParams(), entropy);
+}
+
+// ── mutateGenome ──────────────────────────────────────────────────────────────
+function mutateGenome(entropyOnly) {
+  if (!currentGenome) { generateGenome(); return; }
+
+  const intensity  = parseInt(document.getElementById('mutationIntensity').value);
+  const randomSeed = GenomeLib.randBig();
+  const prev       = currentGenome;
+
+  if (entropyOnly) {
+    currentGenome = GenomeLib.mutateEntropy(currentGenome, randomSeed);
+  } else {
+    currentGenome = GenomeLib.mutate(currentGenome, intensity, randomSeed);
+  }
+
+  const flipped = GenomeLib.hammingDistance(prev, currentGenome);
+  totalBitsFlipped += flipped;
+  mutationCount++;
+
+  document.getElementById('bitsFlipped').textContent = flipped;
+
+  renderAll();
+  const fn = entropyOnly ? 'GenomeLib.mutateEntropy()' : `GenomeLib.mutate(intensity=${intensity})`;
+  appendLog(fn, `${flipped} bits flipped · cost: ${intensity} OBAMEOW · ${GenomeLib.toHex(currentGenome).substring(0,18)}…`, 'mutation');
+}
+
+function renderAll() {
+  renderGenomeDisplay();
+  renderTraits();
+  renderFitness();
+  renderCreature();
+  renderLineage();
+}
+
+// ── renderGenomeDisplay ───────────────────────────────────────────────────────
+function renderGenomeDisplay() {
+  const hex    = GenomeLib.toHex(currentGenome).replace('0x','');
+  const chunks = hex.match(/.{8}/g);
+  document.getElementById('genomeHash').innerHTML =
+    '0x ' + chunks.map((c,i) => `<span class="chunk" title="bytes ${i*4}–${i*4+3}">${c}</span>`).join(' ');
+
+  const bm    = document.getElementById('bitMap');
+  bm.innerHTML = '';
+  const bytes = GenomeLib.toBytes(currentGenome);
+
+  for (let i = 0; i < 256; i++) {
+    const byteIdx = Math.floor(i / 8);
+    const bitIdx  = 7 - (i % 8);
+    const bit     = (bytes[byteIdx] >> bitIdx) & 1;
+    const field   = BIT_FIELDS.find(f => i >= f.bits[0] && i <= f.bits[1]);
+    const div     = document.createElement('div');
+    div.className = 'bit';
+    div.style.background = bit === 1 ? (field ? field.color : '#00ffe7') : 'var(--border)';
+    div.style.opacity    = bit === 0 ? '0.25' : '1';
+    bm.appendChild(div);
+  }
+}
+
+// ── renderTraits — uses GenomeLib.decode() ────────────────────────────────────
+function renderTraits() {
+  const d = GenomeLib.decode(currentGenome);
+  const g2 = document.getElementById('traitsGrid');
+  g2.innerHTML = '';
+
+  const traits = [
+    { f:BIT_FIELDS[0], val:'0x'+d.speciesId.toString(16).padStart(4,'0').toUpperCase(),
+      desc:'Lineage root — unique within species tree',
+      raw:d.speciesId, max:65535, rawLabel:`uint16: ${d.speciesId}` },
+    { f:BIT_FIELDS[1], val:'P-'+d.planetId.toString(16).padStart(4,'0').toUpperCase(),
+      desc:'Genesis planet hash fragment',
+      raw:d.planetId, max:65535, rawLabel:`uint16: ${d.planetId}` },
+    { f:BIT_FIELDS[2], val: ATMO_TYPES[Math.floor(d.atmosphere/65536*ATMO_TYPES.length)%ATMO_TYPES.length],
+      desc:`O₂×655 + CH₄×10 = ${d.atmosphere} (physics-weighted)`,
+      raw:d.atmosphere, max:65535, rawLabel:`uint16: ${d.atmosphere}` },
+    { f:BIT_FIELDS[3], val: METABOLISM_TYPES[d.metabolism % METABOLISM_TYPES.length],
+      desc:`C×400 + Si×255 = ${d.metabolism} (composition-derived)`,
+      raw:d.metabolism, max:65535, rawLabel:`uint16: ${d.metabolism}` },
+    { f:BIT_FIELDS[4], val: (d.gravity/13).toFixed(1)+' m/s²',
+      desc:`gravity×13 = ${d.gravity} → structural density`,
+      raw:d.gravity, max:65535, rawLabel:`uint16: ${d.gravity}` },
+    { f:BIT_FIELDS[5], val: d.temperature+' K',
+      desc: d.temperature<200?'Cryo-tolerant organism':d.temperature>373?'Thermophile adaptations':'Mesophile baseline',
+      raw:d.temperature, max:1000, rawLabel:`uint16: ${d.temperature}` },
+    { f:BIT_FIELDS[6], val: d.radiation+' mSv',
+      desc: d.radiation>500?'Radioresistant · DNA repair upregulated':'Standard radiation tolerance',
+      raw:d.radiation, max:1000, rawLabel:`uint16: ${d.radiation}` },
+    { f:BIT_FIELDS[7], val: SENSORY_TYPES[d.sensory % SENSORY_TYPES.length],
+      desc:`Complexity index ${(d.sensory/65535*100).toFixed(0)}% · hash-derived`,
+      raw:d.sensory, max:65535, rawLabel:`uint16: ${d.sensory}` },
+    { f:BIT_FIELDS[8], val:'0x'+d.entropySeed.toString(16).substring(0,8).toUpperCase()+'…',
+      desc:'Evolvable randomness seed · bits [128–191] · uint64',
+      raw:Number(d.entropySeed & 0xFFFFn), max:65535,
+      rawLabel:`uint64: ${d.entropySeed.toString(16).toUpperCase().substring(0,16)}…` },
+  ];
+
+  traits.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'trait-card animated';
+    card.style.setProperty('--trait-color', t.f.color);
+    card.style.animationDelay = `${i * 0.04}s`;
+    card.style.opacity = '0';
+    const pct = Math.min(100, (t.raw / t.max * 100)).toFixed(1);
+    card.innerHTML = `
+      <div class="trait-header">
+        <div class="trait-name">${t.f.name}</div>
+        <div class="trait-bits">bits ${t.f.bits[0]}–${t.f.bits[1]}</div>
+      </div>
+      <div class="trait-value">${t.val}</div>
+      <div class="trait-desc">${t.desc}</div>
+      <div class="trait-raw">${t.rawLabel}</div>
+      <div class="trait-bar"><div class="trait-bar-fill" style="width:0%" data-pct="${pct}"></div></div>
+    `;
+    g2.appendChild(card);
+  });
+
+  setTimeout(() => {
+    document.querySelectorAll('.trait-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 80);
+}
+
+// ── renderFitness — uses GenomeLib.fitnesScore() ──────────────────────────────
+function renderFitness() {
+  const [,,,oxygen,gravity,temperature,radiation] = getParams();
+  // Note: fitnesScore(genome, planetOxygen, planetGravity, planetTemp, planetRadiation)
+  const { score, components } = GenomeLib.fitnesScore(
+    currentGenome, oxygen, gravity, temperature, radiation
+  );
+
+  const color = score > 7500 ? '#10b981' : score > 4000 ? '#f59e0b' : '#c0392b';
+  const label = score > 8000 ? 'THRIVING' : score > 5500 ? 'ADAPTED' : score > 3000 ? 'STRUGGLING' : 'CRITICAL';
+
+  document.getElementById('fitnessScore').textContent = score;
+  document.getElementById('fitnessScore').style.color = color;
+  document.getElementById('fitnessLabel').textContent  = `/ 10000 — ${label}`;
+  document.getElementById('fitnessBar').style.cssText  =
+    `width:${score/100}%; background:linear-gradient(to right,#c0392b,${color})`;
+
+  document.getElementById('fitnessBreakdown').innerHTML = [
+    { label:'Atmosphere', val:components.atmos, color:'#1d8a4e' },
+    { label:'Gravity',    val:components.grav,  color:'#c0392b' },
+    { label:'Temperature',val:components.temp,  color:'#e07b39' },
+    { label:'Radiation',  val:components.rad,   color:'#9a3b3b' },
+  ].map(c => `
+    <div class="fit-component">
+      <div class="fit-comp-label">${c.label}</div>
+      <div class="fit-comp-val" style="color:${c.color}">${c.val}</div>
+    </div>
+  `).join('');
+}
+
+// ── renderCreature — genome bytes drive visual phenotype ──────────────────────
+function renderCreature() {
+  const canvas = document.getElementById('creatureCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = '#030a0f';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(0,255,231,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  const b  = GenomeLib.toBytes(currentGenome);
+  const d  = GenomeLib.decode(currentGenome);
+  const cx = W/2, cy = H/2;
+
+  // Phenotype traits — all derived from genome fields via GenomeLib.decode()
+  const limbCount    = 2 + (b[8] % 6);
+  const bodySize     = 28 + (b[9] % 44);
+  const segments     = 1  + (b[10] % 4);
+  const eyeCount     = 1  + (b[11] % 5);
+  const hue1         = b[12] * 1.41;
+  const hue2         = (hue1 + 120) % 360;
+  const sat          = 55 + b[13] % 35;
+  const lum1         = 38 + b[14] % 28;
+  const lum2         = 48 + b[15] % 28;
+  const limbLen      = 22 + (b[16] % 55);
+  const hasShell     = d.metabolism % 2 === 0;     // even metabolism → exoskeleton
+  const hasTentacles = d.sensory > 32767;           // high sensory → tentacles
+  const isGlowing    = d.radiation > 500;           // high radiation → bioluminescence
+  const c1 = `hsl(${hue1|0},${sat}%,${lum1}%)`;
+  const c2 = `hsl(${hue2|0},${sat}%,${lum2}%)`;
+
+  ctx.shadowColor = c1;
+  ctx.shadowBlur  = isGlowing ? 32 : 18;
+
+  // Body segments
+  for (let s = 0; s < segments; s++) {
+    const segY = cy + (s - (segments-1)/2) * bodySize * 0.55;
+    const segR = bodySize * (1 - s * 0.12);
+    const grad = ctx.createRadialGradient(cx, segY, 0, cx, segY, segR);
+    grad.addColorStop(0, c2); grad.addColorStop(1, c1);
+    ctx.beginPath(); ctx.ellipse(cx, segY, segR * 0.65, segR, 0, 0, Math.PI*2);
+    ctx.fillStyle = grad; ctx.fill();
+    if (hasShell) {
+      ctx.strokeStyle = `hsla(${hue1|0},80%,70%,0.5)`;
+      ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  // Limbs
+  ctx.shadowBlur = 5;
+  for (let l = 0; l < limbCount; l++) {
+    const angle = (l / limbCount) * Math.PI * 2 - Math.PI/2;
+    const sx = cx + Math.cos(angle) * bodySize * 0.55;
+    const sy = cy + Math.sin(angle) * bodySize * 0.55;
+    const jx = sx + Math.cos(angle + 0.45) * limbLen * 0.5;
+    const jy = sy + Math.sin(angle + 0.45) * limbLen * 0.5;
+    const ex = jx + Math.cos(angle - 0.35) * limbLen * 0.5;
+    const ey = jy + Math.sin(angle - 0.35) * limbLen * 0.5;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo(jx,jy,ex,ey);
+    ctx.strokeStyle = c2; ctx.lineWidth = Math.max(1, 3.5 - l*0.3); ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, Math.PI*2); ctx.fillStyle = c1; ctx.fill();
+  }
+
+  // Tentacles (high-sensory)
+  if (hasTentacles) {
+    ctx.shadowBlur = 12;
+    for (let t = 0; t < 4; t++) {
+      const ta = (t / 4) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ta)*bodySize*0.45, cy + Math.sin(ta)*bodySize*0.45);
+      for (let i = 1; i <= 9; i++) {
+        const wave = Math.sin(i*0.85 + t*1.2) * 9;
+        ctx.lineTo(cx + Math.cos(ta)*(bodySize*0.45 + i*9) + wave,
+                   cy + Math.sin(ta)*(bodySize*0.45 + i*9) + wave*0.6);
+      }
+      ctx.strokeStyle = `hsla(${(hue1+t*35)|0},70%,60%,0.65)`;
+      ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  // Bioluminescence ring (high radiation)
+  if (isGlowing) {
+    ctx.shadowBlur = 28; ctx.shadowColor = `hsl(${hue2|0},100%,70%)`;
+    ctx.beginPath(); ctx.arc(cx, cy, bodySize*1.3, 0, Math.PI*2);
+    ctx.strokeStyle = `hsla(${hue2|0},100%,70%,0.13)`;
+    ctx.lineWidth = 10; ctx.stroke();
+  }
+
+  // Eyes
+  ctx.shadowBlur = 16; ctx.shadowColor = '#00ffe7';
+  for (let e = 0; e < eyeCount; e++) {
+    const ea = (e / eyeCount)*Math.PI*1.2 - Math.PI*0.6;
+    const er2 = bodySize * 0.4;
+    const ex2 = cx + Math.cos(ea)*er2*0.7;
+    const ey2 = (cy - bodySize*0.28) + Math.sin(ea)*er2*0.28;
+    const er  = 4 + (b[20] % 6);
+    ctx.beginPath(); ctx.arc(ex2, ey2, er, 0, Math.PI*2); ctx.fillStyle = '#001515'; ctx.fill();
+    ctx.strokeStyle = '#00ffe7'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(ex2, ey2, er*0.4, 0, Math.PI*2); ctx.fillStyle = '#00ffe7'; ctx.fill();
+  }
+
+  // Watermark
+  ctx.shadowBlur = 0; ctx.font = '9px Space Mono';
+  ctx.fillStyle = 'rgba(0,255,231,0.22)';
+  ctx.fillText(`speciesId:0x${d.speciesId.toString(16).padStart(4,'0').toUpperCase()}  metab:${METABOLISM_TYPES[d.metabolism%6]}`, 8, H-8);
+}
+
+// ── renderLineage ─────────────────────────────────────────────────────────────
+function renderLineage() {
+  if (!parentGenome || !currentGenome) return;
+  document.getElementById('parentHash').textContent        = GenomeLib.toHex(parentGenome);
+  document.getElementById('currentHashDisplay').textContent= GenomeLib.toHex(currentGenome);
+
+  const hamming     = GenomeLib.hammingDistance(parentGenome, currentGenome);
+  const sameSpecies = GenomeLib.sameSpecies(parentGenome, currentGenome);
+  const samePlanet  = GenomeLib.samePlanetOrigin(parentGenome, currentGenome);
+
+  document.getElementById('lineageStats').innerHTML = [
+    { label:'Hamming Distance',   val:hamming,                          color: hamming>64?'#c0392b':hamming>16?'#f59e0b':'#10b981' },
+    { label:'Divergence',         val:(hamming/256*100).toFixed(2)+'%', color:'#a855f7' },
+    { label:'Mutations Applied',  val:mutationCount,                    color:'#00ffe7' },
+    { label:'Total Bits Flipped', val:totalBitsFlipped,                 color:'#ff6b35' },
+    { label:'Same Species',       val:sameSpecies?'✓ YES':'✗ NO',       color:sameSpecies?'#10b981':'#c0392b' },
+    { label:'Same Planet Origin', val:samePlanet ?'✓ YES':'✗ NO',       color:samePlanet ?'#10b981':'#c0392b' },
+  ].map(s=>`
+    <div class="lstat">
+      <div class="lstat-label">${s.label}</div>
+      <div class="lstat-val" style="color:${s.color}">${s.val}</div>
+    </div>
+  `).join('');
+}
+
+// ── Logs ──────────────────────────────────────────────────────────────────────
+function appendLog(fn, detail, type) {
+  const log  = document.getElementById('derivationLog');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const color = type==='mutation'?'color:var(--accent2)':type==='generation'?'color:var(--accent)':'';
+  line.innerHTML = `<span class="log-key">${fn}</span><span class="log-arrow">→</span><span class="log-val" style="${color}">${detail}</span>`;
+  log.prepend(line);
+}
+
+function renderFullLog(params, entropy) {
+  const [carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane] = params;
+  const atmosVal = Number((BigInt(oxygen)*655n + BigInt(methane)*10n) & 0xFFFFn);
+  const metabVal = Number((BigInt(carbon)*400n + BigInt(silicon)*255n) & 0xFFFFn);
+  const gravVal  = Number((BigInt(gravity)*13n) & 0xFFFFn);
+
+  const log = document.getElementById('derivationLog');
+  const lines = [
+    ['fn call',        'GenomeLib.deriveFromPlanet(carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane,entropy)'],
+    ['encoding',       'keccak256(abi.encodePacked(all params + block.timestamp + msg.sender + entropy))'],
+    ['carbon',         `${carbon} → METABOLISM_MASK[48–63]: C×400=${carbon*400}`],
+    ['silicon',        `${silicon} → METABOLISM_MASK[48–63]: Si×255=${silicon*255}  combined=${metabVal}`],
+    ['oxygen',         `${oxygen} → ATMOS_MASK[32–47]: O₂×655=${oxygen*655}`],
+    ['methane',        `${methane} → ATMOS_MASK[32–47]: CH₄×10=${methane*10}  combined=${atmosVal}`],
+    ['gravity',        `${gravity} → GRAVITY_MASK[64–79]: g×13=${gravVal}`],
+    ['temperature',    `${temperature} K → TEMP_MASK[80–95]: direct uint16`],
+    ['radiation',      `${radiation} mSv → RADIATION_MASK[96–111]: direct uint16`],
+    ['tidal',          `${tidal} kN → abi.encodePacked input only (no dedicated field v1)`],
+    ['entropy',        `0x${entropy.toString(16).padStart(8,'0')} → bits [128–191] preserved from raw keccak output`],
+    ['reserved',       'bits [192–255] = 0 · protected from mutation in mutate()'],
+    ['genome',         GenomeLib.toHex(currentGenome)],
+    ['storage cost',   '1 × uint256 EVM slot · 32 bytes · single SSTORE'],
+    ['verifiable',     '✓ deterministic · on-chain reproducible · physics-driven'],
+  ];
+
+  // Insert below any existing prepended entries
+  const existing = log.querySelectorAll('.log-line');
+  existing.forEach(el => el.remove());
+
+  lines.forEach(([k, v]) => {
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    const isGenome = k === 'genome';
+    const isVerify = k === 'verifiable';
+    line.innerHTML = `
+      <span class="log-key">${k}</span>
+      <span class="log-arrow">→</span>
+      <span class="log-val" style="${isGenome?'color:var(--accent)':isVerify?'color:#10b981':''}">${v}</span>
+    `;
+    log.appendChild(line);
+  });
+}
+
+// Auto-derive on load
+generateGenome();
+</script>
+</body>
+</html>

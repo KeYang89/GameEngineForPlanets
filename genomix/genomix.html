@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>genomix · Solidity Reference</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,800;1,300&family=Syne:wght@400;700;800&display=swap');
+
+:root {
+  --ink: #0e1117;
+  --paper: #f5f0e8;
+  --cream: #ede8dc;
+  --rule: #c8c0b0;
+  --accent: #c0392b;
+  --accent2: #1a6b3c;
+  --accent3: #1a3a6b;
+  --gold: #9a7a1a;
+  --dim: #7a7060;
+  --code-bg: #1a1a2e;
+  --code-text: #e2e2e2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* Paper texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 40px;
+}
+
+/* Header */
+.doc-header {
+  border-bottom: 3px double var(--rule);
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+}
+.doc-meta {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.doc-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  color: var(--ink);
+}
+.doc-title span { color: var(--accent); }
+.doc-subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+/* Section headers */
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 48px 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+h2::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--accent);
+}
+h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* Bit layout diagram */
+.bit-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 32px;
+}
+
+.bit-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 200px;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--rule);
+  background: var(--cream);
+  transition: background 0.15s;
+}
+.bit-row:hover { background: #e8e0d0; }
+.bit-row:first-child { border-radius: 4px 4px 0 0; }
+.bit-row:last-child  { border-radius: 0 0 4px 4px; }
+
+.bit-range {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dim);
+  border-right: 1px solid var(--rule);
+  font-variant-numeric: tabular-nums;
+}
+.bit-bar-wrap {
+  padding: 8px 12px;
+  border-right: 1px solid var(--rule);
+}
+.bit-bar {
+  height: 10px;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+.bit-label {
+  padding: 8px 12px;
+  font-size: 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.bit-sublabel {
+  font-size: 9px;
+  color: var(--dim);
+  display: block;
+  font-weight: 400;
+}
+
+/* Mask table */
+.mask-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+  font-size: 11px;
+}
+.mask-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 2px solid var(--rule);
+  font-weight: 600;
+}
+.mask-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.mask-table tr:hover td { background: var(--cream); }
+.mask-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent3);
+  font-weight: 600;
+}
+.mask-bits { color: var(--dim); font-size: 9px; }
+.mask-name { font-weight: 600; }
+
+/* Function signatures */
+.fn-grid {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 32px;
+}
+
+.fn-card {
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent2);
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 16px;
+  transition: border-left-color 0.15s;
+}
+.fn-card:hover { border-left-color: var(--accent); }
+.fn-card.setter { border-left-color: var(--accent3); }
+.fn-card.setter:hover { border-left-color: var(--accent); }
+.fn-card.mutation { border-left-color: var(--accent); }
+.fn-card.utility  { border-left-color: var(--gold); }
+
+.fn-sig {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.fn-sig .kw  { color: var(--accent2); }
+.fn-sig .fn  { color: var(--accent3); }
+.fn-sig .typ { color: var(--accent); }
+.fn-desc { font-size: 10px; color: var(--dim); line-height: 1.5; }
+.fn-tag {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 2px;
+  white-space: nowrap;
+  align-self: start;
+}
+.tag-getter   { color: var(--accent2); border-color: var(--accent2); }
+.tag-setter   { color: var(--accent3); border-color: var(--accent3); }
+.tag-mutation { color: var(--accent);  border-color: var(--accent);  }
+.tag-utility  { color: var(--gold);    border-color: var(--gold);    }
+.tag-derive   { color: var(--dim);     border-color: var(--dim);     }
+
+/* Code block */
+.code-block {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 32px;
+  overflow-x: auto;
+  position: relative;
+}
+.code-block pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--code-text);
+  white-space: pre;
+}
+.c-kw  { color: #ff79c6; }
+.c-fn  { color: #50fa7b; }
+.c-typ { color: #8be9fd; }
+.c-str { color: #f1fa8c; }
+.c-cm  { color: #6272a4; font-style: italic; }
+.c-num { color: #bd93f9; }
+.c-op  { color: #ff79c6; }
+.code-label {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: #44475a;
+  text-transform: uppercase;
+}
+
+/* Interactive panel */
+.interactive-panel {
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.ipanel-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ipanel-title::after {
+  content: 'LIVE';
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.input-group label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.input-group input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-group input:focus { border-color: var(--accent3); }
+
+.run-btn {
+  padding: 10px 28px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 20px;
+}
+.run-btn:hover { background: var(--accent); }
+
+.decode-output {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.decode-field {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 10px 12px;
+}
+.decode-field-name {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.decode-field-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.decode-field-raw {
+  font-size: 9px;
+  color: var(--dim);
+  margin-top: 2px;
+}
+
+/* Hamming demo */
+.hamming-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.hamming-bit {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid var(--rule);
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.hb-same  { background: var(--cream); color: var(--dim); }
+.hb-diff  { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* Footer */
+footer {
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="doc-meta">GenWorld · Smart Contract Library · v1.0</div>
+    <div class="doc-title">Genome<span>Lib</span></div>
+    <div class="doc-subtitle">Compact 256-bit on-chain creature DNA · EVM-optimised · MIT License</div>
+  </div>
+
+  <h2>Bit Layout</h2>
+  <div class="bit-layout" id="bitLayout"></div>
+
+  <h2>Constants</h2>
+  <table class="mask-table">
+    <thead>
+      <tr>
+        <th>Constant</th>
+        <th>Mask Value</th>
+        <th>Bits</th>
+        <th>Width</th>
+      </tr>
+    </thead>
+    <tbody id="maskTable"></tbody>
+  </table>
+
+  <h2>API Reference</h2>
+  <div class="fn-grid" id="fnGrid"></div>
+
+  <h2>Usage Example</h2>
+  <div class="code-block">
+    <div class="code-label">Solidity</div>
+    <pre><span class="c-cm">// In your creature spawning contract:</span>
+<span class="c-kw">using</span> <span class="c-typ">genomix</span> <span class="c-kw">for</span> <span class="c-typ">uint256</span>;
+
+<span class="c-kw">mapping</span>(<span class="c-typ">uint256</span> => <span class="c-typ">uint256</span>) <span class="c-kw">public</span> creatureGenome;
+
+<span class="c-kw">function</span> <span class="c-fn">spawnCreature</span>(<span class="c-typ">uint256</span> planetId, <span class="c-typ">bytes32</span> vrfEntropy) <span class="c-kw">external</span> {
+    <span class="c-cm">// Fetch planet physics from your engine</span>
+    Planet <span class="c-kw">memory</span> p = planets[planetId];
+
+    <span class="c-cm">// Derive genome deterministically from physics</span>
+    <span class="c-typ">uint256</span> genome = <span class="c-typ">genomix</span>.<span class="c-fn">deriveFromPlanet</span>(
+        p.carbon, p.silicon, p.oxygen,
+        p.gravity, p.temperature, p.radiation,
+        p.tidal, p.methane,
+        vrfEntropy
+    );
+
+    creatureGenome[nextId] = genome;
+    <span class="c-kw">emit</span> <span class="c-fn">CreatureSpawned</span>(nextId++, genome);
+}
+
+<span class="c-kw">function</span> <span class="c-fn">breed</span>(<span class="c-typ">uint256</span> parentId, <span class="c-typ">bytes32</span> vrfSeed) <span class="c-kw">external</span> {
+    <span class="c-cm">// Deduct OBAMEOW tokens here</span>
+    obameow.<span class="c-fn">burn</span>(msg.sender, MUTATION_COST);
+
+    <span class="c-typ">uint256</span> child = <span class="c-typ">genomix</span>.<span class="c-fn">mutate</span>(
+        creatureGenome[parentId],
+        mutationIntensity,
+        vrfSeed
+    );
+
+    creatureGenome[nextId] = child;
+}
+
+<span class="c-kw">function</span> <span class="c-fn">checkFitness</span>(<span class="c-typ">uint256</span> creatureId, <span class="c-typ">uint256</span> planetId)
+    <span class="c-kw">external view returns</span> (<span class="c-typ">uint16</span> score)
+{
+    Planet <span class="c-kw">memory</span> p = planets[planetId];
+    <span class="c-kw">return</span> <span class="c-typ">genomix</span>.<span class="c-fn">fitnesScore</span>(
+        creatureGenome[creatureId],
+        p.oxygen, p.gravity, p.temperature, p.radiation
+    );
+}
+
+<span class="c-kw">function</span> <span class="c-fn">offChainDecode</span>(<span class="c-typ">uint256</span> creatureId)
+    <span class="c-kw">external view returns</span> (<span class="c-typ">genomix.DecodedGenome memory</span>)
+{
+    <span class="c-kw">return</span> <span class="c-typ">genomix</span>.<span class="c-fn">decode</span>(creatureGenome[creatureId]);
+}</pre>
+  </div>
+
+  <h2>Interactive Decoder</h2>
+  <div class="interactive-panel">
+    <div class="ipanel-title">Decode a Genome</div>
+    <div class="input-row">
+      <div class="input-group" style="grid-column: 1/-1">
+        <label>Genome (uint256 hex)</label>
+        <input type="text" id="genomeInput" placeholder="0x..." value="0xa3f7c291b42e8d1f6a0c5e3b9d8f2741e6a3c091b42d8f1e6b0c5a3d9f82741">
+      </div>
+    </div>
+    <button class="run-btn" onclick="decodeGenome()">Decode →</button>
+    <div class="decode-output" id="decodeOutput"></div>
+  </div>
+
+  <h2>Hamming Distance Demo</h2>
+  <div class="interactive-panel" style="padding-bottom: 28px;">
+    <div class="ipanel-title" style="margin-bottom:8px">Evolutionary Distance</div>
+    <p style="font-size:10px; color:var(--dim); margin-bottom:16px;">XOR of two genomes — red bits = mutations between generations</p>
+    <div class="input-row">
+      <div class="input-group" style="grid-column: span 2">
+        <label>Genome A</label>
+        <input type="text" id="hamA" value="0xa3f7c291b42e8d1f6a0c5e3b9d8f2741e6a3c091b42d8f1e6b0c5a3d9f82741">
+      </div>
+      <div class="input-group" style="grid-column: span 2">
+        <label>Genome B (mutant)</label>
+        <input type="text" id="hamB" value="0xa3f7c291b42e8d1f6a0c5e3b9d8f2741e6a3c091b42d8f1e6b0c5a3d9f82755">
+      </div>
+    </div>
+    <button class="run-btn" onclick="calcHamming()">Compare →</button>
+    <div id="hammingResult"></div>
+  </div>
+
+  <footer>
+    <span>genomix.sol · MIT License</span>
+    <span>GenWorld · 256-bit DNA · EVM Slot = 1</span>
+  </footer>
+
+</div>
+
+<script>
+// ─── Bit Layout Data ──────────────────────────────────────────────────────────
+const FIELDS = [
+  { range: '0–15',    name: 'SPECIES_MASK',        field: 'Species ID',            desc: 'Lineage root',                  color: '#2a9d8f', bytes: 2  },
+  { range: '16–31',   name: 'PLANET_MASK',          field: 'Planet Origin ID',      desc: 'Genesis planet',                color: '#457b9d', bytes: 2  },
+  { range: '32–47',   name: 'ATMOS_MASK',           field: 'Atmosphere Adaptation', desc: 'O₂ / Methane / Nitrogen',       color: '#1d8a4e', bytes: 2  },
+  { range: '48–63',   name: 'METABOLISM_MASK',      field: 'Metabolism Type',       desc: 'Carbon / Silicon / Hybrid',     color: '#7b2d8b', bytes: 2  },
+  { range: '64–79',   name: 'GRAVITY_MASK',         field: 'Gravity Adaptation',    desc: 'Structural density',            color: '#c0392b', bytes: 2  },
+  { range: '80–95',   name: 'TEMP_MASK',            field: 'Temperature Resistance',desc: 'Cold / Hot range',              color: '#e07b39', bytes: 2  },
+  { range: '96–111',  name: 'RADIATION_MASK',       field: 'Radiation Tolerance',   desc: 'Stellar proximity',             color: '#9a3b3b', bytes: 2  },
+  { range: '112–127', name: 'SENSORY_MASK',         field: 'Sensory Complexity',    desc: 'Vision / Echo / EM',            color: '#2c5f8a', bytes: 2  },
+  { range: '128–191', name: 'ENTROPY_MASK',         field: 'Mutation Entropy Seed', desc: 'Evolvable randomness seed',     color: '#5a5a5a', bytes: 8  },
+  { range: '192–255', name: 'RESERVED_MASK',        field: 'Reserved Future Traits',desc: 'Expansion space',               color: '#999', bytes: 8  },
+];
+
+// Build bit layout
+const layout = document.getElementById('bitLayout');
+FIELDS.forEach(f => {
+  const widthPct = (f.bytes / 32) * 100;
+  const row = document.createElement('div');
+  row.className = 'bit-row';
+  row.innerHTML = `
+    <div class="bit-range">[${f.range}]</div>
+    <div class="bit-bar-wrap">
+      <div class="bit-bar" style="width:${Math.max(widthPct*0.9,4)}%; background:${f.color}"></div>
+    </div>
+    <div class="bit-label">${f.field}<span class="bit-sublabel">${f.desc}</span></div>
+  `;
+  layout.appendChild(row);
+});
+
+// Build mask table
+const MASKS = [
+  { name: 'SPECIES_MASK',    val: '0xFFFF',                              bits: '[0–15]',    w: '16 bits' },
+  { name: 'PLANET_MASK',     val: '0xFFFF << 16',                        bits: '[16–31]',   w: '16 bits' },
+  { name: 'ATMOS_MASK',      val: '0xFFFF << 32',                        bits: '[32–47]',   w: '16 bits' },
+  { name: 'METABOLISM_MASK', val: '0xFFFF << 48',                        bits: '[48–63]',   w: '16 bits' },
+  { name: 'GRAVITY_MASK',    val: '0xFFFF << 64',                        bits: '[64–79]',   w: '16 bits' },
+  { name: 'TEMP_MASK',       val: '0xFFFF << 80',                        bits: '[80–95]',   w: '16 bits' },
+  { name: 'RADIATION_MASK',  val: '0xFFFF << 96',                        bits: '[96–111]',  w: '16 bits' },
+  { name: 'SENSORY_MASK',    val: '0xFFFF << 112',                       bits: '[112–127]', w: '16 bits' },
+  { name: 'ENTROPY_MASK',    val: '0xFFFFFFFFFFFFFFFF << 128',           bits: '[128–191]', w: '64 bits' },
+  { name: 'RESERVED_MASK',   val: '0xFFFFFFFFFFFFFFFF << 192',           bits: '[192–255]', w: '64 bits' },
+];
+const tbody = document.getElementById('maskTable');
+MASKS.forEach(m => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="mask-name">${m.name}</span></td>
+    <td><span class="mask-val">${m.val}</span></td>
+    <td><span class="mask-bits">${m.bits}</span></td>
+    <td>${m.w}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// Build fn grid
+const FUNCTIONS = [
+  { sig: 'deriveFromPlanet(carbon, silicon, oxygen, gravity, temperature, radiation, tidal, methane, entropy)', ret: 'uint256', type: 'derive', tag: 'DERIVE', desc: 'Deterministic genome from planet physics. Combines all params with keccak256 + block context.' },
+  { sig: 'getSpeciesId(uint256 g)',   ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract species lineage root from bits [0–15].' },
+  { sig: 'getPlanetId(uint256 g)',    ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract genesis planet ID from bits [16–31].' },
+  { sig: 'getAtmosphere(uint256 g)',  ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract atmosphere adaptation from bits [32–47].' },
+  { sig: 'getMetabolism(uint256 g)',  ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract metabolism type from bits [48–63].' },
+  { sig: 'getGravity(uint256 g)',     ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract gravity adaptation from bits [64–79].' },
+  { sig: 'getTemperature(uint256 g)', ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract temperature resistance from bits [80–95].' },
+  { sig: 'getRadiation(uint256 g)',   ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract radiation tolerance from bits [96–111].' },
+  { sig: 'getSensory(uint256 g)',     ret: 'uint16', type: 'getter', tag: 'GETTER', desc: 'Extract sensory complexity from bits [112–127].' },
+  { sig: 'getEntropySeed(uint256 g)', ret: 'uint64', type: 'getter', tag: 'GETTER', desc: 'Extract 64-bit mutation entropy seed from bits [128–191].' },
+  { sig: 'setSpeciesId(uint256 g, uint16 v)',   ret: 'uint256', type: 'setter', tag: 'SETTER', desc: 'Write species ID. Returns new genome (immutable pattern).' },
+  { sig: 'setMetabolism(uint256 g, uint16 v)',  ret: 'uint256', type: 'setter', tag: 'SETTER', desc: 'Write metabolism type. Returns new genome.' },
+  { sig: 'setGravity(uint256 g, uint16 v)',     ret: 'uint256', type: 'setter', tag: 'SETTER', desc: 'Write gravity adaptation. Returns new genome.' },
+  { sig: 'mutate(parentGenome, intensity, randomSeed)',   ret: 'uint256', type: 'mutation', tag: 'MUTATION', desc: 'Full XOR mutation. Higher intensity → more entropy bits flipped. Cost enforced by caller in OBAMEOW.' },
+  { sig: 'mutateEntropy(parentGenome, randomSeed)',       ret: 'uint256', type: 'mutation', tag: 'MUTATION', desc: 'Targeted mutation: only flips entropy seed bits [128–191]. Preserves species identity.' },
+  { sig: 'fitnesScore(genome, oxygen, gravity, temp, rad)', ret: 'uint16', type: 'utility', tag: 'UTILITY', desc: 'Environmental fitness score [0–10000]. Compares all adaptation traits against live planet physics.' },
+  { sig: 'decode(uint256 g)',          ret: 'DecodedGenome', type: 'utility', tag: 'UTILITY', desc: 'Returns all fields as a struct. Designed for off-chain engine integration.' },
+  { sig: 'hammingDistance(a, b)',      ret: 'uint16', type: 'utility', tag: 'UTILITY', desc: 'Bit-flip distance between two genomes. Measures evolutionary divergence.' },
+  { sig: 'sameSpecies(a, b)',          ret: 'bool',   type: 'utility', tag: 'UTILITY', desc: 'True if both genomes share the same species lineage root (bits [0–15]).' },
+  { sig: 'samePlanetOrigin(a, b)',     ret: 'bool',   type: 'utility', tag: 'UTILITY', desc: 'True if both genomes originated from the same genesis planet.' },
+];
+
+const fgrid = document.getElementById('fnGrid');
+FUNCTIONS.forEach(f => {
+  const card = document.createElement('div');
+  const cls = f.type === 'getter' ? '' : f.type === 'setter' ? 'setter' : f.type === 'mutation' ? 'mutation' : 'utility';
+  const tagCls = `tag-${f.type === 'derive' ? 'utility' : f.type}`;
+  card.className = `fn-card ${cls}`;
+  card.innerHTML = `
+    <div>
+      <div class="fn-sig"><span class="kw">function</span> <span class="fn">${f.sig.split('(')[0]}</span><span style="color:var(--dim)">(${f.sig.includes('(')? f.sig.split('(')[1].replace(')','')+')' : ''})</span> → <span class="typ">${f.ret}</span></div>
+      <div class="fn-desc">${f.desc}</div>
+    </div>
+    <div class="fn-tag ${tagCls}">${f.tag}</div>
+  `;
+  fgrid.appendChild(card);
+});
+
+// ─── Interactive Decoder ──────────────────────────────────────────────────────
+function hexToBigInt(hex) {
+  hex = hex.trim().replace(/^0x/i, '');
+  if (!hex) return 0n;
+  return BigInt('0x' + hex.padStart(64, '0'));
+}
+
+function decodeGenome() {
+  const hex = document.getElementById('genomeInput').value;
+  let g;
+  try { g = hexToBigInt(hex); } catch(e) { return; }
+
+  const mask16 = 0xFFFFn;
+  const mask64 = 0xFFFFFFFFFFFFFFFFn;
+
+  const fields = [
+    { name: 'Species ID',             val: Number(g & mask16),              shift: 0n,   fmt: v => '0x'+v.toString(16).padStart(4,'0').toUpperCase() },
+    { name: 'Planet Origin ID',       val: Number((g >> 16n) & mask16),     shift: 16n,  fmt: v => 'P-'+v.toString(16).padStart(4,'0').toUpperCase() },
+    { name: 'Atmosphere Adapt.',      val: Number((g >> 32n) & mask16),     shift: 32n,  fmt: v => (v/655.35).toFixed(1)+'% equiv' },
+    { name: 'Metabolism Type',        val: Number((g >> 48n) & mask16),     shift: 48n,  fmt: v => ['Carbon','Silicon','Hybrid','Photonic','Plasma','Crystal'][v % 6] },
+    { name: 'Gravity Adapt.',         val: Number((g >> 64n) & mask16),     shift: 64n,  fmt: v => (v/13).toFixed(1)+' m/s²' },
+    { name: 'Temperature Resist.',    val: Number((g >> 80n) & mask16),     shift: 80n,  fmt: v => v+'K' },
+    { name: 'Radiation Tolerance',    val: Number((g >> 96n) & mask16),     shift: 96n,  fmt: v => v+' mSv' },
+    { name: 'Sensory Complexity',     val: Number((g >> 112n) & mask16),    shift: 112n, fmt: v => ['Visual','Echo','EM','Thermal','Quantum','Chemo'][v % 6] },
+    { name: 'Entropy Seed',           val: (g >> 128n) & mask64,            shift: 128n, fmt: v => '0x'+v.toString(16).substring(0,8).toUpperCase()+'…' },
+    { name: 'Reserved',               val: Number((g >> 192n) & mask64),    shift: 192n, fmt: v => v === 0 ? '(empty)' : '0x'+v.toString(16) },
+  ];
+
+  const out = document.getElementById('decodeOutput');
+  out.innerHTML = '';
+  fields.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'decode-field';
+    const rawVal = typeof f.val === 'bigint' ? f.val : f.val;
+    const display = f.fmt(rawVal);
+    div.innerHTML = `
+      <div class="decode-field-name">${f.name}</div>
+      <div class="decode-field-val">${display}</div>
+      <div class="decode-field-raw">raw: 0x${(typeof rawVal === 'bigint' ? rawVal : rawVal).toString(16).padStart(4,'0').toUpperCase()}</div>
+    `;
+    out.appendChild(div);
+  });
+}
+
+// ─── Hamming Distance ─────────────────────────────────────────────────────────
+function calcHamming() {
+  let a, b;
+  try {
+    a = hexToBigInt(document.getElementById('hamA').value);
+    b = hexToBigInt(document.getElementById('hamB').value);
+  } catch(e) { return; }
+
+  const xor = a ^ b;
+  let count = 0n;
+  let temp = xor;
+  while (temp > 0n) { temp &= temp - 1n; count++; }
+
+  const div = document.getElementById('hammingResult');
+  const xorHex = xor.toString(16).padStart(64,'0');
+
+  // Show first 64 bits visually
+  let bits = '';
+  for (let i = 0; i < 64; i++) {
+    const byteIdx = Math.floor(i/8);
+    const bitIdx = 7 - (i%8);
+    const byte = parseInt(xorHex.substring(byteIdx*2, byteIdx*2+2), 16);
+    const bit = (byte >> bitIdx) & 1;
+    bits += `<div class="hamming-bit ${bit ? 'hb-diff' : 'hb-same'}">${bit}</div>`;
+  }
+
+  div.innerHTML = `
+    <p style="font-size:12px; font-weight:600; margin-bottom:12px; color:var(--ink)">
+      Hamming Distance: <span style="color:var(--accent)">${count} bits</span>
+      &nbsp;·&nbsp; ${((Number(count)/256)*100).toFixed(1)}% divergence
+    </p>
+    <p style="font-size:9px; color:var(--dim); margin-bottom:8px">XOR · first 64 bits (red = mutation)</p>
+    <div class="hamming-row">${bits}</div>
+  `;
+}
+
+// ─── Auto-run on load ─────────────────────────────────────────────────────────
+decodeGenome();
+calcHamming();
+</script>
+</body>
+</html>

@@ -100,7 +100,7 @@ body.night #stars { opacity: 1; }
 
 
 /* Special Styling for World Builder Link */
-.btn-world-builder {
+.btn-world-builder, .btn-creature-builder {
     display: inline-block;
     text-decoration: none;
     background: linear-gradient(135deg, #7b5fff, #3a9fff);
@@ -120,13 +120,17 @@ body.night #stars { opacity: 1; }
     animation: ctaPulse 3s infinite;
 }
 
-.btn-world-builder:hover {
+.btn-creature-builder {
+    background: linear-gradient(-135deg, #7b5fff, #3a9fff);
+}
+
+.btn-world-builder:hover, .btn-creature-builder:hover {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 20px rgba(123, 95, 255, 0.5);
     filter: brightness(1.1);
 }
 
-.btn-world-builder:active {
+.btn-world-builder:active, .btn-creature-builder:active {
     transform: translateY(0) scale(0.98);
 }
 
