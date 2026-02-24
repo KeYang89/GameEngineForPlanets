@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GenWorld Genomix</title>
+<title>Genomix</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@400;700;900&display=swap');
 
@@ -179,9 +179,9 @@
 <div class="container">
 
   <header>
-    <div class="logo">GEN<span>WORLD</span></div>
+    <div class="logo">GENO<span>MIX</span></div>
     <div class="subtitle">Genome · Encoding · Engine · v1.0</div>
-    <div class="lib-badge">powered by GenomeLib.sol</div>
+    <div class="lib-badge">powered by genomix.sol</div>
   </header>
 
   <div class="section-title">01 · Planet Parameters <span class="fn-tag">deriveFromPlanet()</span></div>
@@ -195,10 +195,10 @@
     <div class="field-legend" id="fieldLegend"></div>
   </div>
 
-  <div class="section-title">03 · Decoded Traits <span class="fn-tag">GenomeLib.decode()</span></div>
+  <div class="section-title">03 · Decoded Traits <span class="fn-tag">genomix.decode()</span></div>
   <div class="traits-grid" id="traitsGrid"></div>
 
-  <div class="section-title">04 · Environmental Fitness <span class="fn-tag">GenomeLib.fitnesScore()</span></div>
+  <div class="section-title">04 · Environmental Fitness <span class="fn-tag">genomix.fitnesScore()</span></div>
   <div class="fitness-panel">
     <div style="font-size:9px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-bottom:4px">Survival Probability vs Current Planet · [0–10000]</div>
     <div class="fitness-score" id="fitnessScore" style="color:var(--dim)">—</div>
@@ -250,12 +250,12 @@
 
 <script>
 // ════════════════════════════════════════════════════════════════════════════
-//  GenomeLib.js
-//  Faithful BigInt port of GenomeLib.sol
+//  genomix.js
+//  Faithful BigInt port of genomix.sol
 //  Every mask, formula, getter, setter, mutate(), fitnesScore(), decode(),
 //  hammingDistance() matches the Solidity source exactly.
 // ════════════════════════════════════════════════════════════════════════════
-const GenomeLib = (() => {
+const genomix = (() => {
 
   const UINT256_MAX = (1n << 256n) - 1n;
   const MASK16 = 0xFFFFn;
@@ -263,7 +263,7 @@ const GenomeLib = (() => {
   const u256   = v => ((v % (UINT256_MAX + 1n)) + (UINT256_MAX + 1n)) % (UINT256_MAX + 1n);
   const notU   = v => u256(UINT256_MAX ^ v);  // bitwise NOT within uint256
 
-  // ── Constants matching GenomeLib.sol exactly ───────────────────────────────
+  // ── Constants matching genomix.sol exactly ───────────────────────────────
   const SPECIES_MASK    = 0xFFFFn;
   const PLANET_MASK     = 0xFFFFn                    << 16n;
   const ATMOS_MASK      = 0xFFFFn                    << 32n;
@@ -302,7 +302,7 @@ const GenomeLib = (() => {
     return u256(result);
   }
 
-  // ── deriveFromPlanet — mirrors GenomeLib.deriveFromPlanet() ──────────────
+  // ── deriveFromPlanet — mirrors genomix.deriveFromPlanet() ──────────────
   //   genome = keccak256(abi.encodePacked(carbon,silicon,oxygen,gravity,
   //            temperature,radiation,tidal,methane,block.timestamp,
   //            msg.sender,entropy))
@@ -375,7 +375,7 @@ const GenomeLib = (() => {
   //   mask = mask & ~RESERVED_MASK      ← protect reserved [192–255]
   //   newGenome = parentGenome ^ mask
   function mutate(parentGenome, intensity, randomSeed) {
-    if (intensity < 1 || intensity > 64) throw new Error('GenomeLib: intensity out of range');
+    if (intensity < 1 || intensity > 64) throw new Error('genomix: intensity out of range');
     let mask = u256(randomSeed);
     const intensityFactor = u256((BigInt(intensity) * UINT256_MAX) / 64n);
     mask = mask & intensityFactor;
@@ -563,7 +563,7 @@ function generateGenome() {
   const [carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane] = getParams();
   const entropy = Math.floor(Math.random() * 0xFFFFFFFF);
 
-  currentGenome = GenomeLib.deriveFromPlanet(
+  currentGenome = genomix.deriveFromPlanet(
     carbon, silicon, oxygen, gravity, temperature, radiation, tidal, methane, entropy
   );
   parentGenome     = currentGenome;
@@ -571,7 +571,7 @@ function generateGenome() {
   totalBitsFlipped = 0;
 
   renderAll();
-  appendLog('GenomeLib.deriveFromPlanet()', GenomeLib.toHex(currentGenome), 'generation');
+  appendLog('genomix.deriveFromPlanet()', genomix.toHex(currentGenome), 'generation');
   renderFullLog(getParams(), entropy);
 }
 
@@ -580,24 +580,24 @@ function mutateGenome(entropyOnly) {
   if (!currentGenome) { generateGenome(); return; }
 
   const intensity  = parseInt(document.getElementById('mutationIntensity').value);
-  const randomSeed = GenomeLib.randBig();
+  const randomSeed = genomix.randBig();
   const prev       = currentGenome;
 
   if (entropyOnly) {
-    currentGenome = GenomeLib.mutateEntropy(currentGenome, randomSeed);
+    currentGenome = genomix.mutateEntropy(currentGenome, randomSeed);
   } else {
-    currentGenome = GenomeLib.mutate(currentGenome, intensity, randomSeed);
+    currentGenome = genomix.mutate(currentGenome, intensity, randomSeed);
   }
 
-  const flipped = GenomeLib.hammingDistance(prev, currentGenome);
+  const flipped = genomix.hammingDistance(prev, currentGenome);
   totalBitsFlipped += flipped;
   mutationCount++;
 
   document.getElementById('bitsFlipped').textContent = flipped;
 
   renderAll();
-  const fn = entropyOnly ? 'GenomeLib.mutateEntropy()' : `GenomeLib.mutate(intensity=${intensity})`;
-  appendLog(fn, `${flipped} bits flipped · cost: ${intensity} OBAMEOW · ${GenomeLib.toHex(currentGenome).substring(0,18)}…`, 'mutation');
+  const fn = entropyOnly ? 'genomix.mutateEntropy()' : `genomix.mutate(intensity=${intensity})`;
+  appendLog(fn, `${flipped} bits flipped · cost: ${intensity} OBAMEOW · ${genomix.toHex(currentGenome).substring(0,18)}…`, 'mutation');
 }
 
 function renderAll() {
@@ -610,14 +610,14 @@ function renderAll() {
 
 // ── renderGenomeDisplay ───────────────────────────────────────────────────────
 function renderGenomeDisplay() {
-  const hex    = GenomeLib.toHex(currentGenome).replace('0x','');
+  const hex    = genomix.toHex(currentGenome).replace('0x','');
   const chunks = hex.match(/.{8}/g);
   document.getElementById('genomeHash').innerHTML =
     '0x ' + chunks.map((c,i) => `<span class="chunk" title="bytes ${i*4}–${i*4+3}">${c}</span>`).join(' ');
 
   const bm    = document.getElementById('bitMap');
   bm.innerHTML = '';
-  const bytes = GenomeLib.toBytes(currentGenome);
+  const bytes = genomix.toBytes(currentGenome);
 
   for (let i = 0; i < 256; i++) {
     const byteIdx = Math.floor(i / 8);
@@ -632,9 +632,9 @@ function renderGenomeDisplay() {
   }
 }
 
-// ── renderTraits — uses GenomeLib.decode() ────────────────────────────────────
+// ── renderTraits — uses genomix.decode() ────────────────────────────────────
 function renderTraits() {
-  const d = GenomeLib.decode(currentGenome);
+  const d = genomix.decode(currentGenome);
   const g2 = document.getElementById('traitsGrid');
   g2.innerHTML = '';
 
@@ -696,11 +696,11 @@ function renderTraits() {
   }, 80);
 }
 
-// ── renderFitness — uses GenomeLib.fitnesScore() ──────────────────────────────
+// ── renderFitness — uses genomix.fitnesScore() ──────────────────────────────
 function renderFitness() {
   const [,,,oxygen,gravity,temperature,radiation] = getParams();
   // Note: fitnesScore(genome, planetOxygen, planetGravity, planetTemp, planetRadiation)
-  const { score, components } = GenomeLib.fitnesScore(
+  const { score, components } = genomix.fitnesScore(
     currentGenome, oxygen, gravity, temperature, radiation
   );
 
@@ -740,11 +740,11 @@ function renderCreature() {
   for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
   for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
 
-  const b  = GenomeLib.toBytes(currentGenome);
-  const d  = GenomeLib.decode(currentGenome);
+  const b  = genomix.toBytes(currentGenome);
+  const d  = genomix.decode(currentGenome);
   const cx = W/2, cy = H/2;
 
-  // Phenotype traits — all derived from genome fields via GenomeLib.decode()
+  // Phenotype traits — all derived from genome fields via genomix.decode()
   const limbCount    = 2 + (b[8] % 6);
   const bodySize     = 28 + (b[9] % 44);
   const segments     = 1  + (b[10] % 4);
@@ -840,12 +840,12 @@ function renderCreature() {
 // ── renderLineage ─────────────────────────────────────────────────────────────
 function renderLineage() {
   if (!parentGenome || !currentGenome) return;
-  document.getElementById('parentHash').textContent        = GenomeLib.toHex(parentGenome);
-  document.getElementById('currentHashDisplay').textContent= GenomeLib.toHex(currentGenome);
+  document.getElementById('parentHash').textContent        = genomix.toHex(parentGenome);
+  document.getElementById('currentHashDisplay').textContent= genomix.toHex(currentGenome);
 
-  const hamming     = GenomeLib.hammingDistance(parentGenome, currentGenome);
-  const sameSpecies = GenomeLib.sameSpecies(parentGenome, currentGenome);
-  const samePlanet  = GenomeLib.samePlanetOrigin(parentGenome, currentGenome);
+  const hamming     = genomix.hammingDistance(parentGenome, currentGenome);
+  const sameSpecies = genomix.sameSpecies(parentGenome, currentGenome);
+  const samePlanet  = genomix.samePlanetOrigin(parentGenome, currentGenome);
 
   document.getElementById('lineageStats').innerHTML = [
     { label:'Hamming Distance',   val:hamming,                          color: hamming>64?'#c0392b':hamming>16?'#f59e0b':'#10b981' },
@@ -880,7 +880,7 @@ function renderFullLog(params, entropy) {
 
   const log = document.getElementById('derivationLog');
   const lines = [
-    ['fn call',        'GenomeLib.deriveFromPlanet(carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane,entropy)'],
+    ['fn call',        'genomix.deriveFromPlanet(carbon,silicon,oxygen,gravity,temperature,radiation,tidal,methane,entropy)'],
     ['encoding',       'keccak256(abi.encodePacked(all params + block.timestamp + msg.sender + entropy))'],
     ['carbon',         `${carbon} → METABOLISM_MASK[48–63]: C×400=${carbon*400}`],
     ['silicon',        `${silicon} → METABOLISM_MASK[48–63]: Si×255=${silicon*255}  combined=${metabVal}`],
@@ -892,7 +892,7 @@ function renderFullLog(params, entropy) {
     ['tidal',          `${tidal} kN → abi.encodePacked input only (no dedicated field v1)`],
     ['entropy',        `0x${entropy.toString(16).padStart(8,'0')} → bits [128–191] preserved from raw keccak output`],
     ['reserved',       'bits [192–255] = 0 · protected from mutation in mutate()'],
-    ['genome',         GenomeLib.toHex(currentGenome)],
+    ['genome',         genomix.toHex(currentGenome)],
     ['storage cost',   '1 × uint256 EVM slot · 32 bytes · single SSTORE'],
     ['verifiable',     '✓ deterministic · on-chain reproducible · physics-driven'],
   ];
