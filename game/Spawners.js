@@ -482,6 +482,7 @@ class Egg {
         this.entities = entities;
         this.bus = bus;
         this.hatchTime = 15;
+        this.dead = false;
         this.element = this.createElement();
     }
 
@@ -505,6 +506,7 @@ class Egg {
     hatch() {
         if (this._hatching) return;
         this._hatching = true;
+        this.dead = true;
         this.element?.classList.add('hatching');
 
         setTimeout(() => {

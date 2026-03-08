@@ -10,10 +10,10 @@ import { EntityManager } from '../../engine/EntityManager.js';
 
 const PERSONALITIES = ['Curious','Lazy','Social','Shy','Brave','Cautious','Energetic','Calm'];
 const COLORS = [
-    { name:'Yellow', hex:'#ffd700', emoji:'🦆' }, { name:'White',  hex:'#ffffff', emoji:'🦆' },
-    { name:'Brown',  hex:'#8b6f47', emoji:'🦆' }, { name:'Orange', hex:'#ff8c42', emoji:'🦆' },
-    { name:'Green',  hex:'#4a7c59', emoji:'🦆' }, { name:'Blue',   hex:'#5b9bd5', emoji:'🦆' },
-    { name:'Pink',   hex:'#ff69b4', emoji:'🦆' }, { name:'Purple', hex:'#9370db', emoji:'🦆' },
+    { name:'Yellow', hex:'#ffd700' }, { name:'White',  hex:'#ffffff' },
+    { name:'Brown',  hex:'#8b6f47' }, { name:'Orange', hex:'#ff8c42' },
+    { name:'Green',  hex:'#4a7c59' }, { name:'Blue',   hex:'#5b9bd5' },
+    { name:'Pink',   hex:'#ff69b4' }, { name:'Purple', hex:'#9370db' },
 ];
 
 export class BirdEntity extends BaseEntity {
@@ -51,7 +51,7 @@ export class BirdEntity extends BaseEntity {
         const isDuckling = this.age < 10 || this.speciesDef.isBaby;
         const emoji = this.speciesDef.islandOnly
             ? this.speciesDef.emoji
-            : (isDuckling ? '🐥' : this.color.emoji);
+            : (isDuckling ? '🐥' : this.speciesDef.emoji);
         const size  = isDuckling ? '36px' : this.speciesDef.size + 'px';
         duck.innerHTML = `
             <div class="duck-body" style="filter:drop-shadow(0 0 8px ${this.color.hex});font-size:${size};">${emoji}</div>
@@ -73,7 +73,7 @@ export class BirdEntity extends BaseEntity {
         if (body) {
             const isDuckling = this.age < 10 || this.speciesDef.isBaby;
             if (!this.speciesDef.islandOnly) {
-                body.textContent  = isDuckling ? '🐥' : this.color.emoji;
+                body.textContent  = isDuckling ? '🐥' : this.speciesDef.emoji;
                 body.style.fontSize = isDuckling ? '36px' : this.speciesDef.size + 'px';
             }
         }
@@ -473,7 +473,7 @@ export class BirdEntity extends BaseEntity {
     // ── Thought bubbles ───────────────────────────────────────────────────────
 
     showThought(text) {
-        this.thinkingTimer = 600 + Math.random() * 600;
+        this.thinkingTimer = 3 + Math.random() * 2;
         const bubble = this.element?.querySelector('.duck-thinking');
         if (bubble) {
             bubble.textContent = text;
