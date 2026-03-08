@@ -50,7 +50,7 @@ export class BirdEntity extends BaseEntity {
         duck.style.top  = this.y + 'px';
         const isDuckling = this.age < 10 || this.speciesDef.isBaby;
         const emoji = this.speciesDef.islandOnly
-            ? this.speciesDef.emoji               // flamingo always uses species emoji
+            ? this.speciesDef.emoji
             : (isDuckling ? '🐥' : this.color.emoji);
         const size  = isDuckling ? '36px' : this.speciesDef.size + 'px';
         duck.innerHTML = `
@@ -225,10 +225,20 @@ export class BirdEntity extends BaseEntity {
     }
 
     _findMate(entities) {
-        for (const d of entities.ducks)
-            if (d !== this && d.canBreed && d.breedingCooldown <= 0 &&
-                d.hunger > 50 && d.energy > 50 && this.distanceTo(d) < 200)
+        for (const d of entities.ducks) {
+            if (
+                d !== this &&
+                d.canBreed &&
+                d.breedingCooldown <= 0 &&
+                d.hunger > 50 &&
+                d.energy > 50 &&
+                d.gender !== this.gender &&
+                d.speciesDef?.id === this.speciesDef?.id &&
+                this.distanceTo(d) < 200
+            ) {
                 return d;
+            }
+        }
         return null;
     }
 
@@ -246,8 +256,6 @@ export class BirdEntity extends BaseEntity {
 
     _explore() {
         if (Math.random() < 0.3) {
-            // Birds know about the world height/width from their element's container,
-            // but we approximate from the DOM rather than storing a world ref.
             const c  = this.element?.parentElement ?? document.getElementById('game-container');
             const isDuckling = this.age < 10;
             const ty = isDuckling
@@ -310,7 +318,6 @@ export class BirdEntity extends BaseEntity {
                 }
                 break;
             default:
-                // idle — gentle wander in water
                 if (Math.random() < 0.005) {
                     this.isSwimming = true;
                     this.wander(0.05);
@@ -377,54 +384,90 @@ export class BirdEntity extends BaseEntity {
     }
 
     _breed(mate, entities, bus) {
-        if (!mate.canBreed || mate.breedingCooldown > 0 || this.gender === mate.gender) {
-            this.state = 'idle'; this.target = null; return;
+        if (
+            !mate.canBreed ||
+            mate.breedingCooldown > 0 ||
+            this.gender === mate.gender ||
+            mate.speciesDef?.id !== this.speciesDef?.id
+        ) {
+            this.state = 'idle';
+            this.target = null;
+            return;
         }
+
         const female = this.gender === 'F' ? this : mate;
         female.element?.classList.add('laying-egg');
         setTimeout(() => female.element?.classList.remove('laying-egg'), 2000);
-        this.breedingCooldown = mate.breedingCooldown = 30;
+
+        this.breedingCooldown = 30;
+        mate.breedingCooldown = 30;
+
         this.showThought('💕 Love is in the air! 💕');
         mate.showThought('💕 Love is in the air! 💕');
+
         const avgF    = (this.fertility + mate.fertility) / 2;
         const numEggs = avgF > 75 ? 3 : avgF > 50 ? 2 : 1;
-        const px = (this.x + mate.x) / 2, py = (this.y + mate.y) / 2;
+        const px = (this.x + mate.x) / 2;
+        const py = (this.y + mate.y) / 2;
         const parentColor = Math.random() < 0.5 ? this.color : mate.color;
+        const parentSpeciesDef = female.speciesDef;
+
         for (let i = 0; i < numEggs; i++) {
             setTimeout(() => {
                 bus.emit(Events.EGG_HATCHED, {
                     x: px + (Math.random() - 0.5) * 40,
                     y: py + (Math.random() - 0.5) * 40,
-                    parentColor, create: true,
+                    parentColor,
+                    parentSpeciesDef,
+                    create: true,
                 });
             }, i * 300);
         }
+
         this.fertility = Math.max(0, this.fertility - 30);
         mate.fertility = Math.max(0, mate.fertility - 30);
-        bus.emit(Events.LOG_EVENT, { message: `${female.color.name} ${female.speciesDef.name} #${female.id} ♀️ & #${mate.id} ♂️ laid ${numEggs} egg(s)! 🥚` });
-        this.target = null; this.state = 'idle';
+
+        bus.emit(Events.LOG_EVENT, {
+            message: `${female.color.name} ${female.speciesDef.name} #${female.id} ♀️ & #${mate.id} ♂️ laid ${numEggs} egg(s)! 🥚`
+        });
+
+        this.target = null;
+        this.state = 'idle';
     }
 
     _layEggsOnIsland(island, bus) {
         this.onIsland = true;
         this.element?.classList.add('laying-egg');
         setTimeout(() => this.element?.classList.remove('laying-egg'), 2000);
+
         const numEggs = Math.floor(this.fertility / 25) + 1;
         const off = island.size === 'small' ? 45 : island.size === 'medium' ? 70 : 90;
+
         for (let i = 0; i < numEggs; i++) {
             setTimeout(() => {
                 bus.emit(Events.EGG_HATCHED, {
                     x: island.x + off + (Math.random() - 0.5) * 60,
                     y: island.y + off + (Math.random() - 0.5) * 40,
-                    parentColor: this.color, create: true,
+                    parentColor: this.color,
+                    parentSpeciesDef: this.speciesDef,
+                    create: true,
                 });
             }, i * 400);
         }
+
         this.breedingCooldown = 40;
         this.fertility = Math.max(0, this.fertility - 50);
         this.showThought(`Laid ${numEggs} eggs! 🥚🏝️`);
-        bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} laid ${numEggs} egg(s) on Island #${island.id}!` });
-        setTimeout(() => { this.onIsland = false; this.state = 'idle'; this.target = null; }, 3000);
+
+        bus.emit(Events.LOG_EVENT, {
+            message: `${this.speciesDef.name} #${this.id} laid ${numEggs} egg(s) on Island #${island.id}!`
+        });
+
+        setTimeout(() => {
+            this.onIsland = false;
+            this.state = 'idle';
+            this.target = null;
+        }, 3000);
     }
 
     // ── Thought bubbles ───────────────────────────────────────────────────────
@@ -432,7 +475,10 @@ export class BirdEntity extends BaseEntity {
     showThought(text) {
         this.thinkingTimer = 600 + Math.random() * 600;
         const bubble = this.element?.querySelector('.duck-thinking');
-        if (bubble) { bubble.textContent = text; bubble.classList.add('show'); }
+        if (bubble) {
+            bubble.textContent = text;
+            bubble.classList.add('show');
+        }
     }
 
     _hideThought() {
