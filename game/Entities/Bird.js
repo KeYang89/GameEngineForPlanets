@@ -130,8 +130,8 @@ export class BirdEntity extends BaseEntity {
                 // Start building a nest — freezes for ~8s before breeding is unlocked
                 this._nestBuildTimer = 8;
                 this.state = 'building-nest';
-                this.showThought('Time to build a nest! 🪹');
-                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} is building a nest! 🪹` });
+                this.showThought('Time to build a nest! ');
+                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} is building a nest! ` });
             }
         }
 
@@ -143,7 +143,7 @@ export class BirdEntity extends BaseEntity {
                 this.hasNest  = true;
                 this.canBreed = true;
                 this.state    = 'idle';
-                this.showThought("Nest ready! I'm mature now! 🎂🪹");
+                this.showThought("Nest ready! ");
                 bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} finished their nest and is ready to breed! 🎂` });
             }
         }
