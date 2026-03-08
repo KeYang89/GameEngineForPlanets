@@ -36,6 +36,8 @@ export class BirdEntity extends BaseEntity {
         this.friends          = [];
         this.thinkingTimer    = 0;
         this.lastDecisionTime = 0;
+        this.hasNest          = false;
+        this._nestBuildTimer  = 0;
         // Flamingo orbit state
         this._islandTarget    = null;
         this._orbitAngle      = Math.random() * Math.PI * 2;
@@ -53,8 +55,13 @@ export class BirdEntity extends BaseEntity {
             ? this.speciesDef.emoji
             : (isDuckling ? '🐥' : this.speciesDef.emoji);
         const size  = isDuckling ? '36px' : this.speciesDef.size + 'px';
+        const isGoose = this.speciesDef.id === 'goose';
+        const bodyClass = isGoose ? 'duck-body goose' : 'duck-body';
+        const bodyFilter = isGoose
+            ? `drop-shadow(0 0 8px ${this.color.hex}) invert(0.2)`
+            : `drop-shadow(0 0 8px ${this.color.hex})`;
         duck.innerHTML = `
-            <div class="duck-body" style="filter:drop-shadow(0 0 8px ${this.color.hex});font-size:${size};">${emoji}</div>
+            <div class="${bodyClass}" style="filter:${bodyFilter};font-size:${size};">${emoji}</div>
             <div class="duck-ripple"></div>
             <div class="duck-thinking"></div>
             <div class="duck-stats">
@@ -73,9 +80,14 @@ export class BirdEntity extends BaseEntity {
         if (body) {
             const isDuckling = this.age < 10 || this.speciesDef.isBaby;
             if (!this.speciesDef.islandOnly) {
-                body.textContent  = isDuckling ? '🐥' : this.speciesDef.emoji;
+                body.textContent    = isDuckling ? '🐥' : this.speciesDef.emoji;
                 body.style.fontSize = isDuckling ? '36px' : this.speciesDef.size + 'px';
             }
+            const isGoose = this.speciesDef.id === 'goose';
+            body.classList.toggle('goose', isGoose);
+            body.style.filter = isGoose
+                ? `drop-shadow(0 0 8px ${this.color.hex}) invert(0.2)`
+                : `drop-shadow(0 0 8px ${this.color.hex})`;
         }
         const q = s => el.querySelector(s);
         const hB = q('.stat-hunger'), eB = q('.stat-energy'), sB = q('.stat-social');
@@ -86,8 +98,9 @@ export class BirdEntity extends BaseEntity {
         if (aE) aE.textContent = Math.floor(this.age);
         if (fE) fE.textContent = Math.floor(this.fertility);
 
-        el.classList.toggle('swimming', this.isSwimming);
-        el.classList.toggle('breeding', this.state === 'breeding');
+        el.classList.toggle('swimming',  this.isSwimming);
+        el.classList.toggle('breeding',  this.state === 'breeding');
+        el.classList.toggle('nesting',   this.state === 'building-nest');
         if (this.age > this.maxAge * 0.8) el.classList.add('old');
     }
 
@@ -108,10 +121,33 @@ export class BirdEntity extends BaseEntity {
             return;
         }
 
-        if (this.age >= 10 && !this.canBreed) {
-            this.canBreed = true;
-            this.showThought('I\'m mature now! 🎂');
+        if (this.age >= 10 && !this.canBreed && !this.hasNest && this._nestBuildTimer === 0) {
+            if (this.speciesDef.islandOnly) {
+                // Flamingos skip nest-building
+                this.hasNest  = true;
+                this.canBreed = true;
+            } else {
+                // Start building a nest — freezes for ~8s before breeding is unlocked
+                this._nestBuildTimer = 8;
+                this.state = 'building-nest';
+                this.showThought('Time to build a nest! 🪹');
+                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} is building a nest! 🪹` });
+            }
         }
+
+        // Tick nest build
+        if (this._nestBuildTimer > 0) {
+            this._nestBuildTimer -= dt;
+            if (this._nestBuildTimer <= 0) {
+                this._nestBuildTimer = 0;
+                this.hasNest  = true;
+                this.canBreed = true;
+                this.state    = 'idle';
+                this.showThought("Nest ready! I'm mature now! 🎂🪹");
+                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} finished their nest and is ready to breed! 🎂` });
+            }
+        }
+
         if (this.breedingCooldown > 0) this.breedingCooldown -= dt;
 
         this.hunger = Math.max(0, this.hunger - dt * 0.8);
@@ -304,7 +340,12 @@ export class BirdEntity extends BaseEntity {
                 if (this.target && this.distanceTo(this.target.obj) < 60)
                     this._layEggsOnIsland(this.target.obj, bus);
                 break;
+            case 'building-nest':
+                // Stand still, play nesting animation; _nestBuildTimer handles the actual countdown
+                this.element?.classList.add('nesting');
+                break;
             case 'resting':
+                this.element?.classList.remove('nesting');
                 this.energy = Math.min(100, this.energy + dt * 3);
                 if (this.energy > 80) { this.state = 'idle'; this.showThought('Feeling refreshed! ✨'); }
                 break;
