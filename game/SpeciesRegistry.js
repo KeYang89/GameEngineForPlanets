@@ -17,7 +17,7 @@ export const SPECIES = {
         PELICAN:   { id: 'pelican',      emoji: '🦤', name: 'Pelican',      speed: 1.0, maxAge: 300, size: 44, MAX_COUNT: 10 },
         SWAN:      { id: 'swan',         emoji: '🦢', name: 'Swan',         speed: 1.0, maxAge: 220, size: 40, MAX_COUNT: 12 },
         FLAMINGO:  { id: 'flamingo',     emoji: '🦩', name: 'Flamingo',     speed: 0.6, maxAge: 200, size: 42, MAX_COUNT: 10, onIsland: true, islandOnly: true },
-        GOOSE:     { id: 'goose',        emoji: '🪿', name: 'Goose',        speed: 1.3, maxAge: 180, size: 38, MAX_COUNT: 12 },
+        GOOSE:     { id: 'goose',        emoji: '🦢', name: 'Goose',        speed: 1.3, maxAge: 180, size: 38, MAX_COUNT: 12 },
     },
     mammals: {
         CAT:     { id: 'cat',     emoji: '🐈', name: 'Cat',     speed: 1.4, maxAge: 150, size: 36, MAX_COUNT:  8, isPredator: true,  onIsland: true },
