@@ -481,7 +481,7 @@ class Egg {
         this.parentSpeciesDef = parentSpeciesDef || SPECIES.birds.MALLARD;
         this.entities         = entities;
         this.bus              = bus;
-        this.hatchTime        = 30;   // seconds until auto-hatch
+        this.hatchTime        = 3 + Math.random() * 2;   // auto-hatch in 3–5s
         this.element          = this.createElement();
     }
 
@@ -562,20 +562,101 @@ class Egg {
     syncToDOM(_el) {}
 
     update(dt) {
+        if (this._hatching) return;
         this.hatchTime -= dt;
-        if (this.hatchTime <= 0) this.hatch();
+        if (this.hatchTime <= 0) {
+            const speciesDef = this.parentSpeciesDef || SPECIES.birds.MALLARD;
+            if (!this.entities.canSpawn(speciesDef)) {
+                // Pond full — wait 2s and try again rather than giving up
+                this.hatchTime = 2;
+            } else {
+                this.hatch();
+            }
+        }
+    }
+
+    _hatchingSVG() {
+        const u = 'e' + this.id;
+        return `<svg width="120" height="84" viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf7"/>
+      <stop offset="1" stop-color="#f3ead7"/>
+    </linearGradient>
+    <filter id="${u}f" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <ellipse cx="300" cy="290" rx="170" ry="36" fill="#d8c7a6" opacity="0.28"/>
+  <g filter="url(#${u}f)">
+    <ellipse cx="300" cy="255" rx="150" ry="82" fill="#8b5e34"/>
+    <ellipse cx="300" cy="245" rx="112" ry="46" fill="#c79b63"/>
+    <ellipse cx="300" cy="240" rx="92"  ry="34" fill="#efd8b2"/>
+  </g>
+  <g stroke-linecap="round" fill="none">
+    <path d="M160 245 C205 210,255 205,330 220 S450 245,440 280" stroke="#6f4524" stroke-width="8"/>
+    <path d="M168 272 C215 228,280 226,352 238 S430 260,432 287" stroke="#7d512d" stroke-width="7"/>
+    <path d="M176 285 C220 250,280 248,344 258 S412 278,420 300" stroke="#5f3c20" stroke-width="6"/>
+    <path d="M185 230 C235 195,300 193,375 210 S445 240,448 270" stroke="#9a6a3d" stroke-width="6"/>
+    <path d="M150 260 C190 300,255 320,332 312 S438 290,455 252" stroke="#6a4326" stroke-width="7"/>
+    <path d="M158 280 C205 315,272 332,345 323 S425 298,440 270" stroke="#8c6239" stroke-width="6"/>
+  </g>
+  <g filter="url(#${u}f)">
+    <ellipse cx="260" cy="230" rx="28" ry="38" fill="url(#${u}g)" transform="rotate(-8 260 230)"/>
+    <ellipse cx="340" cy="232" rx="28" ry="38" fill="url(#${u}g)" transform="rotate(10 340 232)"/>
+  </g>
+  <g stroke="#7a5c3a" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M248 228 L258 218 L268 228 L278 220"/>
+    <path d="M328 232 L338 220 L350 230 L360 220"/>
+  </g>
+  <g>
+    <circle cx="300" cy="210" r="16" fill="#ffd76a"/>
+    <circle cx="295" cy="205" r="2.5" fill="#222"/>
+    <polygon points="308,210 318,214 308,218" fill="#ff9f43"/>
+  </g>
+  <g stroke-linecap="round" stroke="#a56f3d" fill="none">
+    <path d="M190 198 L176 178" stroke-width="4"/>
+    <path d="M220 188 L208 164" stroke-width="3.5"/>
+    <path d="M390 190 L405 166" stroke-width="3.5"/>
+    <path d="M425 206 L444 188" stroke-width="4"/>
+  </g>
+</svg>`;
     }
 
     hatch() {
         if (this._hatching) return;
         this._hatching = true;
-        this.element?.classList.add('hatching');
 
+        // Step 1: swap to the cracked-egg / chick-emerging SVG immediately
+        if (this.element) {
+            this.element.innerHTML = this._hatchingSVG();
+            this.element.style.transition     = 'transform 0.15s ease-in-out';
+            this.element.style.transformOrigin = 'center bottom';
+            let wobble = 0;
+            const shake = setInterval(() => {
+                wobble++;
+                this.element.style.transform = wobble % 2 === 0
+                    ? 'rotate(-6deg) scale(1.08)'
+                    : 'rotate(6deg) scale(1.08)';
+                if (wobble >= 6) {
+                    clearInterval(shake);
+                    this.element.style.transform = 'scale(1.15)';
+                }
+            }, 100);
+        }
+
+        // Step 2: after 1.2s spawn the bird and remove the nest element
         setTimeout(() => {
             const speciesDef = this.parentSpeciesDef || SPECIES.birds.MALLARD;
 
             if (!this.entities.canSpawn(speciesDef)) {
-                this.entities.queueRemove(this);
+                // Shouldn't normally reach here (update() pre-checks), but just in case
+                this._hatching = false;
+                this.hatchTime = 2;
+                if (this.element) {
+                    this.element.innerHTML = this._svg();
+                    this.element.style.transform = '';
+                }
                 return;
             }
 
@@ -593,12 +674,24 @@ class Egg {
                 message: `🐣 An egg hatched! Welcome ${bird.color.name} ${bird.gender === 'M' ? '♂️' : '♀️'} ${bird.speciesDef.name} #${bird.id}!`
             });
 
+            this._removeElement();
             this.entities.queueRemove(this);
-        }, 800);
+        }, 1200);
+    }
+
+    // Explicitly remove DOM element — called from hatch() so the nest never
+    // lingers even if destroy() is skipped by the entity manager.
+    _removeElement() {
+        if (this.element) {
+            this.element.style.transition = 'opacity 0.4s, transform 0.4s';
+            this.element.style.opacity    = '0';
+            this.element.style.transform  = 'scale(0.5)';
+            setTimeout(() => { this.element?.remove(); this.element = null; }, 400);
+        }
     }
 
     destroy() {
-        this.element?.remove();
+        this._removeElement();
     }
 }
 
