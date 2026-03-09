@@ -489,8 +489,9 @@ class Egg {
     createElement() {
         const el = document.createElement('div');
         el.className = 'egg fade-in';
-        el.style.left = this.x + 'px';
-        el.style.top  = this.y + 'px';
+        el.style.left    = this.x + 'px';
+        el.style.top     = this.y + 'px';
+        el.style.zIndex  = '50';   // above nest SVG (z-index:10), below HUD
         el.innerHTML = '🥚';
         el.title = 'Click to hatch!';
         el.addEventListener('click', () => this.hatch());
