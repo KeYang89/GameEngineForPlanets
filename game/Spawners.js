@@ -344,8 +344,10 @@ export class Spawners {
     }
 
     createEgg(x, y, parentColor, parentSpeciesDef = SPECIES.birds.MALLARD) {
+        // EntityManager may not define nextEggId — use a module-level counter
+        if (typeof Spawners._eggCounter === 'undefined') Spawners._eggCounter = 1;
         const egg = new Egg(
-            this.entities.nextEggId++,
+            Spawners._eggCounter++,
             x,
             y,
             parentColor,
@@ -650,33 +652,38 @@ class Egg {
             const speciesDef = this.parentSpeciesDef || SPECIES.birds.MALLARD;
 
             if (!this.entities.canSpawn(speciesDef)) {
-                // Shouldn't normally reach here (update() pre-checks), but just in case
-                this._hatching = false;
-                this.hatchTime = 2;
-                if (this.element) {
-                    this.element.innerHTML = this._svg();
-                    this.element.style.transform = '';
-                }
+                // Cap hit — don't revert the visual. Poll every 2s until a slot opens.
+                const retry = setInterval(() => {
+                    if (this.dead || !this.element) { clearInterval(retry); return; }
+                    if (this.entities.canSpawn(speciesDef)) {
+                        clearInterval(retry);
+                        this._spawnBird(speciesDef);
+                    }
+                }, 2000);
                 return;
             }
 
-            const bird = new BirdEntity(
-                this.entities.nextDuckId++,
-                this.x,
-                this.y,
-                speciesDef,
-                this.parentColor
-            );
-
-            this.entities.add(bird, 'ducks', true);
-
-            this.bus.emit(Events.LOG_EVENT, {
-                message: `🐣 An egg hatched! Welcome ${bird.color.name} ${bird.gender === 'M' ? '♂️' : '♀️'} ${bird.speciesDef.name} #${bird.id}!`
-            });
-
-            this._removeElement();
-            this.entities.queueRemove(this);
+            this._spawnBird(speciesDef);
         }, 1200);
+    }
+
+    _spawnBird(speciesDef) {
+        const bird = new BirdEntity(
+            this.entities.nextDuckId++,
+            this.x,
+            this.y,
+            speciesDef,
+            this.parentColor
+        );
+
+        this.entities.add(bird, 'ducks', true);
+
+        this.bus.emit(Events.LOG_EVENT, {
+            message: `🐣 An egg hatched! Welcome ${bird.color.name} ${bird.gender === 'M' ? '♂️' : '♀️'} ${bird.speciesDef.name} #${bird.id}!`
+        });
+
+        this._removeElement();
+        this.entities.queueRemove(this);
     }
 
     // Explicitly remove DOM element — called from hatch() so the nest never

@@ -207,7 +207,7 @@ export class BirdEntity extends BaseEntity {
 
         // Priority 1: lay eggs on island
         if (this.canBreed && this.breedingCooldown <= 0 &&
-            this.hunger > 60 && this.energy > 60 && this.fertility > 70) {
+            this.hunger > 80 && this.energy > 60 && this.fertility > 70) {
             const island = EntityManager.findNearest(this.x, this.y, entities.islands);
             if (island && !this.onIsland) {
                 this.target = { type: 'island', obj: island };
@@ -219,7 +219,7 @@ export class BirdEntity extends BaseEntity {
 
         // Priority 2: find mate
         if (this.canBreed && this.breedingCooldown <= 0 &&
-            this.hunger > 50 && this.energy > 50) {
+            this.hunger > 60 && this.energy > 50) {
             const mate = this._findMate(entities);
             if (mate) {
                 this.target = { type: 'duck', obj: mate };
@@ -266,7 +266,7 @@ export class BirdEntity extends BaseEntity {
                 d !== this &&
                 d.canBreed &&
                 d.breedingCooldown <= 0 &&
-                d.hunger > 50 &&
+                d.hunger > 75 &&
                 d.energy > 50 &&
                 d.gender !== this.gender &&
                 d.speciesDef?.id === this.speciesDef?.id &&
