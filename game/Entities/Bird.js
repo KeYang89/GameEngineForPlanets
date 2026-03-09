@@ -63,28 +63,6 @@ export class BirdEntity extends BaseEntity {
         duck.innerHTML = `
             <div class="${bodyClass}" style="filter:${bodyFilter};font-size:${size};">${emoji}</div>
             <div class="duck-ripple"></div>
-            <div class="bird-nest" style="display:none;"><svg class="bird-nest-svg" width="90" height="52" viewBox="100 190 400 160" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="nestShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.22"/>
-    </filter>
-  </defs>
-  <g filter="url(#nestShadow)">
-    <ellipse cx="300" cy="255" rx="150" ry="82" fill="#8b5e34"/>
-    <ellipse cx="300" cy="245" rx="112" ry="46" fill="#c79b63"/>
-    <ellipse cx="300" cy="240" rx="92" ry="34" fill="#efd8b2"/>
-  </g>
-  <g stroke-linecap="round" fill="none">
-    <path d="M160 245 C205 210,255 205,330 220 S450 245,440 280" stroke="#6f4524" stroke-width="8"/>
-    <path d="M168 272 C215 228,280 226,352 238 S430 260,432 287" stroke="#7d512d" stroke-width="7"/>
-    <path d="M176 285 C220 250,280 248,344 258 S412 278,420 300" stroke="#5f3c20" stroke-width="6"/>
-    <path d="M185 230 C235 195,300 193,375 210 S445 240,448 270" stroke="#9a6a3d" stroke-width="6"/>
-    <path d="M150 260 C190 300,255 320,332 312 S438 290,455 252" stroke="#6a4326" stroke-width="7"/>
-    <path d="M158 280 C205 315,272 332,345 323 S425 298,440 270" stroke="#8c6239" stroke-width="6"/>
-    <path d="M175 220 C225 250,285 262,355 255 S425 235,448 214" stroke="#b37a46" stroke-width="5"/>
-    <path d="M170 300 C230 278,292 272,368 281 S428 300,445 318" stroke="#7b4e2c" stroke-width="5"/>
-  </g>
-</svg></div>
             <div class="duck-thinking"></div>
             <div class="duck-stats">
                 <div><strong>${this.personality}</strong> ${this.color.name} ${this.gender === 'M' ? '♂️' : '♀️'} #${this.id} <em style="opacity:.7">${this.speciesDef.name}</em></div>
@@ -124,13 +102,6 @@ export class BirdEntity extends BaseEntity {
         el.classList.toggle('breeding',  this.state === 'breeding');
         el.classList.toggle('nesting',   this.state === 'building-nest');
         if (this.age > this.maxAge * 0.8) el.classList.add('old');
-
-        // Show nest SVG while building or after built
-        const nestEl = el.querySelector('.bird-nest');
-        if (nestEl) {
-            const showNest = this.state === 'building-nest' || this.hasNest;
-            nestEl.style.display = showNest ? 'block' : 'none';
-        }
     }
 
     onInteract() {
@@ -159,8 +130,8 @@ export class BirdEntity extends BaseEntity {
                 // Start building a nest — freezes for ~8s before breeding is unlocked
                 this._nestBuildTimer = 8;
                 this.state = 'building-nest';
-                this.showThought('Time to build a nest! 🪹');
-                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} is building a nest! 🪹` });
+                this.showThought('Time to build a nest! ');
+                bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} is building a nest! ` });
             }
         }
 
@@ -172,7 +143,7 @@ export class BirdEntity extends BaseEntity {
                 this.hasNest  = true;
                 this.canBreed = true;
                 this.state    = 'idle';
-                this.showThought("Nest ready! I'm mature now! 🎂🪹");
+                this.showThought("Nest ready! ");
                 bus.emit(Events.LOG_EVENT, { message: `${this.speciesDef.name} #${this.id} finished their nest and is ready to breed! 🎂` });
             }
         }

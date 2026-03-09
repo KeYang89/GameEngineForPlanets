@@ -474,30 +474,92 @@ class Island {
 
 class Egg {
     constructor(id, x, y, parentColor, parentSpeciesDef, entities, bus) {
-        this.id = id;
-        this.x = x;
-        this.y = y;
-        this.parentColor = parentColor;
+        this.id               = id;
+        this.x                = x;
+        this.y                = y;
+        this.parentColor      = parentColor;
         this.parentSpeciesDef = parentSpeciesDef || SPECIES.birds.MALLARD;
-        this.entities = entities;
-        this.bus = bus;
-        this.hatchTime = 15;
-        this.dead = false;
-        this.element = this.createElement();
+        this.entities         = entities;
+        this.bus              = bus;
+        this.hatchTime        = 30;   // seconds until auto-hatch
+        this.element          = this.createElement();
+    }
+
+    _svg() {
+        // Use per-instance unique IDs to avoid SVG defs conflicts when
+        // multiple eggs exist in the DOM at the same time.
+        const u = 'e' + this.id;
+        return `<svg width="120" height="84" viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf7"/>
+      <stop offset="1" stop-color="#f3ead7"/>
+    </linearGradient>
+    <filter id="${u}f" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <ellipse cx="300" cy="290" rx="170" ry="36" fill="#d8c7a6" opacity="0.28"/>
+  <g filter="url(#${u}f)">
+    <ellipse cx="300" cy="255" rx="150" ry="82" fill="#8b5e34"/>
+    <ellipse cx="300" cy="245" rx="112" ry="46" fill="#c79b63"/>
+    <ellipse cx="300" cy="240" rx="92"  ry="34" fill="#efd8b2"/>
+  </g>
+  <g stroke-linecap="round" fill="none">
+    <path d="M160 245 C205 210,255 205,330 220 S450 245,440 280" stroke="#6f4524" stroke-width="8"/>
+    <path d="M168 272 C215 228,280 226,352 238 S430 260,432 287" stroke="#7d512d" stroke-width="7"/>
+    <path d="M176 285 C220 250,280 248,344 258 S412 278,420 300" stroke="#5f3c20" stroke-width="6"/>
+    <path d="M185 230 C235 195,300 193,375 210 S445 240,448 270" stroke="#9a6a3d" stroke-width="6"/>
+    <path d="M150 260 C190 300,255 320,332 312 S438 290,455 252" stroke="#6a4326" stroke-width="7"/>
+    <path d="M158 280 C205 315,272 332,345 323 S425 298,440 270" stroke="#8c6239" stroke-width="6"/>
+    <path d="M175 220 C225 250,285 262,355 255 S425 235,448 214" stroke="#b37a46" stroke-width="5"/>
+    <path d="M170 300 C230 278,292 272,368 281 S428 300,445 318" stroke="#7b4e2c" stroke-width="5"/>
+    <path d="M195 205 C245 180,315 180,390 198 S455 230,460 252" stroke="#6a4020" stroke-width="5"/>
+    <path d="M145 250 C170 220,205 205,235 196"                  stroke="#8a5a30" stroke-width="5"/>
+    <path d="M455 252 C430 220,395 206,362 197"                  stroke="#8a5a30" stroke-width="5"/>
+  </g>
+  <g filter="url(#${u}f)">
+    <ellipse cx="255" cy="232" rx="28" ry="38" fill="url(#${u}g)" transform="rotate(-10 255 232)"/>
+    <ellipse cx="300" cy="223" rx="30" ry="40" fill="url(#${u}g)"/>
+    <ellipse cx="345" cy="232" rx="28" ry="38" fill="url(#${u}g)" transform="rotate(10 345 232)"/>
+    <ellipse cx="247" cy="220" rx="7"  ry="12" fill="#fff" opacity="0.65" transform="rotate(-10 247 220)"/>
+    <ellipse cx="292" cy="210" rx="8"  ry="13" fill="#fff" opacity="0.65"/>
+    <ellipse cx="337" cy="220" rx="7"  ry="12" fill="#fff" opacity="0.65" transform="rotate(10 337 220)"/>
+  </g>
+  <g stroke-linecap="round" stroke="#a56f3d" fill="none" opacity="0.95">
+    <path d="M190 198 L176 178" stroke-width="4"/>
+    <path d="M220 188 L208 164" stroke-width="3.5"/>
+    <path d="M390 190 L405 166" stroke-width="3.5"/>
+    <path d="M425 206 L444 188" stroke-width="4"/>
+    <path d="M210 312 L193 333" stroke-width="3.5"/>
+    <path d="M395 315 L413 335" stroke-width="3.5"/>
+  </g>
+</svg>`;
     }
 
     createElement() {
+        const container = document.getElementById('game-container');
         const el = document.createElement('div');
-        el.className = 'egg fade-in';
-        el.style.left    = this.x + 'px';
-        el.style.top     = this.y + 'px';
-        el.style.zIndex  = '50';   // above nest SVG (z-index:10), below HUD
-        el.innerHTML = '🥚';
-        el.title = 'Click to hatch!';
+        el.className      = 'egg bird-nest fade-in';
+        el.style.cssText  = [
+            'position:absolute',
+            `left:${this.x - 60}px`,
+            `top:${this.y - 42}px`,
+            'width:120px',
+            'height:84px',
+            'z-index:20',
+            'cursor:pointer',
+            'animation:2s ease-in-out 0s infinite normal none running bobFloat',
+        ].join(';');
+        el.title     = 'Click to hatch!';
+        el.innerHTML = this._svg();
         el.addEventListener('click', () => this.hatch());
-        document.getElementById('game-container').appendChild(el);
+        container.appendChild(el);
         return el;
     }
+
+    // Prevent RenderSystem from overwriting the position set in createElement.
+    syncToDOM(_el) {}
 
     update(dt) {
         this.hatchTime -= dt;
@@ -507,7 +569,6 @@ class Egg {
     hatch() {
         if (this._hatching) return;
         this._hatching = true;
-        this.dead = true;
         this.element?.classList.add('hatching');
 
         setTimeout(() => {

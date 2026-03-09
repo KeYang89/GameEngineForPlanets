@@ -1216,10 +1216,22 @@ body.night .ocean {
     .grass-blade:nth-child(3) { left: 8px; }
 }
 
-
-
-
 @keyframes pulseBeam {
     0%, 100% { filter: drop-shadow(0 0 10px rgba(100,200,255,0.6)); }
     50%      { filter: drop-shadow(0 0 20px rgba(100,200,255,1)); }
+}
+
+/* ── Nest ── */
+.bird-nest {
+    position: absolute;
+    pointer-events: auto;   /* was 'none' before — must be auto for click-to-hatch */
+}
+
+.bird-nest:hover {
+    filter: brightness(1.05);
+}
+
+@keyframes bobFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-5px); }
 }
